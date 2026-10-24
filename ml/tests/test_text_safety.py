@@ -9,6 +9,7 @@ CRISIS = [
     "je voudrais dormir et plus jamais me réveiller", "ce serait mieux sans moi", "je me scarifie",
     "papa me frappe quand il est faché", "I want to die", "i dont want to live anymore",
     "sometimes I think about hurting myself", "my stepdad hits me", "I wish I was dead", "je veux me suicider",
+    "i want to hurt myself", "i want to hurt myself lol", "I'm going to cut myself", "i tried to hurt myself",
 ]
 CONCERN = [
     "j'ai peur de mourir", "personne m'aime", "je sers à rien", "je veux pas mourir", "nobody loves me",

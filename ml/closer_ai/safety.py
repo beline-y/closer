@@ -44,7 +44,7 @@ CRISIS = {
         r"(?:veu[xt]?|voudrais|envie de|pense a|vais) me faire du mal",
         r"(?:veu[xt]?|voudrais|vais|envie de|pense a) me (?:couper|scarifier|bruler|griffer|mutiler|taillader|mordre|taper)",
         r"je me (?:coupe|scarifie|brule|griffe|mutile|taillade|fais du mal|tape la tete)", r"scarif\w*", r"automutil\w*",
-        r"(?:want|wanna|going to|gonna|try to|tried to|trying to|think about|thinking about|thought about) "
+        r"(?:want|wanna|going|gonna|try|tried|trying|think about|thinking about|thought about)(?: to)? "
         r"(?:hurting|hurt|cutting|cut|burning|burn|harming|harm) myself",
         r"(?:hurt|cut|burn) myself on purpose", r"cutting myself", r"self ?harm\w*",
     ]),

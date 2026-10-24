@@ -18,8 +18,8 @@ AUC for distress by age: 5-7 0.918, 8-11 0.928, 12-17 0.915. The interpretable m
 
 | | Rate |
 |---|---|
-| Crisis notes raising an urgent alert | 69% |
-| Crisis notes raising an alert of any level | 69% |
+| Crisis notes raising an urgent alert | 73% |
+| Crisis notes raising an alert of any level | 73% |
 | Strong statements raising a priority alert | 96% |
 | Ordinary notes wrongly flagged as a crisis | 0.00% |
 
@@ -31,7 +31,7 @@ Test cohort. *Unsupported distress days*: days a child spends in distress before
 
 | Policy | Unsupported distress days / child-week | Workload / child-week | Episodes reached | Median delay (days) | Alert precision | Questions / child-week | Worst 10% of children |
 |---|---|---|---|---|---|---|---|
-| No AI alert (shield only) | 0.803 | 0.00 | 11% | 1.5 | n/a | 0.00 | 3.50 |
+| No AI alert (shield only) | 0.797 | 0.00 | 11% | 2.0 | n/a | 0.00 | 3.47 |
 | Spec rules (3 low moods, 2 days without check-in or family) | 0.226 | 0.83 | 42% | 1.0 | 26% | 0.00 | 1.39 |
 | Threshold on P(distress), tau=0.30 | 0.290 | 0.39 | 46% | 1.0 | 67% | 0.00 | 1.48 |
 | Threshold + gentle questions, tau=0.30 | 0.238 | 0.43 | 48% | 1.0 | 78% | 0.56 | 1.23 |
