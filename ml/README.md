@@ -50,7 +50,8 @@ Simulated children, test and validation cohorts never seen in training. Full rep
 | Ward of 20 beds, Whittle index vs highest P(distress) | **−20%** (1 visit a day), **−23%** (2 visits a day) |
 | Indexability | 100% of sampled states |
 | Distilled tree (VIPER) | 20 rules; still better than the threshold, with less workload |
-| Safety rules alone | 69% of crisis notes caught, 0 false crisis on 14,000+ ordinary notes; the misses are the indirect phrasings Claude is there for |
+| Safety rules alone | 73% of crisis notes caught, 0 false crisis on 14,000+ ordinary notes; the misses are indirect phrasings |
+| Claude as second reader (live run, 80 notes, 40 of them with planted crisis or strong statements) | **100% of crisis notes** caught, against 53% for the rules on the same notes; 0 false alarm on the 40 ordinary notes |
 
 ![Trade-off curves](RESULTS_tradeoff.svg)
 
@@ -108,6 +109,10 @@ that it cannot override protect the cases that matter most.
 - **The agent rediscovered a heuristic, then went further.** A hand-written "ask when unsure, alert when sure"
   rule ties with the agent at the 0.4 budget. When the psychologist's time is scarce, the agent beats it by 11 to
   19%, and it does so for every budget from one network, without anyone tuning the rule.
+- **Claude's evaluation found a bug in our own rules.** Measuring Claude against the lexicon showed the rules missed
+  "i want to hurt myself": the pattern did not allow the "to". Fixed and covered by tests. The point stands even after
+  the fix: indirect goodbyes ("i wrote goodbye letters for everyone") are invisible to word rules, and Claude caught
+  all of them.
 - **Explainable did not cost accuracy.** The additive model matches gradient boosting on held-out children, so
   nothing had to be traded for the per-signal explanations.
 - **One network per budget would have been the wrong design.** Conditioning on λ gives the whole trade-off curve,
@@ -184,7 +189,8 @@ agreement.
 
 ## Run it
 
-Python 3.10+. On the school machines, home quotas are small: put the environment in `/tmp`.
+Python 3.10+. On the school machines, home quotas are small: put the environment in `/tmp`. For `--claude`, put
+`ANTHROPIC_API_KEY=...` in the repo's git-ignored `.env.local` (as in `.env.example`): the CLI reads it from there.
 
 ```bash
 cd ml
@@ -194,7 +200,7 @@ pip install -e ".[dev]"
 pytest                                   # ~35 s
 
 python -m closer_ai demo                 # 16 fictional children, today's decisions, and the hidden truth
-python -m closer_ai demo --claude        # same, with Claude reading notes and summarizing each child (needs a key)
+python -m closer_ai demo --claude --language French   # with Claude reading notes and summarizing each child
 ```
 
 Day to day, on a local SQLite file (`ml/data/closer_ai.sqlite`, git-ignored):
@@ -213,7 +219,7 @@ python -m closer_ai train-assessor               # 4,000 simulated stays, ~30 s
 python -m closer_ai train-policy                 # 5M steps of PPO, ~25 min
 python -m closer_ai train-policy --no-ask --out artifacts/policy_no_ask.zip   # the ablation, same budget
 python -m closer_ai evaluate                     # RESULTS.md + charts, policy.json (lambda for the budget), the tree
-python -m closer_ai eval-reader --n 120          # lexicon vs Claude on planted notes (120 API calls)
+python -m closer_ai eval-reader --n 80           # lexicon vs Claude on planted notes (one API call per note)
 ```
 
 `artifacts/` holds the trained models (about 1 MB). They were trained with the library versions in `pyproject.toml`
@@ -239,7 +245,8 @@ python -m closer_ai eval-reader --n 120          # lexicon vs Claude on planted 
 - **Everything is simulated.** The simulator encodes our assumptions about hospitalized children. A psychologist
   must review it and set the costs (one day of delay vs. one false alarm) before the numbers mean anything.
 - **Notes are synthetic.** The same person wrote the note templates and the lexicon, so the lexicon's scores on
-  them are optimistic. `eval-reader` measures Claude on the indirect phrasings planted to defeat the lexicon.
+  them are optimistic. Claude's 100% comes from 80 notes, 17 of them with crisis language: a strong signal, not a
+  clinical figure.
 - **Toward real data.** Only alerted children get reviewed (selective labels), so routine screenings and the
   psychologist's manual reports (`psy_manual` alerts) are needed for unbiased labels. A new policy would first be
   evaluated off-policy (importance sampling or doubly robust estimators on logged decisions) and improved with
