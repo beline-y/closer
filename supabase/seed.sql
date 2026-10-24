@@ -11,6 +11,7 @@
 --   Sarah ...... pediatric nurse (care team)
 --   Maya ....... volunteer, marine biologist
 --   Daniel ..... volunteer, airline pilot
+--   Ava, 12 and Lucas, 7: background patients only Sarah follows (fill the care dashboard)
 
 -- ---------------------------------------------------------------------------
 -- Reset: remove the demo accounts of this and earlier seeds (listed explicitly,
@@ -18,7 +19,10 @@
 -- cascades to identities, profiles and links; demo patients are removed by id.
 -- ---------------------------------------------------------------------------
 delete from public.patients
-  where id in ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+  where id in (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+  );
 
 delete from auth.users
   where id in (
@@ -96,10 +100,18 @@ insert into public.patients (id, user_id, nickname, birth_year, is_minor, intere
 values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111',
    'Leo', 2017, true, array['dinosaurs', 'soccer', 'drawing', 'the ocean'], 'active', 'LEO123',
+   '44444444-4444-4444-8444-444444444444'),
+  -- Background patients: no app account and no family linked yet.
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', null,
+   'Ava', 2014, true, array['music', 'cats'], 'active', null,
+   '44444444-4444-4444-8444-444444444444'),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', null,
+   'Lucas', 2019, true, array['trains', 'lego'], 'active', null,
    '44444444-4444-4444-8444-444444444444');
 
 -- ---------------------------------------------------------------------------
 -- Links around Leo: Emma (mom, guardian), James (dad), Noah (friend), Sarah (care team).
+-- Sarah also follows Ava and Lucas.
 -- Volunteers are never linked to a patient: they only meet patients through
 -- approved, moderated requests (see docs/SPEC.md, Volunteers).
 -- ---------------------------------------------------------------------------
@@ -108,4 +120,6 @@ values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '22222222-2222-4222-8222-222222222222', 'family',    'Mom',             true,  'active'),
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '33333333-3333-4333-8333-333333333333', 'family',    'Dad',             false, 'active'),
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '77777777-7777-4777-8777-777777777777', 'friend',    'Best friend',     false, 'active'),
-  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active');
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active'),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active');

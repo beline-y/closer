@@ -56,12 +56,12 @@ select pg_temp.reset_role();
 -- Leo's circle sees Leo; the guardian and care team see the whole circle
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('11111111-1111-4111-8111-111111111111'); -- Leo
-select is((select count(*) from patients)::int, 1, 'Leo sees his own patient record');
+select is((select count(*) from patients)::int, 1, 'Leo sees only his own patient record');
 select is((select count(*) from patient_links)::int, 4, 'Leo sees his whole circle');
 select pg_temp.reset_role();
 
 select pg_temp.act_as('22222222-2222-4222-8222-222222222222'); -- Emma, guardian
-select is((select nickname from patients), 'Leo', 'Emma sees Leo');
+select is((select string_agg(nickname, ',') from patients), 'Leo', 'Emma sees Leo only (not Ava or Lucas)');
 select is((select count(*) from patient_links)::int, 4, 'Emma (guardian) sees the whole circle');
 select pg_temp.reset_role();
 
@@ -76,8 +76,8 @@ select is((select count(*) from profiles where account_type = 'volunteer')::int,
 select pg_temp.reset_role();
 
 select pg_temp.act_as('44444444-4444-4444-8444-444444444444'); -- Sarah, care team
-select is((select count(*) from patients)::int, 1, 'Sarah sees her patient');
-select is((select count(*) from patient_links)::int, 4, 'Sarah sees the circle of her patient');
+select is((select count(*) from patients)::int, 3, 'Sarah sees her three patients (Leo, Ava, Lucas)');
+select is((select count(*) from patient_links)::int, 6, 'Sarah sees the circles of her patients');
 select is((select count(*) from profiles where account_type = 'volunteer')::int, 0,
   'Sarah sees no volunteer profiles yet (volunteer approval comes with its own feature)');
 select pg_temp.reset_role();

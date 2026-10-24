@@ -35,7 +35,9 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - Patient devices are personal tablets, so there's no auto sign-out in the MVP.
 - **Demo access:** while all data is fictional, the landing page is a role picker (`DEMO_MODE=true` in every environment, production included). Real sign-in is tracked in issue #9.
 - **Volunteer contact:** only the patient can ask. Flow: patient taps "I'd like to talk with Maya" → care team approves → guardian approves (minors) → the volunteer receives the request with only what the care team chooses to share → the volunteer accepts or declines → a supervised visit or a moderated, logged exchange scheduled by the care team (Cheer Up! model). No free chat, ever.
-- **Patient answers shown to volunteers:** go through a privacy filter (masks names, places, hospital names, emails, phone numbers) **and** need care team approval ("shareable"). Only the approved, masked copy reaches volunteers, in a table with no `patient_id`.
+- **Patient answers shown to volunteers:** only answers the patient chose to share ("Volunteers can read it, without my name", off by default). They go through a privacy filter (masks names, places, hospital names, emails, phone numbers) **and** need care team approval ("shareable"). The care team sees only those opted-in answers, already masked, in its review queue. Only the approved, masked copy reaches volunteers, in a table with no `patient_id`.
+- **Placeholder data:** screens whose feature isn't built yet read typed fixtures from `src/lib/demo-fixtures.ts` (same cast, relative dates). Each feature branch replaces its slice with a real table, RLS and seed. People, patients and links already come from Supabase.
+- **Background patients:** Ava (12) and Lucas (7) have no app account and no family linked; only Sarah follows them. They fill the care dashboard and trigger alerts.
 - **Memories** are shared by the patient's circle only. The care team and volunteers never see them.
 - **Cloud-only workflow:** no Docker, no local Supabase. One shared Supabase cloud project (US) is the dev database for every branch preview and for `main`. Migrations go through `supabase db push`, one person at a time. Features are tested on Vercel preview URLs. Production will get its own Supabase project later.
 
@@ -191,7 +193,7 @@ One branch and one Vercel preview per step. Tested on the preview, then merged.
 |---|---|---|
 | Foundation | `feature/foundation` | ✅ |
 | Demo role picker | `feature/demo-roles` | ✅ |
-| English personas, SPEC update, RLS tests | `chore/personas` | |
+| English personas, SPEC update, RLS tests | `chore/personas` | ✅ |
 | Role shells (layout, navigation, main screens) | `feature/role-shells` | |
 | Mood check-in | `feature/mood-checkin` | |
 | Nudges + notifications | `feature/nudges` | |
