@@ -124,3 +124,15 @@ def test_tradeoff_chart_is_valid_svg():
     paths = [el for el in root.iter("{http://www.w3.org/2000/svg}path")]
     assert len(paths) == len(SERIES)
     assert "Spec rules" in svg and "Budget 0.4" in svg and "not shown" in svg
+
+
+def test_access_check_reports_missing_credentials_without_raising():
+    from closer_ai.claude import check_access
+
+    class NoCredentials:
+        class models:
+            @staticmethod
+            def retrieve(model):
+                raise TypeError("Could not resolve authentication method. Expected one of api_key")
+
+    assert check_access(NoCredentials()) == "Could not resolve authentication method"

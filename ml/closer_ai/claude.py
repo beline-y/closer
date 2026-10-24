@@ -175,6 +175,23 @@ class ClaudeExplainer:
         return _call(self.client, self.model, EXPLAINER_SYSTEM.format(language=self.language), content, effort="low")
 
 
+def check_access(client: anthropic.Anthropic | None = None, model: str = MODEL) -> str | None:
+    """None when Claude can be called; otherwise why not. Uses the Models API, which costs no tokens."""
+    try:
+        (client or anthropic.Anthropic()).models.retrieve(model)
+    except TypeError as error:  # the SDK found no credentials at all (no key, token or profile)
+        return str(error).strip('"').split(".")[0]
+    except anthropic.AuthenticationError:
+        return "the API key was rejected"
+    except anthropic.NotFoundError:
+        return f"model {model} is not available to this key"
+    except anthropic.APIStatusError as error:
+        return f"API error {error.status_code}"
+    except anthropic.APIConnectionError:
+        return "the API cannot be reached"
+    return None
+
+
 def _call(client: anthropic.Anthropic, model: str, system: str, content: list[dict], effort: str,
           output_format: dict | None = None) -> str | None:
     """One Messages call; returns the text answer, or None when it cannot be used."""

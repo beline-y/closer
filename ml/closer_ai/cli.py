@@ -107,10 +107,14 @@ def _components(store, use_claude: bool, language: str):
     tree = TreePolicy.load(tree_path) if tree_path.exists() else None
     reader = explainer = None
     if use_claude:
-        from .claude import ClaudeExplainer, ClaudeReader, StoreCache
+        from .claude import ClaudeExplainer, ClaudeReader, StoreCache, check_access
 
-        reader = ClaudeReader(cache=StoreCache(store))
-        explainer = ClaudeExplainer(language=language)
+        problem = check_access()
+        if problem:
+            print(f"Claude unavailable ({problem}): running with the lexicon and template explanations.")
+        else:
+            reader = ClaudeReader(cache=StoreCache(store))
+            explainer = ClaudeExplainer(language=language)
     return assessor, policy, tree, reader, explainer
 
 
@@ -181,7 +185,10 @@ def _review(args) -> None:
 
 def _eval_reader(args) -> None:
     """Lexicon vs Claude on simulated notes with a planted label. Calls the API once per note."""
-    from .claude import ClaudeReader
+    from .claude import ClaudeReader, check_access
+
+    if problem := check_access():
+        raise SystemExit(f"Claude unavailable: {problem}")
     from .safety import check_text
     from .simulator import simulate_stay
 
@@ -228,7 +235,7 @@ def main(argv: list[str] | None = None) -> None:
 
     p = sub.add_parser("train-policy", help="train the lambda-conditioned PPO alert agent")
     p.add_argument("--assessor", default=str(ARTIFACTS / "assessor.joblib"))
-    p.add_argument("--steps", type=int, default=4_000_000)
+    p.add_argument("--steps", type=int, default=5_000_000)
     p.add_argument("--envs", type=int, default=14)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--no-ask", action="store_true", help="ablation: remove the gentle-question action")
