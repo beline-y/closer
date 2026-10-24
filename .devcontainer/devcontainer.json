@@ -1,0 +1,25 @@
+{
+  "name": "Closer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "24" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "npm ci",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Next.js", "onAutoForward": "notify" }
+  },
+  "secrets": {
+    "NEXT_PUBLIC_SUPABASE_URL": { "description": "Dev Supabase project URL (ask the team lead)" },
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": { "description": "Dev Supabase publishable key (ask the team lead)" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  }
+}
