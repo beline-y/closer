@@ -29,7 +29,7 @@ export const ACTIVITIES: { value: ActivityKind; emoji: string; label: string }[]
   { value: "walk", emoji: "🚶", label: "Went for a walk" },
 ];
 
-export const REACTIONS = ["❤️", "🤗", "⭐", "💪", "😂"] as const;
+export const REACTIONS = ["❤️", "🤗", "💪", "😂"] as const;
 export type ReactionEmoji = (typeof REACTIONS)[number];
 
 /** What the patient sends. photoPath: undefined = unchanged, null = removed. */

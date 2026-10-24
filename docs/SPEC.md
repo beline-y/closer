@@ -30,7 +30,7 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - Nudges have no hourly or daily cap. There is a **cooldown per nudge type**, 10 minutes by default and editable by the care team per patient. The button shows the remaining time.
 - Alert defaults, editable per patient by the care team: 3 low moods (≤ 2) in a row, no check-in for 2 days, no family contact for 2 days.
 - Email: Resend (test mode while in dev). Web push comes after the MVP.
-- AI: Anthropic Claude, via a server-side route only (post-MVP).
+- AI: Mistral, server-side only, for opt-in daily wellbeing observations and personalized connection prompts. See [WELLBEING.md](WELLBEING.md). Care staff review support signals; AI does not diagnose.
 - Supabase region: US. Default patient timezone: `America/New_York`.
 - Patient devices are personal tablets, so there's no auto sign-out in the MVP.
 - **Demo access:** while all data is fictional, the landing page is a role picker (`DEMO_MODE=true` in every environment, production included). Real sign-in is tracked in issue #9.
@@ -143,7 +143,7 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `guardian_consents` | guardian_id, consent_version, scopes, granted_at, withdrawn_at | Guardian inserts and withdraws. Guardian and care team read. Never deleted. |
 | `mood_checkins` | local_date (set by the database, patient timezone), mood 1–5, meals[] (breakfast/lunch/dinner/snack), meal_amount (all/half/a little), meal_note, activities[] (played, movie, drew, school, visit, treatment, rested, walk), activity_note, note ≤ 280 | Patient writes and edits today's only (until midnight). Family and care team read. Volunteers: none. Unique (patient, day). Realtime. |
 | `checkin_photos` | checkin_id (one photo per check-in), patient_id, path | **Patient and family only.** Storage bucket uses the same rule. Photos are resized (max 1600px) and re-encoded to WebP on the device, which strips EXIF and GPS. Realtime. |
-| `checkin_reactions` | checkin_id, user_id, emoji (❤️ 🤗 ⭐ 💪 😂) | Patient and family read; family and friends add and remove their own. Realtime. |
+| `checkin_reactions` | checkin_id, user_id, emoji (❤️ 🤗 💪 😂), one per person per check-in | Patient and family read; family and friends add, change and remove their own. Realtime. |
 | `nudges` | patient_id, kind | Created only by `send_nudge()`, which enforces the per-type cooldown. `nudge_cooldowns()` feeds the UI. |
 | `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji, reply_text | Recipient updates their own row. Patient reads. |
 | `comfort_cards` | author_id, body ≤ 1000, color, opened_at | Author reads their own. Patient reads only opened cards. `sealed_cards()` and `open_comfort_card()` handle sealed ones. No care team access. |

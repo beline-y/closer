@@ -72,14 +72,17 @@ export async function toggleCheckinReaction(checkinId: string, emoji: string): P
   const userId = claims?.claims.sub;
   if (!userId) return { ok: false, error: "Not signed in." };
 
-  const { data: existing } = await supabase
+  const { data: existing, error: readError } = await supabase
     .from("checkin_reactions")
     .select("emoji")
-    .match({ checkin_id: checkinId, user_id: userId, emoji })
+    .match({ checkin_id: checkinId, user_id: userId })
     .maybeSingle();
-  const { error } = existing
+  if (readError) return { ok: false, error: "Couldn't load your reaction." };
+  const { error } = existing?.emoji === emoji
     ? await supabase.from("checkin_reactions").delete().match({ checkin_id: checkinId, user_id: userId, emoji })
-    : await supabase.from("checkin_reactions").insert({ checkin_id: checkinId, user_id: userId, emoji });
+    : existing
+      ? await supabase.from("checkin_reactions").update({ emoji }).match({ checkin_id: checkinId, user_id: userId })
+      : await supabase.from("checkin_reactions").insert({ checkin_id: checkinId, user_id: userId, emoji });
   if (error) return { ok: false, error: "Couldn't react." };
 
   refresh();
