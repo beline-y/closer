@@ -78,7 +78,7 @@ that it cannot override protect the cases that matter most.
 |---|---|
 | Model | Constrained POMDP, one decision per child per evening |
 | Hidden state | stable, fragile or distress. Driven by stressors (big days, isolation, days without family, pain, length of stay) and support (family visits, the psychologist's visits after an alert) |
-| Belief | The assessor's P(stable, fragile, distress), from 60 causal features compared with the child's own habits |
+| Belief | The assessor's P(stable, fragile, distress), from 71 causal features (the nurse's round included) compared with the child's own habits |
 | Actions | wait · digest alert · priority alert · ask a gentle validated question (8 years and up) |
 | Reward | − 1 per day in distress before a psychologist knows, − 0.1 per fragile day with no contact, − 0.05 per question asked |
 | Constraint | Psychologist workload (digest 1 unit, priority 1.5) under a weekly budget, through Lagrangian relaxation: reward − λ · workload |
@@ -157,6 +157,12 @@ New data fields, all optional for the child. The UI can offer one or two a day s
 | Engagement | minutes in the app, comfort cards opened, question of the day answered | Withdrawal, not content |
 | Care context (care team) | big day, protective isolation, roommate left, room change, discharge planned, visit restrictions | Explains expected dips. Never a diagnosis or a treatment |
 | Validated scales | score from a short scale chosen by the psychologist | The answer to the "ask" action, and a strong label |
+| Nurse's round (care tab) | lunch and dinner eaten (all, half, a little, nothing, fasting), how the child looked (calm, cheerful, sad, tearful, anxious, withdrawn, irritable, agitated, tired), engagement during care, pain score 0–10, last night's sleep, refused care, visitors, a note, and "I'd like the psychologist to see this child" | A second view, independent of the app: brief, often skipped, but harder to fool for a child who hides distress behind good moods. The nurse's request always raises a priority alert, and the note goes through the safety rules and Claude like the child's |
+| Ward menu (care tab) | today's lunch and dinner | The baseline for appetite: the model compares what the child ate with what the *other* children ate of the same dish, so a dish nobody liked is not read as a lost appetite |
+
+App usage the store never received (minutes, nudges, family messages) stays unknown, never zero: "no data" must
+not read as "no family contact". In simulation, adding the nurse's round raises the assessor's AUC for distress from
+0.927 to 0.949 (500 held-out children; quick check, not in RESULTS.md).
 
 **Never read:** comfort card and question-of-the-day contents, photos, unshared drawings, and anything biometric.
 Faces in photos and voice are excluded: emotion recognition from biometric data is high-risk under the EU AI Act,
@@ -186,6 +192,38 @@ Claude makes the analysis better without becoming a single point of failure:
 
 With real children, sending notes to an external API would first need guardian consent and a data processing
 agreement.
+
+## In the app: the care tab
+
+The nurse (Sarah in the demo) sees the AI's read of each child and adds what only the care team sees.
+
+- **Patients** (`/care`): Claude's summary for every child, the ones who need support first, an "AI reading" column
+  in the table, and today's ward menu.
+- **Patient page**: today's summary (level, chance of distress and its 3-day trend, what weighs most, the decision,
+  14 days of readings, the alerts sent to the psychologist) next to the nurse's round. Saving the round re-runs the
+  job for that child and the summary updates in about 10 seconds.
+
+```
+browser ──> Next.js server ──(RLS: may Sarah see this child?)──> Supabase
+                  │
+                  └──(shared secret, localhost)──> python -m closer_ai serve ──> SQLite ──> assessor, shield, agent, Claude
+```
+
+The app stays the source of truth for what the child shares; the Next.js server forwards the check-ins it may read
+(never photos or reactions), then the nurse's round and the menu. The browser never talks to the AI service. A child's
+assessment is recomputed only when their inputs changed, and within a day a decision can only escalate: an alert or a
+question already sent stands.
+
+To run it locally, with `CLOSER_AI_URL=http://127.0.0.1:8787` and a random `CLOSER_AI_TOKEN` in the repo's
+`.env.local` (both processes read it):
+
+```bash
+cd ml && python -m closer_ai serve      # the AI service; --no-claude for template summaries
+npm run dev                             # in another terminal, from the repo root; choose "Care team"
+```
+
+The first visit reads every child's notes once (about 30 s with Claude); after that, pages load in about a second.
+Without the service (on a Vercel preview, for example), the care tab says so and everything else works.
 
 ## Run it
 
@@ -233,12 +271,13 @@ python -m closer_ai eval-reader --n 80           # lexicon vs Claude on planted 
 | `store.py` | SQLite store (standard library `sqlite3`): signals in, assessments, alerts and reviews out |
 | `simulator.py`, `notes_gen.py` | Fictional children: hidden states, reporting styles, masking, treatment fatigue, notes in French and English |
 | `text.py`, `safety.py` | Note lexicon with negation and idioms; deterministic crisis and concern rules |
-| `features.py`, `assessor.py` | 60 causal features; additive spline model with exact per-feature explanations |
+| `features.py`, `assessor.py` | 71 causal features; additive spline model with exact per-feature explanations |
 | `policy/env.py`, `policy/obs.py` | The constrained POMDP as a Gymnasium env; observation and mask shared with production |
 | `policy/train.py`, `policy/baselines.py` | λ-conditioned MaskablePPO; spec rules, thresholds, value-of-information heuristic, oracle |
 | `policy/whittle.py`, `policy/distill.py` | Neural Whittle index and ward simulation; VIPER extraction |
 | `evaluate.py`, `report.py` | Cohorts, metrics, paired bootstrap, the full report |
 | `claude.py`, `pipeline.py`, `cli.py` | Claude reader and daily summaries; the evening job; the command line |
+| `bridge.py`, `server.py` | The app's vocabulary mapped to the contract; the care tab's local JSON API (standard library) |
 
 ## Limits, honestly
 
