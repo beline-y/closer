@@ -53,6 +53,8 @@ flowchart LR
   migration history: nudges, settings Realtime, menus/reactions, meal-column compatibility and
   activities. Their files are retained locally so future pushes preserve the real history.
   These schema changes are ahead of `main`; their feature UIs have not been merged here.
+  A subsequent applied `20261024221840_challenge_invite.sql` was also recovered; it adds a
+  private trigger for the activity feature without changing public types.
 - The wellbeing migration was retimestamped after those applied migrations. After the user
   confirmed team coordination, its dry-run passed and the CLI applied only
   `20261024221143_daily_wellbeing.sql`. Canonical types were regenerated from the linked project.
@@ -72,6 +74,9 @@ flowchart LR
 - `vercel.json` configures the production-only daily job at 12:00 UTC. Preview cron runs are manual.
 - The locally authenticated Vercel user currently has only a personal team with no projects;
   this is different from the `beline` team. No new Vercel deployment or environment change was made.
+- [PR #15](https://github.com/beline-y/closer/pull/15) is a draft containing this implementation.
+  Vercel explicitly blocked its preview because Git author `paulopasso` is not a member of Beline.
+  The project owner must resolve deployment access before preview verification can proceed.
 - `.env` configures the local app only. Before an approved deployment, configure the server variables
   in the correct Vercel project's Preview/Production environment and redeploy. Never expose secret
   keys with a `NEXT_PUBLIC_` prefix.
