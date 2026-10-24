@@ -15,8 +15,10 @@ create table public.patient_settings (
   updated_by uuid references public.profiles (id) on delete set null,
   updated_at timestamptz not null default now()
 );
+
 create trigger patient_settings_set_updated_at before update on public.patient_settings
   for each row execute function public.set_updated_at();
+
 -- Every patient gets settings with the defaults.
 create function private.create_patient_settings()
 returns trigger
@@ -28,21 +30,28 @@ begin
   return new;
 end;
 $$;
+
 revoke all on function private.create_patient_settings() from public, anon, authenticated;
+
 create trigger patients_create_settings after insert on public.patients
   for each row execute function private.create_patient_settings();
+
 insert into public.patient_settings (patient_id) select id from public.patients on conflict do nothing;
+
 -- ---------------------------------------------------------------------------
 -- Nudges
 -- ---------------------------------------------------------------------------
 create type public.nudge_kind as enum ('miss_you', 'call_me', 'bored', 'proud', 'hug');
+
 create table public.nudges (
   id uuid primary key default gen_random_uuid(),
   patient_id uuid not null references public.patients (id) on delete cascade,
   kind public.nudge_kind not null,
   created_at timestamptz not null default now()
 );
+
 create index nudges_patient_kind_idx on public.nudges (patient_id, kind, created_at desc);
+
 create table public.nudge_recipients (
   nudge_id uuid not null references public.nudges (id) on delete cascade,
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -52,7 +61,9 @@ create table public.nudge_recipients (
   replied_at timestamptz,
   primary key (nudge_id, user_id)
 );
+
 create index nudge_recipients_user_idx on public.nudge_recipients (user_id, replied_at);
+
 -- Patient of a nudge (for policies; avoids recursion between the two tables).
 create function private.nudge_patient(p_nudge_id uuid)
 returns uuid
@@ -61,6 +72,7 @@ set search_path = ''
 as $$
   select patient_id from public.nudges where id = p_nudge_id;
 $$;
+
 create function private.is_nudge_recipient(p_nudge_id uuid)
 returns boolean
 language sql stable security definer
@@ -71,8 +83,10 @@ as $$
     where r.nudge_id = p_nudge_id and r.user_id = (select auth.uid())
   );
 $$;
+
 revoke all on function private.nudge_patient(uuid), private.is_nudge_recipient(uuid) from public, anon;
 grant execute on function private.nudge_patient(uuid), private.is_nudge_recipient(uuid) to authenticated;
+
 -- The only way to create a nudge: the patient, to people of their own circle, outside the
 -- cooldown of that type. Recipients default to the whole circle.
 create function public.send_nudge(p_kind public.nudge_kind, p_recipients uuid[] default null)
@@ -111,8 +125,10 @@ begin
   return v_nudge;
 end;
 $$;
+
 revoke all on function public.send_nudge(public.nudge_kind, uuid[]) from public, anon;
 grant execute on function public.send_nudge(public.nudge_kind, uuid[]) to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Privileges + RLS
 -- ---------------------------------------------------------------------------
@@ -121,30 +137,37 @@ grant select on public.patient_settings, public.nudges, public.nudge_recipients 
 grant update (nudge_cooldown_minutes, low_mood_threshold, low_mood_streak, no_checkin_days, no_family_contact_days, updated_by)
   on public.patient_settings to authenticated;
 grant update (seen_at, reply_emoji, reply_text, replied_at) on public.nudge_recipients to authenticated;
+
 alter table public.patient_settings enable row level security;
 alter table public.nudges enable row level security;
 alter table public.nudge_recipients enable row level security;
+
 -- Settings: patient, circle and care team read (the cooldown shows in the UI);
 -- only the care team edits.
 create policy "patient_settings: read if linked"
   on public.patient_settings for select to authenticated
   using (private.can_view(patient_id));
+
 create policy "patient_settings: care team edits"
   on public.patient_settings for update to authenticated
   using (private.is_care_team(patient_id))
   with check (private.is_care_team(patient_id) and updated_by = (select auth.uid()));
+
 -- Nudges: the patient and the recipients. Not the care team, not volunteers.
 create policy "nudges: patient and recipients read"
   on public.nudges for select to authenticated
   using (private.is_patient_self(patient_id) or private.is_nudge_recipient(id));
+
 -- Recipients: you see your own row; the patient sees every reply to their nudges.
 create policy "nudge_recipients: own row or patient"
   on public.nudge_recipients for select to authenticated
   using (user_id = (select auth.uid()) or private.is_patient_self(private.nudge_patient(nudge_id)));
+
 create policy "nudge_recipients: recipient replies"
   on public.nudge_recipients for update to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
+
 -- ---------------------------------------------------------------------------
 -- Realtime: family sees new nudges live, the patient sees replies live
 -- ---------------------------------------------------------------------------

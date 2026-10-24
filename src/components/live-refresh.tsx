@@ -25,7 +25,11 @@ export function LiveRefresh({ channel, watch }: { channel: string; watch: Watch[
     }
     let cancelled = false;
     void supabase.realtime.setAuth().then(() => {
-      if (!cancelled) ch.subscribe();
+      if (!cancelled)
+        ch.subscribe((status, err) => {
+          // e.g. a watched table missing from the supabase_realtime publication
+          if (status === "CHANNEL_ERROR") console.warn(`Live updates unavailable (${channel})`, err?.message);
+        });
     });
     return () => {
       cancelled = true;

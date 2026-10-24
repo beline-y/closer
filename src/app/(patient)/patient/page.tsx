@@ -8,9 +8,11 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { ReactionList } from "@/components/reaction-bar";
 import { CAST } from "@/lib/cast";
 import { getCheckins, getMyPatient } from "@/lib/data/checkins";
+import { getRepliesForPatient, getThinkingOfYouToday } from "@/lib/data/nudges";
+import { NudgeReplies } from "@/components/nudge-replies";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { relativeDay } from "@/lib/dates";
-import { COMFORT_CARDS, MEMORIES, SUGGESTED_ACTIVITY, THINKING_OF_YOU_TODAY, TODAY_QUESTION } from "@/lib/demo-fixtures";
+import { COMFORT_CARDS, MEMORIES, SUGGESTED_ACTIVITY, TODAY_QUESTION } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Today · Closer" };
 
@@ -153,21 +155,35 @@ async function TodayCheckIn() {
   );
 }
 
-// Who's in Leo's circle comes from Supabase (RLS); who interacted today is placeholder data.
+// Family who replied to a nudge or reacted to a check-in today, plus today's replies. Live.
 async function ThinkingOfYou() {
-  const circle = await getVisibleCircle();
-  const today = circle.filter((m) => THINKING_OF_YOU_TODAY.includes(m.id));
-  if (today.length === 0) {
-    return <p className="text-lg text-muted-foreground">Your family will pop up here when they send you something 💛</p>;
-  }
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const [circle, todayIds, replies] = await Promise.all([
+    getVisibleCircle(),
+    getThinkingOfYouToday(patient.id, patient.timezone),
+    getRepliesForPatient(patient.id, patient.timezone, 1),
+  ]);
+  const today = circle.filter((m) => m.userId && todayIds.includes(m.userId));
   return (
-    <ul className="flex flex-wrap gap-5">
-      {today.map((m) => (
-        <li key={m.id} className="flex flex-col items-center gap-1.5">
-          <PersonaAvatar person={m} size="xl" presence="online" />
-          <span className="font-bold">{m.relationship === "Mom" ? "Mom" : m.name}</span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <LiveRefresh
+        channel={`patient-thinking-${patient.id}`}
+        watch={[{ table: "nudge_recipients" }, { table: "checkin_reactions" }]}
+      />
+      {today.length === 0 ? (
+        <p className="text-lg text-muted-foreground">Your family will pop up here when they send you something 💛</p>
+      ) : (
+        <ul className="flex flex-wrap gap-5">
+          {today.map((m) => (
+            <li key={m.id} className="flex flex-col items-center gap-1.5">
+              <PersonaAvatar person={m} size="xl" presence="recent" />
+              <span className="font-bold">{m.relationship === "Mom" || m.relationship === "Dad" ? m.relationship : m.name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {replies.filter((r) => r.daysAgo === 0).length > 0 && <NudgeReplies replies={replies.filter((r) => r.daysAgo === 0).slice(0, 3)} />}
+    </>
   );
 }
