@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { CheckInFlow } from "@/components/patient/checkin-flow";
-import { getCheckins, getMyPatient } from "@/lib/data/checkins";
+import { getTodayActivityKinds } from "@/lib/data/activities";
+import { getCheckins, getMyPatient, getTodayMenu } from "@/lib/data/checkins";
 
 export const metadata: Metadata = { title: "Check in · Closer" };
 
@@ -19,6 +20,7 @@ async function CheckIn() {
   const patient = await getMyPatient();
   if (!patient) redirect("/");
   const [today] = (await getCheckins(patient.id, patient.timezone, { days: 1, withPhotos: true })).filter((c) => c.daysAgo === 0);
+  const [menu, doneActivities] = await Promise.all([getTodayMenu(patient.id, patient.timezone, today?.id), getTodayActivityKinds(patient.id, patient.timezone)]);
 
   return (
     <>
@@ -31,13 +33,13 @@ async function CheckIn() {
       {today && <p className="text-lg text-muted-foreground">You can change it until midnight.</p>}
       <CheckInFlow
         patientId={patient.id}
+        menu={menu.dishes}
+        doneActivities={doneActivities}
         initial={
           today
             ? {
                 mood: today.mood,
-                meals: today.meals,
-                mealAmount: today.mealAmount,
-                mealNote: today.mealNote ?? "",
+                ratings: menu.ratings,
                 activities: today.activities,
                 activityNote: today.activityNote ?? "",
                 note: today.note ?? "",
