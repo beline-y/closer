@@ -11,7 +11,7 @@
     "check": "npm run lint && npm run typecheck",
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
-    "db:seed": "supabase db push --include-seed",
+    "db:seed": "supabase db push && supabase db query --linked -f supabase/seed.sql",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/database.types.ts"
   },
   "dependencies": {

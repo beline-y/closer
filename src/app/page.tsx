@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { DemoRolePicker } from "@/components/demo-role-picker";
 import { SupabaseStatus } from "@/components/supabase-status";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ROLES } from "@/lib/roles";
+import { buttonVariants } from "@/components/ui/button";
+import { isDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
+  const demo = isDemoMode();
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-4 py-12 sm:px-6 sm:py-16">
       <header className="flex flex-col items-center gap-3 text-center">
@@ -18,34 +20,23 @@ export default function Home() {
         </p>
       </header>
 
-      <nav aria-label="Dashboards" className="grid gap-4 sm:grid-cols-2">
-        {ROLES.map((role) => {
-          const Icon = role.icon;
-          return (
-            <Link
-              key={role.key}
-              href={role.href}
-              className="group rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-ring/50"
-            >
-              <Card className="h-full transition-transform group-hover:-translate-y-0.5 group-active:translate-y-0">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <span
-                    className={cn("flex size-14 shrink-0 items-center justify-center rounded-2xl text-white", role.accentBg)}
-                    aria-hidden
-                  >
-                    <Icon className="size-7" />
-                  </span>
-                  <div className="flex flex-col gap-1">
-                    <CardTitle className="text-xl">{role.label}</CardTitle>
-                    <CardDescription className="text-base">{role.tagline}</CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="text-sm font-bold text-primary">Open dashboard →</CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </nav>
+      {demo ? (
+        <section aria-labelledby="pick-role" className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <h2 id="pick-role" className="text-2xl font-extrabold">
+              Choose a demo role
+            </h2>
+            <p className="text-muted-foreground">One story, four points of view. Tap a card to step in.</p>
+          </div>
+          <DemoRolePicker />
+        </section>
+      ) : (
+        <div className="flex justify-center">
+          <Link href="/login" className={cn(buttonVariants({ size: "lg" }), "min-h-12 px-8 text-lg")}>
+            Sign in
+          </Link>
+        </div>
+      )}
 
       <footer className="flex flex-col items-center gap-3 text-center text-sm text-muted-foreground">
         <Suspense fallback={null}>

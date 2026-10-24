@@ -35,7 +35,15 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 ```
 
-That's enough to run the app. Leave the other values empty unless a feature needs them.
+For the demo role picker, also fill in the demo passwords (they're in the table below):
+
+```dotenv
+DEMO_MODE=true
+DEMO_PASSWORD=...      # the adults' password
+DEMO_PATIENT_PIN=...   # Léo's PIN
+```
+
+Leave the other values empty unless a feature needs them.
 
 Optional quick UI check:
 
@@ -57,6 +65,8 @@ We test features on **Vercel preview deployments**, not on localhost.
 Previews and `main` both use the shared **dev** Supabase project for now. Production will get its own project later.
 
 ## Demo accounts (fictional)
+
+With `DEMO_MODE=true`, the landing page shows **Choose a demo role**: one tap signs you in as Léo, Camille, Nurse Inès or Jordan. The banner's **Switch role** button signs you out and brings you back to the picker.
 
 | Who | Role | Email | Password |
 |---|---|---|---|
@@ -92,7 +102,7 @@ npm run db:types                      # regenerates TypeScript types from the da
 
 Then commit the migration file and the regenerated types in your PR.
 
-Seed data (`supabase/seed.sql`, fictional only) is applied with `npm run db:seed`. It's safe to re-run.
+Seed data (`supabase/seed.sql`, fictional only) is applied with `npm run db:seed` (pending migrations, then the whole seed file). It's safe to re-run.
 
 Rules:
 

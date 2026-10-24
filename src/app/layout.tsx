@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible, Nunito } from "next/font/google";
+import { DemoBanner } from "@/components/demo-banner";
+import { isDemoMode } from "@/lib/demo-mode";
 import "./globals.css";
 
 // Atkinson Hyperlegible: designed for readability, good for young and low-vision readers.
@@ -30,7 +32,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${atkinson.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col text-base">{children}</body>
+      <body className="min-h-full flex flex-col text-base">
+        {isDemoMode() && <DemoBanner />}
+        {children}
+      </body>
     </html>
   );
 }
