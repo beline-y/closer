@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 496" width="100%" role="img" aria-labelledby="title desc">
+<title id="title">Unsupported distress days against psychologist workload</title>
+<desc id="desc">Trade-off curves of four alerting policies on the validation cohort; the same points are listed in the table below the chart.</desc>
+<style>
+svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+@media (prefers-color-scheme: dark) {
+  svg { --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835; }
+}
+.bg { fill: var(--surface); }
+.title { fill: var(--ink); font-size: 17px; font-weight: 600; }
+.sub, .tick, .axis-title, .note { fill: var(--ink2); font-size: 12px; }
+.tick { fill: var(--muted); font-variant-numeric: tabular-nums; }
+.legend, .end { fill: var(--ink); font-size: 12px; }
+.grid { stroke: var(--grid); stroke-width: 1; }
+.axis { stroke: var(--axis); stroke-width: 1; }
+.budget { stroke: var(--ink2); stroke-width: 1; }
+.line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dot { stroke: var(--surface); stroke-width: 2; }
+.ref { fill: var(--surface); stroke: var(--ink2); stroke-width: 2; }
+.s-ppo { stroke: #2a78d6; } .f-ppo { fill: #2a78d6; } .s-threshold { stroke: #eb6834; } .f-threshold { fill: #eb6834; } .s-threshold_ask { stroke: #1baf7a; } .f-threshold_ask { fill: #1baf7a; } .s-ppo_no_ask { stroke: #eda100; } .f-ppo_no_ask { fill: #eda100; } 
+@media (prefers-color-scheme: dark) { .s-ppo { stroke: #3987e5; } .f-ppo { fill: #3987e5; } .s-threshold { stroke: #d95926; } .f-threshold { fill: #d95926; } .s-threshold_ask { stroke: #199e70; } .f-threshold_ask { fill: #199e70; } .s-ppo_no_ask { stroke: #c98500; } .f-ppo_no_ask { fill: #c98500; }  }</style>
+<rect class="bg" width="760" height="496" rx="8"/>
+<text class="title" x="72" y="32">Unsupported distress days against psychologist workload</text>
+<text class="sub" x="72" y="52">Validation cohort, simulated children. Lower and to the left is better. Points beyond a workload of 1 are not shown.</text>
+<line class="line s-ppo" x1="72" y1="74" x2="90" y2="74"/>
+<text class="legend" x="96" y="78">RL agent</text>
+<line class="line s-threshold" x1="154.0" y1="74" x2="172.0" y2="74"/>
+<text class="legend" x="178.0" y="78">Threshold on P(distress)</text>
+<line class="line s-threshold_ask" x1="332.0" y1="74" x2="350.0" y2="74"/>
+<text class="legend" x="356.0" y="78">Threshold + questions</text>
+<line class="line s-ppo_no_ask" x1="492.0" y1="74" x2="510.0" y2="74"/>
+<text class="legend" x="516.0" y="78">RL agent without questions</text>
+<line class="grid" x1="72" y1="434.0" x2="582" y2="434.0"/>
+<text class="tick" x="62" y="438.0" text-anchor="end">0.0</text>
+<line class="grid" x1="72" y1="394.0" x2="582" y2="394.0"/>
+<text class="tick" x="62" y="398.0" text-anchor="end">0.1</text>
+<line class="grid" x1="72" y1="354.0" x2="582" y2="354.0"/>
+<text class="tick" x="62" y="358.0" text-anchor="end">0.2</text>
+<line class="grid" x1="72" y1="314.0" x2="582" y2="314.0"/>
+<text class="tick" x="62" y="318.0" text-anchor="end">0.3</text>
+<line class="grid" x1="72" y1="274.0" x2="582" y2="274.0"/>
+<text class="tick" x="62" y="278.0" text-anchor="end">0.4</text>
+<line class="grid" x1="72" y1="234.0" x2="582" y2="234.0"/>
+<text class="tick" x="62" y="238.0" text-anchor="end">0.5</text>
+<line class="grid" x1="72" y1="194.0" x2="582" y2="194.0"/>
+<text class="tick" x="62" y="198.0" text-anchor="end">0.6</text>
+<line class="grid" x1="72" y1="154.0" x2="582" y2="154.0"/>
+<text class="tick" x="62" y="158.0" text-anchor="end">0.7</text>
+<line class="grid" x1="72" y1="114.0" x2="582" y2="114.0"/>
+<text class="tick" x="62" y="118.0" text-anchor="end">0.8</text>
+<text class="tick" x="72.0" y="454" text-anchor="middle">0.0</text>
+<text class="tick" x="174.0" y="454" text-anchor="middle">0.2</text>
+<text class="tick" x="276.0" y="454" text-anchor="middle">0.4</text>
+<text class="tick" x="378.0" y="454" text-anchor="middle">0.6</text>
+<text class="tick" x="480.0" y="454" text-anchor="middle">0.8</text>
+<text class="tick" x="582.0" y="454" text-anchor="middle">1.0</text>
+<line class="axis" x1="72" y1="434" x2="582" y2="434"/>
+<text class="axis-title" x="327.0" y="478" text-anchor="middle">Psychologist workload (alert units per child-week)</text>
+<text class="axis-title" transform="translate(20 274.0) rotate(-90)" text-anchor="middle">Unsupported distress days per child-week</text>
+<line class="budget" x1="276.0" y1="108" x2="276.0" y2="434"/>
+<text class="note" x="282.0" y="120">Budget 0.4</text>
+<path class="line s-ppo" d="M72.0,137.4 L82.0,178.6 L125.8,262.6 L170.4,307.8 L241.1,342.1 L342.6,367.6 L556.6,395.1"/>
+<circle class="dot f-ppo" cx="72.0" cy="137.4" r="4.5"><title>RL agent, lambda=5.00: workload 0.00, 0.742 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo" cx="82.0" cy="178.6" r="4.5"><title>RL agent, lambda=2.81: workload 0.02, 0.639 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo" cx="125.8" cy="262.6" r="4.5"><title>RL agent, lambda=1.58: workload 0.11, 0.428 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo" cx="170.4" cy="307.8" r="4.5"><title>RL agent, lambda=0.89: workload 0.19, 0.316 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo" cx="241.1" cy="342.1" r="4.5"><title>RL agent, lambda=0.50: workload 0.33, 0.230 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo" cx="342.6" cy="367.6" r="4.5"><title>RL agent, lambda=0.28: workload 0.53, 0.166 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo" cx="556.6" cy="395.1" r="4.5"><title>RL agent, lambda=0.16: workload 0.95, 0.097 unsupported distress days per child-week</title></circle>
+<text class="end" x="566.6" y="399.1">RL agent</text>
+<path class="line s-threshold" d="M118.1,220.8 L131.4,244.6 L153.3,268.5 L179.4,290.1 L189.4,305.8 L209.0,314.0 L229.6,323.8 L251.7,329.7 L286.6,335.9 L320.7,346.7 L363.5,355.2"/>
+<circle class="dot f-threshold" cx="118.1" cy="220.8" r="4.5"><title>Threshold on P(distress), tau=0.80: workload 0.09, 0.533 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="131.4" cy="244.6" r="4.5"><title>Threshold on P(distress), tau=0.70: workload 0.12, 0.473 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="153.3" cy="268.5" r="4.5"><title>Threshold on P(distress), tau=0.60: workload 0.16, 0.414 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="179.4" cy="290.1" r="4.5"><title>Threshold on P(distress), tau=0.50: workload 0.21, 0.360 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="189.4" cy="305.8" r="4.5"><title>Threshold on P(distress), tau=0.45: workload 0.23, 0.321 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="209.0" cy="314.0" r="4.5"><title>Threshold on P(distress), tau=0.40: workload 0.27, 0.300 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="229.6" cy="323.8" r="4.5"><title>Threshold on P(distress), tau=0.35: workload 0.31, 0.276 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="251.7" cy="329.7" r="4.5"><title>Threshold on P(distress), tau=0.30: workload 0.35, 0.261 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="286.6" cy="335.9" r="4.5"><title>Threshold on P(distress), tau=0.25: workload 0.42, 0.245 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="320.7" cy="346.7" r="4.5"><title>Threshold on P(distress), tau=0.20: workload 0.49, 0.218 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold" cx="363.5" cy="355.2" r="4.5"><title>Threshold on P(distress), tau=0.15: workload 0.57, 0.197 unsupported distress days per child-week</title></circle>
+<text class="end" x="373.5" y="359.2">Threshold</text>
+<path class="line s-threshold_ask" d="M148.7,255.1 L165.2,270.8 L187.1,297.0 L205.7,306.8 L212.7,315.9 L233.2,326.4 L251.3,338.8 L275.5,344.7 L308.0,357.8 L341.4,371.9 L355.6,371.9"/>
+<circle class="dot f-threshold_ask" cx="148.7" cy="255.1" r="4.5"><title>Threshold + questions, tau=0.80: workload 0.15, 0.447 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="165.2" cy="270.8" r="4.5"><title>Threshold + questions, tau=0.70: workload 0.18, 0.408 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="187.1" cy="297.0" r="4.5"><title>Threshold + questions, tau=0.60: workload 0.23, 0.343 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="205.7" cy="306.8" r="4.5"><title>Threshold + questions, tau=0.50: workload 0.26, 0.318 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="212.7" cy="315.9" r="4.5"><title>Threshold + questions, tau=0.45: workload 0.28, 0.295 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="233.2" cy="326.4" r="4.5"><title>Threshold + questions, tau=0.40: workload 0.32, 0.269 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="251.3" cy="338.8" r="4.5"><title>Threshold + questions, tau=0.35: workload 0.35, 0.238 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="275.5" cy="344.7" r="4.5"><title>Threshold + questions, tau=0.30: workload 0.40, 0.223 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="308.0" cy="357.8" r="4.5"><title>Threshold + questions, tau=0.25: workload 0.46, 0.191 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="341.4" cy="371.9" r="4.5"><title>Threshold + questions, tau=0.20: workload 0.53, 0.155 unsupported distress days per child-week</title></circle>
+<circle class="dot f-threshold_ask" cx="355.6" cy="371.9" r="4.5"><title>Threshold + questions, tau=0.15: workload 0.56, 0.155 unsupported distress days per child-week</title></circle>
+<path class="line s-ppo_no_ask" d="M72.4,138.7 L101.2,213.6 L145.8,271.8 L197.9,321.5 L274.7,348.0 L398.5,380.0"/>
+<circle class="dot f-ppo_no_ask" cx="72.4" cy="138.7" r="4.5"><title>RL agent without questions, lambda=5.00: workload 0.00, 0.738 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo_no_ask" cx="101.2" cy="213.6" r="4.5"><title>RL agent without questions, lambda=2.81: workload 0.06, 0.551 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo_no_ask" cx="145.8" cy="271.8" r="4.5"><title>RL agent without questions, lambda=1.58: workload 0.14, 0.406 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo_no_ask" cx="197.9" cy="321.5" r="4.5"><title>RL agent without questions, lambda=0.89: workload 0.25, 0.281 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo_no_ask" cx="274.7" cy="348.0" r="4.5"><title>RL agent without questions, lambda=0.50: workload 0.40, 0.215 unsupported distress days per child-week</title></circle>
+<circle class="dot f-ppo_no_ask" cx="398.5" cy="380.0" r="4.5"><title>RL agent without questions, lambda=0.28: workload 0.64, 0.135 unsupported distress days per child-week</title></circle>
+<circle class="ref" cx="504.0" cy="358.4" r="5"><title>Spec rules: workload 0.85, 0.189</title></circle>
+<text class="end" x="514.0" y="350.4">Spec rules</text>
+</svg>
