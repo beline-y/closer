@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { WellbeingPanel } from "@/components/wellbeing/dashboard";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { CheckInCard } from "@/components/checkin-card";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -103,6 +104,7 @@ export default function PatientTodayPage() {
           </ul>
         </section>
       )}
+      <Suspense fallback={null}><WellbeingPanel role="patient" /></Suspense>
     </>
   );
 }

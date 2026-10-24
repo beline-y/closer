@@ -22,7 +22,7 @@ for (const file of files) {
 
   const capture =
     "\ncreate temp table _tap (id serial, line text);\n" +
-    "grant insert on _tap to authenticated, anon;\ngrant usage on sequence _tap_id_seq to authenticated, anon;\n";
+    "grant insert on _tap to authenticated, anon, service_role;\ngrant usage on sequence _tap_id_seq to authenticated, anon, service_role;\n";
   const body = sql
     .slice(begin + "begin;".length, rollback)
     .replace("select * from finish();", "select finish();")
