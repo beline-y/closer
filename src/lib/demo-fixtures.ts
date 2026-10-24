@@ -3,59 +3,6 @@
 // Times are relative ("daysAgo") so the demo always looks recent.
 import type { CastId } from "@/lib/cast";
 import { PATIENT_IDS } from "@/lib/cast";
-import type { MoodValue } from "@/lib/mood";
-
-// ---------------------------------------------------------------------------
-// Mood check-ins (care team sees mood, activity, meal and note only)
-// ---------------------------------------------------------------------------
-export type CheckIn = {
-  daysAgo: number;
-  time: string;
-  mood: MoodValue;
-  activity?: string;
-  meal?: "All of it" | "Some" | "A little" | "Nothing";
-  note?: string;
-};
-
-/** Oldest first, 30 days. Index 29 = today. */
-const LEO_MOODS: (MoodValue | null)[] = [3, 3, 2, 3, 4, 4, 3, 2, 2, 3, 4, 4, 5, 4, 3, 3, 4, 4, 3, 2, 3, 4, 4, 5, 4, 4, 3, 4, 5, 4];
-const AVA_MOODS: (MoodValue | null)[] = [4, 4, 3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 3, 3, 4, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3, 2, 2, 2, 1];
-/** null = no check-in that day */
-const LUCAS_MOODS: (MoodValue | null)[] = [3, 4, 4, 3, 4, 4, 5, 4, 4, 3, 4, 4, 3, 4, 4, 4, 5, 4, 3, 4, 4, 3, 4, 4, 3, 4, 4, 3, null, null];
-
-export type MoodPoint = { daysAgo: number; mood: MoodValue | null };
-
-function series(moods: (MoodValue | null)[]): MoodPoint[] {
-  return moods.map((mood, i) => ({ daysAgo: moods.length - 1 - i, mood }));
-}
-
-export const MOOD_HISTORY: Record<string, MoodPoint[]> = {
-  [PATIENT_IDS.leo]: series(LEO_MOODS),
-  [PATIENT_IDS.ava]: series(AVA_MOODS),
-  [PATIENT_IDS.lucas]: series(LUCAS_MOODS),
-};
-
-export const CHECKINS: Record<string, CheckIn[]> = {
-  [PATIENT_IDS.leo]: [
-    { daysAgo: 0, time: "9:12 AM", mood: 4, activity: "Drawing", meal: "All of it", note: "I drew a whale shark!" },
-    { daysAgo: 1, time: "8:47 AM", mood: 5, activity: "Video call", meal: "Some", note: "Noah called me" },
-    { daysAgo: 2, time: "9:30 AM", mood: 4, activity: "Reading", meal: "Some" },
-    { daysAgo: 3, time: "10:05 AM", mood: 3, activity: "Resting", meal: "A little", note: "Tired today" },
-    { daysAgo: 4, time: "9:01 AM", mood: 4, activity: "Board games", meal: "All of it" },
-    { daysAgo: 5, time: "8:55 AM", mood: 4, activity: "Drawing", meal: "Some" },
-    { daysAgo: 6, time: "9:20 AM", mood: 5, activity: "Visit", meal: "All of it", note: "Dad came!" },
-  ],
-  [PATIENT_IDS.ava]: [
-    { daysAgo: 0, time: "11:40 AM", mood: 1, activity: "Resting", meal: "Nothing", note: "I miss my cat" },
-    { daysAgo: 1, time: "10:15 AM", mood: 2, activity: "Music", meal: "A little" },
-    { daysAgo: 2, time: "9:50 AM", mood: 2, activity: "Resting", meal: "A little" },
-    { daysAgo: 3, time: "10:30 AM", mood: 3, activity: "Music", meal: "Some" },
-  ],
-  [PATIENT_IDS.lucas]: [
-    { daysAgo: 2, time: "8:30 AM", mood: 3, activity: "Lego", meal: "Some" },
-    { daysAgo: 3, time: "8:45 AM", mood: 4, activity: "Trains video", meal: "All of it" },
-  ],
-};
 
 // ---------------------------------------------------------------------------
 // Care team dashboard

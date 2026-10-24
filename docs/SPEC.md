@@ -141,9 +141,9 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `patient_links` | patient_id, user_id, role (care_team/family/friend; `volunteer` stays unused: volunteers are never linked to a patient), relationship, is_guardian, status, invite_id | You see your own links. Care team and guardian see all links for the patient. Created only by `redeem_invite()`. |
 | `invites` | code_hash, role, is_guardian_invite, max_uses, used_count, expires_at, revoked_at | Care team only. Redeemed via `redeem_invite(code)`, which checks the account type matches the role. |
 | `guardian_consents` | guardian_id, consent_version, scopes, granted_at, withdrawn_at | Guardian inserts and withdraws. Guardian and care team read. Never deleted. |
-| `mood_checkins` | local_date, mood 1–5, activity, meal, note ≤ 280 | Patient writes (same day). Family and care team read. Unique (patient, day). |
-| `checkin_photos` | checkin_id, patient_id, path | **Patient and family only.** Storage bucket uses the same rule. |
-| `checkin_reactions` | checkin_id, user_id, emoji | Patient and family. |
+| `mood_checkins` | local_date (set by the database, patient timezone), mood 1–5, meals[] (breakfast/lunch/dinner/snack), meal_amount (all/half/a little), meal_note, activities[] (played, movie, drew, school, visit, treatment, rested, walk), activity_note, note ≤ 280 | Patient writes and edits today's only (until midnight). Family and care team read. Volunteers: none. Unique (patient, day). Realtime. |
+| `checkin_photos` | checkin_id (one photo per check-in), patient_id, path | **Patient and family only.** Storage bucket uses the same rule. Photos are resized (max 1600px) and re-encoded to WebP on the device, which strips EXIF and GPS. Realtime. |
+| `checkin_reactions` | checkin_id, user_id, emoji (❤️ 🤗 ⭐ 💪 😂) | Patient and family read; family and friends add and remove their own. Realtime. |
 | `nudges` | patient_id, kind | Created only by `send_nudge()`, which enforces the per-type cooldown. `nudge_cooldowns()` feeds the UI. |
 | `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji, reply_text | Recipient updates their own row. Patient reads. |
 | `comfort_cards` | author_id, body ≤ 1000, color, opened_at | Author reads their own. Patient reads only opened cards. `sealed_cards()` and `open_comfort_card()` handle sealed ones. No care team access. |
@@ -194,7 +194,7 @@ One branch and one Vercel preview per step. Tested on the preview, then merged.
 | Foundation | `feature/foundation` | ✅ |
 | Demo role picker | `feature/demo-roles` | ✅ |
 | English personas, SPEC update, RLS tests | `chore/personas` | ✅ |
-| Role shells (layout, navigation, main screens) | `feature/role-shells` | |
+| Role shells (layout, navigation, main screens) | `feature/role-shells` | ✅ |
 | Mood check-in | `feature/mood-checkin` | |
 | Nudges + notifications | `feature/nudges` | |
 | Comfort cards | `feature/comfort-cards` | |

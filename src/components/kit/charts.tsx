@@ -2,8 +2,7 @@
 
 import { useId, useState } from "react";
 import { dayLabel } from "@/lib/dates";
-import type { MoodPoint } from "@/lib/demo-fixtures";
-import { getMood, MOODS } from "@/lib/mood";
+import { getMood, type MoodPoint, MOODS } from "@/lib/mood";
 import { useToday } from "@/lib/use-today";
 import { cn } from "@/lib/utils";
 

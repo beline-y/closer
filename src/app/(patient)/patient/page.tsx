@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
-import { CheckInCard } from "@/components/patient/check-in-card";
+import { CheckInCard } from "@/components/checkin-card";
+import { LiveRefresh } from "@/components/live-refresh";
+import { ReactionList } from "@/components/reaction-bar";
 import { CAST } from "@/lib/cast";
+import { getCheckins, getMyPatient } from "@/lib/data/checkins";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { relativeDay } from "@/lib/dates";
 import { COMFORT_CARDS, MEMORIES, SUGGESTED_ACTIVITY, THINKING_OF_YOU_TODAY, TODAY_QUESTION } from "@/lib/demo-fixtures";
@@ -31,7 +34,9 @@ export default function PatientTodayPage() {
       </section>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <CheckInCard />
+        <Suspense fallback={<div className="min-h-48 rounded-3xl bg-card ring-1 ring-border" />}>
+          <TodayCheckIn />
+        </Suspense>
 
         <Link
           href="/patient/question"
@@ -99,6 +104,50 @@ export default function PatientTodayPage() {
         </section>
       )}
     </>
+  );
+}
+
+// Today's check-in (or a big button to do it), with the family's reactions, live.
+async function TodayCheckIn() {
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const [latest] = await getCheckins(patient.id, patient.timezone, { days: 14, withPhotos: true, withReactions: true });
+  const doneToday = latest?.daysAgo === 0;
+
+  return (
+    <section aria-labelledby="checkin-title" className="flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border">
+      <LiveRefresh
+        channel={`patient-today-${patient.id}`}
+        watch={[{ table: "mood_checkins", filter: `patient_id=eq.${patient.id}` }, { table: "checkin_reactions" }]}
+      />
+      <h2 id="checkin-title" className="text-2xl font-extrabold">
+        {doneToday ? "Already done today 🎉" : "How do you feel?"}
+      </h2>
+      {!doneToday && (
+        <Link
+          href="/patient/checkin"
+          className="flex min-h-20 items-center justify-center gap-3 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition hover:-translate-y-0.5 active:scale-[0.98]"
+        >
+          <span aria-hidden className="text-4xl">
+            😊
+          </span>
+          Check in
+        </Link>
+      )}
+      {latest && (
+        <>
+          {!doneToday && <p className="font-bold text-muted-foreground">Last time ({relativeDay(latest.daysAgo).toLowerCase()})</p>}
+          <CheckInCard checkin={latest} size="lg">
+            <ReactionList reactions={latest.reactions} />
+          </CheckInCard>
+        </>
+      )}
+      {doneToday && (
+        <Link href="/patient/checkin" className="flex min-h-14 items-center justify-center rounded-2xl bg-muted text-lg font-bold">
+          ✏️ Edit
+        </Link>
+      )}
+    </section>
   );
 }
 

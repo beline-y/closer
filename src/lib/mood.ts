@@ -21,6 +21,9 @@ export const MOODS: Mood[] = [
   { value: 5, emoji: "😄", label: "Great", bg: "bg-mood-5", text: "text-mood-5", color: "var(--mood-5)" },
 ];
 
+/** One day of a mood chart; null = no check-in that day. */
+export type MoodPoint = { daysAgo: number; mood: MoodValue | null };
+
 export function getMood(value: number): Mood {
   return MOODS[Math.min(5, Math.max(1, Math.round(value))) - 1];
 }

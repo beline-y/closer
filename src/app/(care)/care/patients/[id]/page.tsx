@@ -9,9 +9,11 @@ import { InteractionBars, MoodChart } from "@/components/kit/charts";
 import { EmptyState } from "@/components/kit/empty-state";
 import { MoodDot } from "@/components/kit/mood-dot";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
+import { getCheckins, moodSeries } from "@/lib/data/checkins";
 import { getVisiblePatient } from "@/lib/data/circle";
+import { activitySummary, mealSummary } from "@/lib/checkin";
 import { relativeDay } from "@/lib/dates";
-import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS, CHECKINS, MOOD_HISTORY } from "@/lib/demo-fixtures";
+import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Patient · Closer" };
 
@@ -35,7 +37,8 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
   if (!patient) notFound();
 
   const alerts = CARE_ALERTS.filter((a) => a.patientId === id);
-  const checkins = CHECKINS[id] ?? [];
+  // No photos, no reactions: the care team reads mood, activity, meal and note only.
+  const checkins = await getCheckins(id, patient.timezone, { days: 30 });
   const metrics = CARE_METRICS[id];
   const age = patient.birthYear ? new Date().getFullYear() - patient.birthYear : null;
 
@@ -67,7 +70,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-xl border bg-card p-4">
-          <MoodChart history={MOOD_HISTORY[id] ?? []} />
+          <MoodChart history={moodSeries(checkins, 30)} />
         </section>
         <section className="rounded-xl border bg-card p-4">
           <InteractionBars counts={metrics?.interactions ?? []} />
@@ -85,14 +88,14 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
             </EmptyState>
           ) : (
             <ol className="flex flex-col gap-2">
-              {checkins.map((c) => (
-                <li key={c.daysAgo} className="flex flex-col gap-1 rounded-lg border bg-card px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
+              {checkins.slice(0, 14).map((c) => (
+                <li key={c.id} className="flex flex-col gap-1 rounded-lg border bg-card px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
                   <span className="w-36 shrink-0 text-sm text-muted-foreground">
                     {relativeDay(c.daysAgo)}, {c.time}
                   </span>
                   <MoodDot value={c.mood} className="w-32 shrink-0 font-bold" />
                   <span className="text-sm">
-                    {[c.activity, c.meal && `Ate: ${c.meal.toLowerCase()}`].filter(Boolean).join(" · ")}
+                    {[activitySummary(c.activities, c.activityNote), mealSummary(c.meals, c.mealAmount, c.mealNote)].filter(Boolean).join(" · ")}
                     {c.note && <span className="block text-muted-foreground">“{c.note}”</span>}
                   </span>
                 </li>

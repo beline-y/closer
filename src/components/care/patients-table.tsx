@@ -8,8 +8,8 @@ import { MoodSparkline } from "@/components/kit/charts";
 import { MoodDot } from "@/components/kit/mood-dot";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import type { CastMember } from "@/lib/cast";
+import type { MoodPoint } from "@/lib/mood";
 import { relativeDay } from "@/lib/dates";
-import type { MoodPoint } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
 
 export type PatientRow = {
