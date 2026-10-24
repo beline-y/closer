@@ -59,6 +59,9 @@ Simulated children, test and validation cohorts never seen in training. Full rep
 
 ## Why reinforcement learning, and where
 
+The full design (equations, observation, mask, training, deployment, Whittle, VIPER, evaluation) is in
+[RL_ARCHITECTURE.md](RL_ARCHITECTURE.md).
+
 The assessment is supervised: estimating a hidden state from noisy signals is a belief, not a decision. The
 **alerting** is a sequential decision problem with real trade-offs, so that part uses RL:
 
