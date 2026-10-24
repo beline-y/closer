@@ -1,6 +1,6 @@
 # Closer: Product Spec (MVP)
 
-Closer connects hospitalized children and isolated patients with their family, friends and care team, to reduce anxiety and loneliness during a hospital stay. It was inspired by the French association Cheer Up!.
+Closer connects hospitalized children and isolated patients with their family, friends, care team and inspiring volunteers, to reduce anxiety and loneliness during a hospital stay. It was inspired by the French association Cheer Up!.
 
 This is a **demo project**. All data is fictional. Real basic security is implemented (RLS on every table, no secrets in the client, dev tools disabled in production). Regulatory work is documented in `COMPLIANCE_NOTES.md`, not built.
 
@@ -10,7 +10,8 @@ This is a **demo project**. All data is fictional. Real basic security is implem
 2. **Minimal data.** A patient record holds only a nickname, birth year, interests and timezone. No diagnosis, room number or last name. EXIF is stripped from photos before upload.
 3. **Security lives in the database.** Locks, sealed cards and visibility rules are enforced by RLS and SQL functions, not just hidden in the UI.
 4. **Usable by kids who read little.** Every action has an icon and a word. Tap targets are at least 56px, the font is large (Atkinson Hyperlegible), and mood uses emoji plus color plus a label.
-5. **Analytics later, at no extra cost.** A content-free `activity_events` log plus a mood time series let us add care team AI analysis later without changing the schema.
+5. **Volunteers never see who a patient is.** No name, age, photo, avatar, unit, diagnosis, check-in or link to a patient profile. Patients reach volunteers only through anonymized, care-approved content, and only a patient can start a contact request. Enforced by RLS: volunteers have no access to patient tables at all.
+6. **Analytics later, at no extra cost.** A content-free `activity_events` log plus a mood time series let us add care team AI analysis later without changing the schema.
 
 ## Roles
 
@@ -19,7 +20,7 @@ This is a **demo project**. All data is fictional. Real basic security is implem
 | Patient | patient code + 6-digit PIN (QR prefill is a nice-to-have) | their own space |
 | Family & friends | email + password, joins with an invite code | patients they're linked to |
 | Care team | email + password; account created by seed or server script (no self-signup) | **only patients they're individually linked to**: mood, activity, meal, note, aggregates |
-| Volunteer (post-MVP) | email + password, approval required | nothing patient-related until an approved, moderated exchange |
+| Volunteer | email + password, approval required | their own story, the anonymous question pool, care-approved anonymized answers, events, and approved requests (without patient details beyond what the care team shares) |
 
 Guardian consent is required for minors, and one guardian is enough. Adults need no guardian, and their space is active immediately.
 
@@ -32,70 +33,91 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - AI: Anthropic Claude, via a server-side route only (post-MVP).
 - Supabase region: US. Default patient timezone: `America/New_York`.
 - Patient devices are personal tablets, so there's no auto sign-out in the MVP.
+- **Demo access:** while all data is fictional, the landing page is a role picker (`DEMO_MODE=true` in every environment, production included). Real sign-in is tracked in issue #9.
+- **Volunteer contact:** only the patient can ask. Flow: patient taps "I'd like to talk with Maya" → care team approves → guardian approves (minors) → the volunteer receives the request with only what the care team chooses to share → the volunteer accepts or declines → a supervised visit or a moderated, logged exchange scheduled by the care team (Cheer Up! model). No free chat, ever.
+- **Patient answers shown to volunteers:** go through a privacy filter (masks names, places, hospital names, emails, phone numbers) **and** need care team approval ("shareable"). Only the approved, masked copy reaches volunteers, in a table with no `patient_id`.
+- **Memories** are shared by the patient's circle only. The care team and volunteers never see them.
 - **Cloud-only workflow:** no Docker, no local Supabase. One shared Supabase cloud project (US) is the dev database for every branch preview and for `main`. Migrations go through `supabase db push`, one person at a time. Features are tested on Vercel preview URLs. Production will get its own Supabase project later.
 
 ## User stories (MoSCoW)
 
 **Patient:**
-- **M:** code + PIN sign-in; 1-tap mood check-in with optional activity, meal, note and photo; nudges with per-type cooldown; open sealed comfort cards and see the archive; question of the day with lock; see family replies and reactions.
-- **S:** read-aloud; memories; private journal with per-entry sharing; activities.
-- **C:** unlock volunteer stories; request a moderated volunteer exchange; grown-up theme for adults.
+- **M:** code + PIN sign-in; 1-tap mood check-in with optional activity, meal, note and photo; nudges with per-type cooldown; open sealed comfort cards and see the archive; question of the day with lock; see family replies and reactions; shared memories album.
+- **S:** read-aloud; private journal with per-entry sharing; activities; after answering the question of the day, unlock a volunteer card (their answer + story); ask a volunteer a question (anonymous, filtered); ask to talk with a volunteer (approval flow).
+- **C:** grown-up theme for adults.
 - **W:** free chat with volunteers (never).
 
 **Family:**
-- **M:** join by code; guardian consent; check-in feed with reactions; nudges in-app and by email with quick replies; write comfort cards and get notified when opened; question of the day; patient switcher.
-- **S:** notification preferences; AI question suggestions; memories; shared activities.
+- **M:** join by code; guardian consent; check-in feed with reactions; nudges in-app and by email with quick replies; write comfort cards and get notified when opened; question of the day; patient switcher; memories album (photo, caption, date, tag, reactions, short comments).
+- **S:** notification preferences; AI question suggestions ("Question ideas", placeholder list until then); shared activities; guardian approves volunteer contact requests.
 - **C:** web push.
 
 **Care team:**
 - **M:** create patient and invite codes per role; revoke links; patient list (7- and 30-day mood trend, last check-in, minutes in app today, family interactions today, "no family contact today"); mood chart; alerts with acknowledgement; per-patient cooldown and thresholds.
-- **S:** read journal entries shared with care team; discharge.
-- **C:** volunteer approval and moderation; validate activities.
+- **S:** read journal entries shared with care team; discharge; events (create, edit, see sign-ups); mark patient answers as shareable with volunteers; approve volunteer contact requests; volunteer approve / suspend.
+- **C:** validate activities.
 - **W:** AI analysis (data model is ready for it).
 
+**Volunteer:**
+- **S:** My story (first name, photo, job, short story, passions, dreams, fun fact, languages) with a live preview of the patient's view; answer questions (anonymous patient questions + inspiring question bank), optional photo with no faces of other people; read care-approved anonymized patient answers; join or cancel hospital events; see approved requests and accept or decline.
+- **W:** see any patient detail; start a contact; message a patient (never).
+
 **Cross-cutting:**
-- **M:** dev-only demo role switcher; data export (JSON); account deletion; RLS tests.
+- **M:** demo role picker; data export (JSON); account deletion; RLS tests.
 - **S:** PWA manifest; report button.
 
 ## MVP scope
 
-Demo cast, all fictional: **Léo** (patient, 9), **Camille** (mom, guardian), **Sam** (older brother), **Nurse Inès** (care team), **Maya** (second patient, adult, used to show alerts), **Jordan** (approved volunteer, seeded for later phases).
+Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma** (mom, guardian), **James** (dad), **Noah** (Leo's best friend from school), **Sarah** (pediatric nurse, care team), **Maya** (volunteer, marine biologist), **Daniel** (volunteer, airline pilot).
 
-1. Foundation: Next.js, Tailwind, shadcn/ui, Supabase SSR clients, role layouts, PWA manifest.
-2. Auth and linking: care team creates patients and invite codes; code redemption; guardian consent; role routing; patient code + PIN.
-3. Mood check-in, family feed, reactions, photo upload.
-4. Nudges: per-type cooldown, recipient picker, Realtime notifications, email to the local inbox, quick replies.
-5. Comfort cards: seal, open once with animation, archive, notify the author.
-6. Question of the day from the question bank, with lock until you've answered.
-7. Care team dashboard, session tracking, live alerts, settings.
-8. Data export and account deletion.
-9. Seed data (2 weeks relative to today, applied with `npm run db:seed`) and a role switcher on previews only.
-10. pgTAP RLS tests for every feature; lint and typecheck before every commit.
+1. Foundation: Next.js, Tailwind, shadcn/ui, Supabase SSR clients, role layouts, PWA manifest. ✅
+2. Demo access: role picker, silent demo sign-in, demo banner, role routing. ✅ (Real auth and linking: issue #9.)
+3. Role shells: navigation and main screens for each role, with friendly empty states.
+4. Mood check-in, family feed, reactions, photo upload.
+5. Nudges: per-type cooldown, recipient picker, Realtime notifications, email, quick replies.
+6. Comfort cards: seal, open once with animation, archive, notify the author.
+7. Question of the day from the question bank, with lock until you've answered.
+8. Care team dashboard, session tracking, live alerts, settings.
+9. Memories: shared album between the patient and their circle.
+10. Journal, then activities.
+11. Volunteers: questions, My story, events, requests (with care team approvals).
+12. Data export and account deletion.
+13. Seed data (2 weeks relative to today, `npm run db:seed`) and pgTAP RLS tests for every feature (`npm run db:test`); lint and typecheck before every commit.
 
-**Post-MVP, in order:** memories, journal, activities, AI question suggestions, volunteers and moderation, web push, grown-up theme.
+**Post-MVP:** real auth (issue #9), AI question suggestions, web push, grown-up theme.
 
 ## Screens
 
-**Shared:** landing, login (with the dev role switcher), patient login (number pad), join with code, guardian consent, account (export, delete).
+**Shared:** landing with the demo role picker, demo banner with "Switch role" on every page, login, patient login (number pad), join with code, guardian consent, account (export, delete).
 
-**Patient** (tabs Home · Nudge · Cards · Question):
-- Home: four big tiles plus a "From your family" strip.
+**Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet; tabs Today · Connect · Question · Memories · Me):
+- Today: greeting, "who's thinking of you" avatars, mood check-in, today's question, one suggested activity, new memories ("Emma shared a memory").
 - Check-in: five emoji, then optional chips, photo and note, then a celebration.
-- Nudge: five buttons with a cooldown ring, then a recipient picker, then "Sent! ❤️".
-- Cards: envelope stack, then the open animation, then the archive.
-- Question: answer box with emoji chips; "🔒 Mom answered! Answer to see hers".
+- Connect: five nudge buttons (I miss you, Call me, I'm bored, I'm proud of myself, I need a hug) with a cooldown ring, then a recipient picker, then "Sent! ❤️"; sealed comfort cards to open (envelope stack, open animation, archive).
+- Question: answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
+- Memories: the same album as the family.
+- Me: journal and activities.
 
-**Family** (tabs Feed · Nudges · Cards · Question, with a patient switcher):
-- Feed: check-ins, opened cards and question unlocks, with reactions.
-- Nudges: inbox with quick replies.
-- Cards: write a card; list of my sealed and opened cards.
+**Family** (phone first, works on desktop; tabs Feed · Question · Cards · Memories, patient switcher in the header):
+- Feed: check-ins, nudges pinned on top until answered, opened cards, question reveals, new memories, with reactions. Presence lines ("Leo opened your card", "Leo is waiting for your answer"). The guardian also sees volunteer contact requests to approve.
+- Quick actions always visible: reply to a nudge, write a card, answer today's question, add a memory. "Question ideas" button.
 - Question: same lock mechanic as the patient.
+- Cards: write a card; list of my sealed and opened cards.
+- Memories: grid, tap to open, reactions and short comments, add a photo with caption, date and tag (holiday, birthday, pet, school, family, friends, other).
 
-**Care team** (Patients · Alerts · Invites · Settings):
-- Patients: sortable list.
-- Patient detail: chart (7 / 30 days), check-ins (no photos), interactions, alerts, settings.
-- Alerts: inbox.
-- Invites: create patient, codes with QR and expiry, links, PIN reset.
+**Volunteer** (phone and desktop; tabs Questions · My story · Events · Requests):
+- Questions: "A young explorer asks: …" (anonymous patient questions) and inspiring questions; answer in text with an optional photo; care-approved anonymized patient answers ("A young explorer answered: …").
+- My story: editable bio card with a live preview of how a patient sees it.
+- Events: list, details, sign up or cancel.
+- Requests: approved requests only, with status. No messaging.
+
+**Care team** (desktop first, tablet landscape; sidebar Patients · Alerts · Volunteers · Events · Settings):
+- Patients: sortable, filterable table (name, 7-day mood sparkline, last check-in, time in app today, family contact today, alert badge).
+- Patient detail: mood chart (7 / 30 days), check-ins (mood, activity, meal, note only; no photos), family interactions per day, thresholds (low moods in a row, days without check-in, days without family contact, nudge cooldown).
+- Alerts: triggered alerts with "Mark as reviewed".
+- Volunteers: list with approve / suspend; answers to review ("Mark as shareable"); contact requests to approve.
+- Events: create, edit, see sign-ups.
+- Invites: create patient, codes with QR and expiry, links, PIN reset (with real auth, issue #9).
 
 ## Data model (MVP)
 
@@ -114,7 +136,7 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `profiles` | id → auth.users, display_name, avatar_url, account_type | Read your own row and co-linked names. Update your own row; `account_type` is server-only. |
 | `patients` | user_id, nickname, birth_year, is_minor, interests[], timezone, status, login_code, created_by | `can_view` reads. Created only by `create_patient()` (care team only), which also creates the settings row and the creator's link. Care team updates; the patient edits interests. |
 | `patient_settings` | nudge_cooldown_minutes = 10, low_mood_threshold = 2, low_mood_streak = 3, no_checkin_days = 2, no_family_contact_days = 2 | Care team reads and updates. Patient and family read the cooldown. |
-| `patient_links` | patient_id, user_id, role (care_team/family/friend/volunteer), relationship, is_guardian, status, invite_id | You see your own links. Care team and guardian see all links for the patient. Created only by `redeem_invite()`. |
+| `patient_links` | patient_id, user_id, role (care_team/family/friend; `volunteer` stays unused: volunteers are never linked to a patient), relationship, is_guardian, status, invite_id | You see your own links. Care team and guardian see all links for the patient. Created only by `redeem_invite()`. |
 | `invites` | code_hash, role, is_guardian_invite, max_uses, used_count, expires_at, revoked_at | Care team only. Redeemed via `redeem_invite(code)`, which checks the account type matches the role. |
 | `guardian_consents` | guardian_id, consent_version, scopes, granted_at, withdrawn_at | Guardian inserts and withdraws. Guardian and care team read. Never deleted. |
 | `mood_checkins` | local_date, mood 1–5, activity, meal, note ≤ 280 | Patient writes (same day). Family and care team read. Unique (patient, day). |
@@ -134,21 +156,53 @@ These are `security definer` SQL functions in the `private` schema with `search_
 
 **Dashboard functions:** `care_dashboard()` and `care_checkins(pid, days)`. Alerts are computed live from `patient_settings`.
 
-**Storage:** private bucket `checkin-photos` with paths `{patient_id}/{uuid}.jpg`, served through signed URLs.
+**Memories:**
 
-**Post-MVP tables:** memories (+ reactions, comments), journal_entries (private by default), journal_prompts, activities, activity_participations, volunteer_profiles, volunteer_answers, volunteer_unlocks, exchange_requests, exchange_messages, content_reports, moderation_log, ai_generations.
+| Table | Key columns | RLS |
+|---|---|---|
+| `memories` | patient_id, author_id, photo_path, caption ≤ 280, taken_on, tag (holiday, birthday, pet, school, family, friends, other) | Patient and circle read and add. Author edits and deletes. **No care team, no volunteer access.** |
+| `memory_reactions` | memory_id, user_id, emoji | Patient and circle. |
+| `memory_comments` | memory_id, user_id, body ≤ 200 | Patient and circle. Author deletes. |
+
+**Volunteers.** Volunteers have **no SELECT** on `patients`, patient `profiles`, `patient_links`, `mood_checkins`, `journal_entries`, `memories`, `comfort_cards`, `nudges` or any patient-keyed table. Everything they can read lives in tables with **no `patient_id`**:
+
+| Table | Key columns | RLS |
+|---|---|---|
+| `volunteer_profiles` | user_id, first_name, photo_path, job, story, passions[], dreams, fun_fact, languages[], status (pending/approved/suspended) | Volunteer edits their own. Patients, circle and care team read approved ones. Care team approves or suspends. |
+| `volunteer_questions` | text, source (bank / patient), for_volunteer_id (optional), approved_at | The question pool. No patient_id. Volunteers read approved ones. Patient questions get here only after the privacy filter and care approval. |
+| `patient_volunteer_questions` | patient_id, volunteer_id, body, masked_body, status, pool_question_id | Patient-owned original ("Ask Maya a question"). Patient, guardian and care team read. Volunteers: none. |
+| `volunteer_answers` | volunteer_id, question_id (pool) or question_bank_id, body ≤ 1000, photo_path (no faces of other people) | Volunteer writes their own. Patients and circle read; a patient sees them after answering the matching question of the day. |
+| `shared_answers` | question_bank_id, masked_body, approved_by, approved_at | Anonymized, care-approved copy of a patient answer. **No patient_id.** Volunteers read. Written only by `mark_answer_shareable(answer_id)` (care team), which runs the privacy filter. |
+| `contact_requests` | patient_id, volunteer_id, status (pending_care, pending_guardian, sent_to_volunteer, accepted, declined, cancelled), shared_note, scheduled_at | Patient creates (`request_contact()`), care team and guardian approve. Volunteers never read the table: `my_volunteer_requests()` returns only id, status, shared_note and scheduled_at for requests already approved. |
+| `events` | title, description, location_label, starts_at, ends_at, capacity, created_by | Care team creates and edits. Volunteers and care team read. |
+| `event_signups` | event_id, volunteer_id, status (going / cancelled) | Volunteer signs up and cancels their own. Care team reads sign-ups. |
+
+**Privacy filter** (`private.mask_personal_info(text)`, server-side): masks emails, phone numbers, the names of everyone linked to the patient, known places and hospital names, and capitalized words after "I live in" / "at" etc., replacing them with `[name]`, `[place]`, `[contact]`. For the demo, care team approval is still required on top of it.
+
+**Storage:** private buckets `checkin-photos` (`{patient_id}/{uuid}.jpg`), `memories` (`{patient_id}/{uuid}.jpg`) and `volunteer-photos` (`{volunteer_id}/{uuid}.jpg`), served through signed URLs. EXIF stripped before upload.
+
+**Post-MVP tables:** journal_prompts, activity_participations, exchange_messages (moderated, logged), content_reports, moderation_log, ai_generations.
 
 ## Build plan
 
-| Step | Branch |
-|---|---|
-| Foundation | `feature/foundation` |
-| Auth, roles, invites, consent, seed, demo switcher | `feature/auth-roles` |
-| Mood check-in | `feature/mood-checkin` |
-| Nudges + notifications | `feature/nudges` |
-| Comfort cards | `feature/comfort-cards` |
-| Question of the day | `feature/daily-question` |
-| Care dashboard + alerts | `feature/care-dashboard` |
-| Export, delete, accessibility, README | `feature/privacy-polish` |
+One branch and one Vercel preview per step. Tested on the preview, then merged.
+
+| Step | Branch | Status |
+|---|---|---|
+| Foundation | `feature/foundation` | ✅ |
+| Demo role picker | `feature/demo-roles` | ✅ |
+| English personas, SPEC update, RLS tests | `chore/personas` | |
+| Role shells (layout, navigation, main screens) | `feature/role-shells` | |
+| Mood check-in | `feature/mood-checkin` | |
+| Nudges + notifications | `feature/nudges` | |
+| Comfort cards | `feature/comfort-cards` | |
+| Question of the day | `feature/daily-question` | |
+| Care dashboard + alerts | `feature/care-dashboard` | |
+| Memories | `feature/memories` | |
+| Journal | `feature/journal` | |
+| Activities | `feature/activities` | |
+| Volunteers: questions, My story, events, requests | `feature/volunteers` | |
+| Export, delete, accessibility | `feature/privacy-polish` | |
+| Real auth (issue #9) | `feature/auth` | post-demo |
 
 Deployment happens only after explicit approval.
