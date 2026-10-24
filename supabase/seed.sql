@@ -123,3 +123,84 @@ values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active'),
   ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active'),
   ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active');
+
+-- ---------------------------------------------------------------------------
+-- Mood check-ins: Leo's last two weeks (days relative to today, New York time).
+-- No check-in today yet, so the demo starts with Leo doing it live.
+-- A few days have a photo (files in supabase/seed-photos/, uploaded by
+-- scripts/seed-photos.mjs). Ava's moods drop, Lucas skipped the last 2 days.
+-- ---------------------------------------------------------------------------
+create temporary table demo_checkins (
+  patient_id uuid, days_ago int, mood smallint, meals public.meal_kind[], meal_amount public.meal_amount,
+  meal_note text, activities public.activity_kind[], activity_note text, note text, photo text, at time
+);
+
+insert into demo_checkins values
+  -- Leo
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 13, 4, '{breakfast,lunch}', 'half', null, '{played}', 'Uno with Sarah', null, null, '09:10'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 12, 4, '{breakfast,lunch,dinner}', 'all', 'pasta with cheese', '{movie}', 'Finding Nemo', 'Dory is so funny', null, '08:55'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 11, 3, '{lunch}', 'a_little', null, '{treatment,rested}', null, 'Tired after the scan', null, '10:20'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 10, 2, '{snack}', 'a_little', 'apple sauce', '{treatment}', null, 'My tummy hurts', null, '11:05'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 9, 3, '{breakfast,lunch}', 'half', null, '{rested,movie}', null, null, null, '09:40'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 8, 4, '{breakfast,lunch,dinner}', 'half', null, '{drew}', 'Dinosaurs!', null, 'trex-drawing', '09:15'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 7, 4, '{breakfast,lunch,snack}', 'all', 'pancakes!!', '{school}', 'Math with the teacher', null, null, '08:50'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 6, 5, '{breakfast,lunch,dinner}', 'all', null, '{visit,played}', 'Dad came with his guitar', 'Dad played my favorite song!', 'guitar-visit', '09:20'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 5, 4, '{breakfast,lunch}', 'half', null, '{drew,rested}', null, null, null, '08:55'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 4, 4, '{breakfast,lunch,dinner}', 'all', null, '{played}', 'Board games', null, 'board-game', '09:01'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 3, 3, '{lunch,snack}', 'a_little', null, '{treatment,rested}', null, 'Tired today', null, '10:05'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, 4, '{breakfast,lunch}', 'half', null, '{walk}', 'Walk in the garden with Mom', null, 'garden-walk', '09:30'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 1, 5, '{breakfast,lunch,dinner}', 'all', 'pizza night', '{visit,drew}', 'Noah called on video', 'I drew a whale shark for Noah!', 'whale-shark', '08:47'),
+  -- Ava: moods sliding down
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 9, 4, '{breakfast,lunch}', 'half', null, '{rested}', null, null, null, '10:00'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 7, 3, '{lunch}', 'half', null, '{movie}', null, null, null, '10:30'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 5, 3, '{lunch}', 'a_little', null, '{rested}', null, null, null, '10:10'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 3, 3, '{lunch}', 'half', null, '{played}', 'music', null, null, '10:30'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, 2, '{snack}', 'a_little', null, '{rested}', null, null, null, '09:50'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1, 2, '{snack}', 'a_little', null, '{played}', 'music', null, null, '10:15'),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 0, 1, '{}', null, null, '{rested}', null, 'I miss my cat', null, '11:40'),
+  -- Lucas: fine, but no check-in for the last 2 days
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 8, 4, '{breakfast,lunch,dinner}', 'all', null, '{played}', 'lego', null, null, '08:30'),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 6, 5, '{breakfast,lunch,dinner}', 'all', null, '{movie}', 'trains video', null, null, '08:40'),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 4, 4, '{breakfast,lunch}', 'half', null, '{played}', 'lego', null, null, '08:45'),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 3, 4, '{breakfast,lunch}', 'all', null, '{movie}', 'trains video', null, null, '08:45'),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 2, 3, '{lunch}', 'half', null, '{played}', 'lego', null, null, '08:30');
+
+insert into public.mood_checkins (patient_id, local_date, mood, meals, meal_amount, meal_note, activities, activity_note, note, created_at, updated_at)
+select
+  d.patient_id,
+  (now() at time zone 'America/New_York')::date - d.days_ago,
+  d.mood, d.meals, d.meal_amount, d.meal_note, d.activities, d.activity_note, d.note,
+  (((now() at time zone 'America/New_York')::date - d.days_ago) + d.at) at time zone 'America/New_York',
+  (((now() at time zone 'America/New_York')::date - d.days_ago) + d.at) at time zone 'America/New_York'
+from demo_checkins d;
+
+insert into public.checkin_photos (checkin_id, patient_id, path)
+select c.id, c.patient_id, c.patient_id || '/seed-' || d.photo || '.webp'
+from demo_checkins d
+join public.mood_checkins c
+  on c.patient_id = d.patient_id and c.local_date = (now() at time zone 'America/New_York')::date - d.days_ago
+where d.photo is not null;
+
+-- Emma, James and Noah react to Leo's week.
+insert into public.checkin_reactions (checkin_id, user_id, emoji)
+select c.id, r.user_id, r.emoji
+from (values
+  (12, '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
+  (10, '22222222-2222-4222-8222-222222222222'::uuid, '🤗'),
+  (10, '33333333-3333-4333-8333-333333333333'::uuid, '🤗'),
+  (8,  '77777777-7777-4777-8777-777777777777'::uuid, '⭐'),
+  (8,  '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
+  (6,  '33333333-3333-4333-8333-333333333333'::uuid, '❤️'),
+  (6,  '22222222-2222-4222-8222-222222222222'::uuid, '😂'),
+  (4,  '77777777-7777-4777-8777-777777777777'::uuid, '💪'),
+  (3,  '22222222-2222-4222-8222-222222222222'::uuid, '🤗'),
+  (2,  '33333333-3333-4333-8333-333333333333'::uuid, '❤️'),
+  (1,  '77777777-7777-4777-8777-777777777777'::uuid, '😂'),
+  (1,  '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
+  (1,  '33333333-3333-4333-8333-333333333333'::uuid, '⭐')
+) as r(days_ago, user_id, emoji)
+join public.mood_checkins c
+  on c.patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+ and c.local_date = (now() at time zone 'America/New_York')::date - r.days_ago;
+
+drop table demo_checkins;
