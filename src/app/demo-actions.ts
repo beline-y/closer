@@ -9,9 +9,9 @@ import { createClient } from "@/lib/supabase/server";
 // so they never reach the client bundle. Patients sign in with their 6-digit PIN.
 const DEMO_ACCOUNTS: Record<RoleKey, { email: string; secret: "DEMO_PASSWORD" | "DEMO_PATIENT_PIN" }> = {
   patient: { email: "leo.patient@example.com", secret: "DEMO_PATIENT_PIN" },
-  family: { email: "camille@example.com", secret: "DEMO_PASSWORD" },
-  care: { email: "ines.nurse@example.com", secret: "DEMO_PASSWORD" },
-  volunteer: { email: "jordan.volunteer@example.com", secret: "DEMO_PASSWORD" },
+  family: { email: "emma@example.com", secret: "DEMO_PASSWORD" },
+  care: { email: "sarah.nurse@example.com", secret: "DEMO_PASSWORD" },
+  volunteer: { email: "maya.volunteer@example.com", secret: "DEMO_PASSWORD" },
 };
 
 export type DemoSignInState = { error: string | null };
