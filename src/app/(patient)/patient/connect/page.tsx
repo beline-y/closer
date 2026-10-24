@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
 import { RevealCard } from "@/components/kit/reveal-card";
+import { LiveRefresh } from "@/components/live-refresh";
+import { NudgeReplies } from "@/components/nudge-replies";
 import { NudgePanel } from "@/components/patient/nudge-panel";
 import { CAST } from "@/lib/cast";
+import { getMyPatient } from "@/lib/data/checkins";
+import { getVisibleCircle } from "@/lib/data/circle";
+import { getNudgeState, getRepliesForPatient } from "@/lib/data/nudges";
 import { COMFORT_CARDS } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Connect · Closer" };
@@ -18,7 +24,9 @@ export default function PatientConnectPage() {
         <p className="text-xl text-muted-foreground">Tap to tell your people.</p>
       </header>
 
-      <NudgePanel />
+      <Suspense fallback={<div className="min-h-64" />}>
+        <Nudges />
+      </Suspense>
 
       <section aria-labelledby="cards-title" className="flex flex-col gap-4">
         <h2 id="cards-title" className="text-3xl font-extrabold">
@@ -51,6 +59,35 @@ export default function PatientConnectPage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+    </>
+  );
+}
+
+// Buttons with the real cooldown, then the family's replies. Live: replies and a cooldown
+// change by the care team show up without reloading.
+async function Nudges() {
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const [circle, state, replies] = await Promise.all([
+    getVisibleCircle(),
+    getNudgeState(patient.id),
+    getRepliesForPatient(patient.id, patient.timezone),
+  ]);
+  return (
+    <>
+      <LiveRefresh
+        channel={`patient-nudges-${patient.id}`}
+        watch={[{ table: "nudge_recipients" }, { table: "patient_settings", filter: `patient_id=eq.${patient.id}` }]}
+      />
+      <NudgePanel circle={circle} cooldownMinutes={state.cooldownMinutes} lastSent={state.lastSent} serverNow={state.serverNow} />
+      {replies.length > 0 && (
+        <section aria-labelledby="replies-title" className="flex flex-col gap-4">
+          <h2 id="replies-title" className="text-3xl font-extrabold">
+            Your people answered 💌
+          </h2>
+          <NudgeReplies replies={replies.slice(0, 6)} />
         </section>
       )}
     </>

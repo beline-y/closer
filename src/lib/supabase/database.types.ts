@@ -142,6 +142,77 @@ export type Database = {
           },
         ]
       }
+      nudge_recipients: {
+        Row: {
+          nudge_id: string
+          replied_at: string | null
+          reply_emoji: string | null
+          reply_text: string | null
+          seen_at: string | null
+          user_id: string
+        }
+        Insert: {
+          nudge_id: string
+          replied_at?: string | null
+          reply_emoji?: string | null
+          reply_text?: string | null
+          seen_at?: string | null
+          user_id: string
+        }
+        Update: {
+          nudge_id?: string
+          replied_at?: string | null
+          reply_emoji?: string | null
+          reply_text?: string | null
+          seen_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nudge_recipients_nudge_id_fkey"
+            columns: ["nudge_id"]
+            isOneToOne: false
+            referencedRelation: "nudges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nudge_recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nudges: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["nudge_kind"]
+          patient_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["nudge_kind"]
+          patient_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["nudge_kind"]
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nudges_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_links: {
         Row: {
           approved_by: string | null
@@ -200,6 +271,54 @@ export type Database = {
           {
             foreignKeyName: "patient_links_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_settings: {
+        Row: {
+          low_mood_streak: number
+          low_mood_threshold: number
+          no_checkin_days: number
+          no_family_contact_days: number
+          nudge_cooldown_minutes: number
+          patient_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          no_family_contact_days?: number
+          nudge_cooldown_minutes?: number
+          patient_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          no_family_contact_days?: number
+          nudge_cooldown_minutes?: number
+          patient_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_settings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_settings_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -283,7 +402,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      send_nudge: {
+        Args: {
+          p_kind: Database["public"]["Enums"]["nudge_kind"]
+          p_recipients?: string[]
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_type: "patient" | "family" | "care_team" | "volunteer"
@@ -300,6 +425,7 @@ export type Database = {
       link_status: "pending" | "active" | "revoked"
       meal_amount: "all" | "half" | "a_little"
       meal_kind: "breakfast" | "lunch" | "dinner" | "snack"
+      nudge_kind: "miss_you" | "call_me" | "bored" | "proud" | "hug"
       patient_status: "pending_consent" | "active" | "discharged"
     }
     CompositeTypes: {
@@ -443,6 +569,7 @@ export const Constants = {
       link_status: ["pending", "active", "revoked"],
       meal_amount: ["all", "half", "a_little"],
       meal_kind: ["breakfast", "lunch", "dinner", "snack"],
+      nudge_kind: ["miss_you", "call_me", "bored", "proud", "hug"],
       patient_status: ["pending_consent", "active", "discharged"],
     },
   },

@@ -53,7 +53,8 @@ select is((select mood from mood_checkins where patient_id = 'aaaaaaaa-aaaa-4aaa
 select pg_temp.act_as('22222222-2222-4222-8222-222222222222'); -- Emma
 select is((select count(*) from mood_checkins)::int, 14, 'Emma reads all of Leo''s check-ins');
 select is((select count(*) from checkin_photos)::int, 5, 'Emma reads Leo''s check-in photos');
-select is((select count(*) from storage.objects where bucket_id = 'checkin-photos')::int, 5, 'Emma can open the photo files');
+select is((select count(*) from storage.objects o where o.bucket_id = 'checkin-photos' and o.name in (select path from checkin_photos))::int, 5,
+  'Emma can open the photo files');
 select throws_ok(
   $$insert into mood_checkins (patient_id, mood) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2)$$,
   '42501', null, 'Emma cannot write a check-in for Leo');

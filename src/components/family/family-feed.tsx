@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { replyToNudge } from "@/app/nudge-actions";
 import { FeedItem } from "@/components/kit/feed-item";
 import { CheckInCard } from "@/components/checkin-card";
 import { ReactionBar } from "@/components/reaction-bar";
 import { CAST } from "@/lib/cast";
 import type { CheckInView } from "@/lib/data/checkins";
+import type { MyNudge } from "@/lib/data/nudges";
 import { relativeDay } from "@/lib/dates";
-import { COMFORT_CARDS, MEMORIES, QUICK_REPLIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { COMFORT_CARDS, MEMORIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { nudgeKind, QUICK_REPLIES } from "@/lib/nudges";
+import { cn } from "@/lib/utils";
 
-// Emma's home. Check-ins are real and live (see the page); nudges, the volunteer request,
-// memories and cards are still placeholder data until their features land.
-export function FamilyFeed({ checkins, me }: { checkins: CheckInView[]; me: string }) {
-  const [reply, setReply] = useState<string | null>(null);
+// Emma's home. Check-ins and nudges are real and live (see the page). Unanswered nudges
+// stay pinned on top. The volunteer request, memories and cards are still placeholder data.
+export function FamilyFeed({ checkins, nudges, me }: { checkins: CheckInView[]; nudges: MyNudge[]; me: string }) {
+  const pending = nudges.filter((n) => !n.reply);
+  const answered = nudges.filter((n) => n.reply).slice(0, 3);
   const [request, setRequest] = useState<"pending" | "approved" | "declined">("pending");
   const opened = COMFORT_CARDS.find((c) => c.from === "emma" && !c.sealed);
   const memory = MEMORIES.find((m) => m.by !== "emma");
@@ -21,23 +26,9 @@ export function FamilyFeed({ checkins, me }: { checkins: CheckInView[]; me: stri
 
   return (
     <div className="flex flex-col gap-4">
-      {!reply && (
-        <FeedItem person={CAST.leo} pinned when="10 min ago" line={<><strong>Leo</strong> misses you 💛</>}>
-          <p className="text-sm font-bold text-role-family-ink">⏳ Leo is waiting for your answer</p>
-          <div role="group" aria-label="Quick reply" className="flex flex-wrap gap-2">
-            {QUICK_REPLIES.map((r) => (
-              <button key={r} type="button" onClick={() => setReply(r)} className="min-h-11 rounded-full bg-card px-4 font-bold shadow-sm ring-1 ring-border transition hover:-translate-y-0.5 active:scale-95">
-                {r}
-              </button>
-            ))}
-          </div>
-        </FeedItem>
-      )}
-      {reply && (
-        <p aria-live="polite" className="animate-rise rounded-2xl bg-success-soft px-4 py-3 font-bold text-success">
-          You replied “{reply}” to Leo. 💌
-        </p>
-      )}
+      {pending.map((n) => (
+        <PinnedNudge key={n.id} nudge={n} />
+      ))}
 
       {request === "pending" ? (
         <FeedItem person={CAST.leo} when="Today" line={<><strong>Leo</strong> would like to talk with <strong>{maya.firstName}</strong>, a volunteer {maya.job.toLowerCase()} {maya.avatar}</>}>
@@ -80,6 +71,14 @@ export function FamilyFeed({ checkins, me }: { checkins: CheckInView[]; me: stri
         </FeedItem>
       ))}
 
+      {answered.map((n) => (
+        <FeedItem key={n.id} person={CAST.leo} when={`${relativeDay(n.daysAgo)}, ${n.time}`} line={<><strong>Leo</strong> {nudgeKind(n.kind).message} {nudgeKind(n.kind).emoji}</>}>
+          <p className="text-muted-foreground">
+            You replied <span aria-hidden>{n.reply?.emoji}</span> “{n.reply?.text}”
+          </p>
+        </FeedItem>
+      ))}
+
       {memory && (
         <FeedItem person={CAST[memory.by]} when={relativeDay(memory.sharedDaysAgo)} line={<><strong>{CAST[memory.by].name}</strong> shared a memory</>}>
           <Link href="/family/memories" className="flex items-center gap-3 rounded-2xl bg-muted p-2 pr-4 transition hover:-translate-y-0.5">
@@ -97,5 +96,77 @@ export function FamilyFeed({ checkins, me }: { checkins: CheckInView[]; me: stri
         </FeedItem>
       )}
     </div>
+  );
+}
+
+// Quick reply in one tap, or a short message of your own. Leo sees it live.
+function PinnedNudge({ nudge }: { nudge: MyNudge }) {
+  const [emoji, setEmoji] = useState<string>(QUICK_REPLIES[0].emoji);
+  const [text, setText] = useState("");
+  const [custom, setCustom] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, startSending] = useTransition();
+  const k = nudgeKind(nudge.kind);
+
+  const send = (e: string, t: string) => {
+    setError(null);
+    startSending(async () => {
+      const result = await replyToNudge(nudge.id, e, t);
+      if (!result.ok) setError(result.error);
+    });
+  };
+
+  return (
+    <FeedItem person={CAST.leo} pinned when={`${relativeDay(nudge.daysAgo)}, ${nudge.time}`} line={<><strong>Leo</strong> {k.message} {k.emoji}</>}>
+      <p className="text-sm font-bold text-role-family-ink">⏳ Leo is waiting for your answer</p>
+      {custom ? (
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            send(emoji, text);
+          }}
+          className="flex flex-col gap-2"
+        >
+          <div role="radiogroup" aria-label="Emoji" className="flex gap-2">
+            {QUICK_REPLIES.map((r) => (
+              <button key={r.emoji} type="button" role="radio" aria-checked={emoji === r.emoji} onClick={() => setEmoji(r.emoji)} className={cn("flex size-11 items-center justify-center rounded-full text-xl", emoji === r.emoji ? "bg-card ring-2 ring-role-family" : "bg-card/60")}>
+                {r.emoji}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <label htmlFor={`reply-${nudge.id}`} className="sr-only">
+              Your message
+            </label>
+            <input id={`reply-${nudge.id}`} value={text} onChange={(e) => setText(e.target.value)} maxLength={140} placeholder="Coming tonight!" className="min-h-11 min-w-0 flex-1 rounded-full border bg-card px-4" />
+            <button type="submit" disabled={sending || !text.trim()} className="min-h-11 rounded-full bg-role-family-ink px-5 font-bold text-white disabled:opacity-50">
+              Send
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div role="group" aria-label="Quick reply" className="flex flex-wrap gap-2">
+          {QUICK_REPLIES.map((r) => (
+            <button
+              key={r.emoji}
+              type="button"
+              disabled={sending}
+              onClick={() => send(r.emoji, r.text)}
+              className="min-h-11 rounded-full bg-card px-4 font-bold shadow-sm ring-1 ring-border transition hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
+            >
+              <span aria-hidden>{r.emoji}</span> {r.text}
+            </button>
+          ))}
+          <button type="button" onClick={() => setCustom(true)} className="min-h-11 rounded-full px-4 font-bold text-role-family-ink hover:bg-card">
+            ✏️ Write
+          </button>
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="text-sm font-bold text-alert">
+          {error}
+        </p>
+      )}
+    </FeedItem>
   );
 }

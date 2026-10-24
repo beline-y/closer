@@ -3,6 +3,7 @@
 // Times are relative ("daysAgo") so the demo always looks recent.
 import type { CastId } from "@/lib/cast";
 import { PATIENT_IDS } from "@/lib/cast";
+import type { Thresholds } from "@/lib/nudges";
 
 // ---------------------------------------------------------------------------
 // Care team dashboard
@@ -37,34 +38,14 @@ export const CARE_ALERTS: CareAlert[] = [
   { id: "al-4", patientId: PATIENT_IDS.lucas, kind: "no_family_contact", daysAgo: 1, detail: "No family linked yet" },
 ];
 
-export type Thresholds = {
-  lowMoodStreak: number;
-  noCheckinDays: number;
-  noFamilyContactDays: number;
-  nudgeCooldownMinutes: number;
-};
-
+/** Defaults for new patients (the Settings page). Per-patient values live in patient_settings. */
 export const DEFAULT_THRESHOLDS: Thresholds = {
+  lowMoodThreshold: 2,
   lowMoodStreak: 3,
   noCheckinDays: 2,
   noFamilyContactDays: 2,
   nudgeCooldownMinutes: 10,
 };
-
-// ---------------------------------------------------------------------------
-// Nudges (patient -> circle)
-// ---------------------------------------------------------------------------
-export type NudgeKind = "miss_you" | "call_me" | "bored" | "proud" | "hug";
-
-export const NUDGE_KINDS: { kind: NudgeKind; emoji: string; label: string; message: string }[] = [
-  { kind: "miss_you", emoji: "💛", label: "I miss you", message: "misses you" },
-  { kind: "call_me", emoji: "📞", label: "Call me", message: "would love a call" },
-  { kind: "bored", emoji: "🥱", label: "I'm bored", message: "is bored" },
-  { kind: "proud", emoji: "🏆", label: "I'm proud of myself", message: "is proud of themselves" },
-  { kind: "hug", emoji: "🤗", label: "I need a hug", message: "needs a hug" },
-];
-
-export const QUICK_REPLIES = ["❤️ Love you", "📞 Calling soon", "🤗 Big hug", "⭐ So proud of you"];
 
 // ---------------------------------------------------------------------------
 // Comfort cards
@@ -283,7 +264,3 @@ export const ANSWERS_TO_REVIEW = [
   { id: "ar-1", patientId: PATIENT_IDS.leo, question: "What is the bravest thing you ever did?", masked: "I let the nurse [name] take blood and I didn't cry. Then [name] brought me to [place] for ice cream.", daysAgo: 0 },
 ];
 
-// ---------------------------------------------------------------------------
-// Family feed and patient "who's thinking of you"
-// ---------------------------------------------------------------------------
-export const THINKING_OF_YOU_TODAY: CastId[] = ["emma", "noah"];

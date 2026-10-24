@@ -204,3 +204,61 @@ join public.mood_checkins c
  and c.local_date = (now() at time zone 'America/New_York')::date - r.days_ago;
 
 drop table demo_checkins;
+
+-- ---------------------------------------------------------------------------
+-- Nudges: Leo's week, with replies from Emma, James and Noah.
+-- Today's "I miss you" is still unanswered by Emma, so it's pinned in her feed.
+-- (patient_settings rows are created by a trigger with the defaults.)
+-- ---------------------------------------------------------------------------
+create temporary table demo_nudges (
+  ref int, days_ago int, at time, kind public.nudge_kind
+);
+insert into demo_nudges values
+  (1, 6, '15:10', 'miss_you'),
+  (2, 5, '11:30', 'bored'),
+  (3, 3, '19:45', 'hug'),
+  (4, 2, '16:00', 'proud'),
+  (5, 1, '17:20', 'call_me');
+
+create temporary table demo_nudge_ids (ref int, id uuid);
+
+with inserted as (
+  insert into public.nudges (patient_id, kind, created_at)
+  select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', d.kind,
+         (((now() at time zone 'America/New_York')::date - d.days_ago) + d.at) at time zone 'America/New_York'
+  from demo_nudges d
+  order by d.ref
+  returning id, kind
+)
+insert into demo_nudge_ids select d.ref, i.id from inserted i join demo_nudges d on d.kind = i.kind;
+
+-- Today, 2 hours ago
+insert into public.nudges (patient_id, kind, created_at)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'miss_you', now() - interval '2 hours');
+insert into demo_nudge_ids
+select 6, id from public.nudges
+where patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and created_at > now() - interval '3 hours';
+
+insert into public.nudge_recipients (nudge_id, user_id, seen_at, reply_emoji, reply_text, replied_at)
+select n.id, r.user_id,
+       case when r.reply_emoji is not null then nu.created_at + r.after end,
+       r.reply_emoji, r.reply_text,
+       case when r.reply_emoji is not null then nu.created_at + r.after end
+from (values
+  (1, '22222222-2222-4222-8222-222222222222'::uuid, '❤️', 'Coming tonight with your blanket!', interval '4 minutes'),
+  (1, '33333333-3333-4333-8333-333333333333'::uuid, '🤗', null, interval '20 minutes'),
+  (2, '77777777-7777-4777-8777-777777777777'::uuid, '📞', 'Calling after school!', interval '2 hours'),
+  (3, '22222222-2222-4222-8222-222222222222'::uuid, '🤗', 'The biggest hug in the world', interval '3 minutes'),
+  (3, '33333333-3333-4333-8333-333333333333'::uuid, '🤗', null, interval '15 minutes'),
+  (4, '22222222-2222-4222-8222-222222222222'::uuid, '⭐', 'So proud of you, champ!', interval '6 minutes'),
+  (4, '33333333-3333-4333-8333-333333333333'::uuid, '⭐', null, interval '9 minutes'),
+  (4, '77777777-7777-4777-8777-777777777777'::uuid, '⭐', 'You rock!!', interval '40 minutes'),
+  (5, '77777777-7777-4777-8777-777777777777'::uuid, '📞', 'Calling in 5!', interval '2 minutes'),
+  (6, '22222222-2222-4222-8222-222222222222'::uuid, null, null, null),
+  (6, '33333333-3333-4333-8333-333333333333'::uuid, '❤️', 'Love you buddy, see you Saturday', interval '12 minutes')
+) as r(ref, user_id, reply_emoji, reply_text, after)
+join demo_nudge_ids n on n.ref = r.ref
+join public.nudges nu on nu.id = n.id;
+
+drop table demo_nudges;
+drop table demo_nudge_ids;
