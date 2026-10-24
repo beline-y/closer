@@ -1,7 +1,7 @@
-"""The daily job: read the store, assess, shield, decide, explain, write back.
+"""The daily job: read the store, assess, shield, decide, summarize, write back.
 
     signals (SQLite) -> features -> assessor (belief) -> shield (rules + Claude) -> RL agent
-                     -> Whittle index, distilled rule, explanation -> ai_assessments / ai_alerts
+                     -> Whittle index, distilled rule, daily summary -> ai_assessments / ai_alerts
 
 Run it every evening after the last check-ins (or more often: it is idempotent per day).
 """
@@ -69,7 +69,7 @@ class Decision:
     rule: list[str]
     alerts: list[dict]
     data_days: int
-    explanation: str
+    summary: str
 
 
 def _alert_reason(flag: SafetyFlag, where: str) -> str:
@@ -81,14 +81,47 @@ def _alert_reason(flag: SafetyFlag, where: str) -> str:
     return f"Safety rule: strong statement in today's {where}"
 
 
-def template_explanation(level_name: str, probs: np.ndarray, factors: list[dict], action: str,
-                         urgency: float | None) -> str:
+def template_summary(nickname: str, level_name: str, probs: np.ndarray, factors: list[dict], action: str,
+                     urgency: float | None) -> str:
     signals = "; ".join(f["text"] for f in factors) or "no single signal stands out"
-    text = f"{level_name.capitalize()} (P(distress) {probs[DISTRESS]:.0%}). Main signals: {signals}. Decision: {action}"
+    text = f"{nickname}: {level_name} (P(distress) {probs[DISTRESS]:.0%}). Main signals: {signals}. Decision: {action}"
     return text + (f" (urgency index {urgency:.2f})." if urgency is not None else ".")
 
 
-def decide(data: PatientData, assessor: Assessor, policy, reader=None, explainer=None, tree=None,
+def summary_facts(data: PatientData, probs: np.ndarray, t: int, factors: list[dict], action: int,
+                  urgency: float | None, rule: list[str], alerts: list[dict], day_of_stay: int) -> dict:
+    """What the summary may draw on: computed results plus what the care team can already read."""
+    h, profile = data.history, data.history.profile
+    today = h.days[t]
+    week = h.days[max(0, t - 6): t + 1]
+    known = [e for e in h.context if e.known_by(today.day)]
+    extras = {"feelings": list(today.feelings), "sleep": today.sleep_quality, "nightmares": today.nightmares,
+              "pain": today.pain, "worry": today.worry, "worry_topics": list(today.worry_topics),
+              "wants_to_talk": today.wants_to_talk or None, "meal": today.meal, "activity": today.activity}
+    return {
+        "child": {"nickname": data.nickname, "age": profile.age, "day_of_stay": day_of_stay,
+                  "interests": list(profile.interests), "family_linked": profile.has_family},
+        "assessment": {"level": level(probs[t]), "p_distress_today": round(float(probs[t][DISTRESS]), 2),
+                       "p_distress_3_days_ago": round(float(probs[max(0, t - 3)][DISTRESS]), 2),
+                       "main_signals": [f["text"] for f in factors]},
+        "last_7_days": {
+            "moods": [r.mood for r in week],
+            "days_with_family_contact": sum(r.family_contacts > 0 or any(v in ("parent", "sibling", "other_family")
+                                                                          for v in r.visits) for r in week),
+            "visits": [v for r in week for v in r.visits],
+        },
+        "today": {k: v for k, v in extras.items() if v not in (None, [])},
+        "recent_notes": [{"days_ago": t - k, "text": r.note} for k, r in enumerate(h.days) if r.note and t - k < 3],
+        "shared_drawings": [{"days_ago": t - k, "title": d.title, "emotion": d.emotion, "themes": list(d.themes)}
+                            for k, r in enumerate(h.days) if t - k < 7 for d in r.shared_drawings],
+        "care_context": {"now": sorted({e.kind for e in known if e.active_on(today.day)}),
+                         "coming": sorted({e.kind for e in known if e.starts_on > today.day})},
+        "decision": {"action": ACTIONS[action], "urgency_index": urgency, "rule_checked": rule},
+        "safety_alerts": [a["reason"] for a in alerts if a["source"] != "policy"],
+    }
+
+
+def decide(data: PatientData, assessor: Assessor, policy, reader=None, summarizer=None, tree=None,
            model_version: str = "") -> Decision:
     h = data.history
     t = len(h.days) - 1
@@ -138,38 +171,31 @@ def decide(data: PatientData, assessor: Assessor, policy, reader=None, explainer
         alerts.append({"source": "policy", "priority": ACTIONS[action], "reason": reason[:300],
                        "evidence": {"factors": factors, "urgency": urgency, "lambda": lam, "rule": rule}})
 
-    explanation = template_explanation(lvl, probs[t], factors, ACTIONS[action], urgency)
-    if explainer is not None:
-        facts = {
-            "age": profile.age, "day_of_stay": day_of_stay, "level": lvl,
-            "probabilities": {"stable": round(float(probs[t][0]), 2), "fragile": round(float(probs[t][1]), 2),
-                              "distress": round(float(probs[t][2]), 2)},
-            "main_signals": [f["text"] for f in factors], "decision": ACTIONS[action],
-            "urgency_index": urgency, "rule_checked": rule, "check_ins_last_7_days": int(sum(builder.ch["checked_in"][-7:])),
-            "safety_alerts": [a["reason"] for a in alerts if a["source"] != "policy"],
-        }
-        explanation = explainer.explain(facts) or explanation
+    summary = template_summary(data.nickname, lvl, probs[t], factors, ACTIONS[action], urgency)
+    if summarizer is not None:
+        facts = summary_facts(data, probs, t, factors, action, urgency, rule, alerts, day_of_stay)
+        summary = summarizer.summarize(facts) or summary
     for alert in alerts:
-        alert["evidence"]["explanation"] = explanation
+        alert["evidence"]["summary"] = summary
 
     return Decision(
         patient_id=profile.patient_id, nickname=data.nickname, for_date=today.day, probs=probs[t], level=lvl,
         factors=factors, action=ACTIONS[action], urgency=urgency, rule=rule, alerts=alerts,
-        data_days=int(sum(builder.ch["checked_in"][-7:])), explanation=explanation,
+        data_days=int(sum(builder.ch["checked_in"][-7:])), summary=summary,
     )
 
 
-def run_daily(store: Store, assessor: Assessor, policy, today: date, reader=None, explainer=None, tree=None,
+def run_daily(store: Store, assessor: Assessor, policy, today: date, reader=None, summarizer=None, tree=None,
               write: bool = True) -> list[Decision]:
     version = f"{assessor.version}+{getattr(policy, 'version', 'policy')}"
-    decisions = [decide(data, assessor, policy, reader, explainer, tree, version) for data in store.load(today)]
+    decisions = [decide(data, assessor, policy, reader, summarizer, tree, version) for data in store.load(today)]
     if write:
         for d in decisions:
             assessment_id = store.save_assessment({
                 "patient_id": d.patient_id, "for_date": d.for_date.isoformat(), "level": d.level,
                 "p_stable": float(d.probs[0]), "p_fragile": float(d.probs[1]), "p_distress": float(d.probs[2]),
                 "factors": d.factors, "data_days": d.data_days, "policy_action": d.action, "urgency": d.urgency,
-                "model_version": version,
+                "summary": d.summary, "model_version": version,
             })
             for alert in d.alerts:
                 store.save_alert(alert | {"patient_id": d.patient_id, "for_date": d.for_date.isoformat(),

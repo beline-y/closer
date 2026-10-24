@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 
-from closer_ai.claude import FALLBACK_BETA, MODEL, ClaudeExplainer, ClaudeReader, StoreCache
+from closer_ai.claude import FALLBACK_BETA, MODEL, ClaudeReader, ClaudeSummarizer, StoreCache
 from closer_ai.contract import ChildProfile, DayRecord
 from closer_ai.pipeline import ThresholdFallback, run_daily
 from closer_ai.policy.distill import TreePolicy
@@ -77,12 +77,12 @@ def test_second_reader_catches_what_the_lexicon_misses(assessor):
     assert not without.alerts
     client, _ = fake_client(("end_turn", reading("crisis", "suicidal_thoughts", sad=2)),
                             ("end_turn", "Jade wrote an indirect goodbye today; see her now."))
-    reader, explainer = ClaudeReader(client), ClaudeExplainer(client)
-    decision = run_daily(store, assessor, ThresholdFallback(0.99), TODAY, reader, explainer, write=False)[0]
+    reader, summarizer = ClaudeReader(client), ClaudeSummarizer(client)
+    decision = run_daily(store, assessor, ThresholdFallback(0.99), TODAY, reader, summarizer, write=False)[0]
     assert reader.calls == 1  # the features and the shield share one reading of the note
     assert decision.alerts[0]["priority"] == "urgent"
     assert decision.alerts[0]["evidence"]["detected_by"] == "claude"
-    assert decision.explanation.startswith("Jade wrote")
+    assert decision.summary.startswith("Jade wrote")
 
 
 class MonotonePolicy:
@@ -136,3 +136,24 @@ def test_access_check_reports_missing_credentials_without_raising():
                 raise TypeError("Could not resolve authentication method. Expected one of api_key")
 
     assert check_access(NoCredentials()) == "Could not resolve authentication method"
+
+
+def test_every_child_gets_a_stored_daily_summary(assessor):
+    from closer_ai.cli import seed_store
+
+    class Recorder:
+        def __init__(self):
+            self.facts = []
+
+        def summarize(self, facts):
+            self.facts.append(facts)
+            return f"{facts['child']['nickname']} is doing {facts['assessment']['level']}."
+
+    store = Store()
+    seed_store(store, 5, TODAY)
+    recorder = Recorder()
+    decisions = run_daily(store, assessor, ThresholdFallback(0.99), TODAY, summarizer=recorder)
+    assert len(recorder.facts) == 5 and all(d.summary.endswith(".") for d in decisions)
+    assert {"child", "assessment", "last_7_days", "recent_notes", "care_context", "decision"} <= set(recorder.facts[0])
+    stored = [row[0] for row in store.db.execute("SELECT summary FROM ai_assessments")]
+    assert sorted(stored) == sorted(d.summary for d in decisions)

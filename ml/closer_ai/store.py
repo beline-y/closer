@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS ai_assessments (
     data_days INTEGER NOT NULL,
     policy_action TEXT NOT NULL CHECK (policy_action IN ('wait', 'digest', 'priority', 'ask')),
     urgency REAL,
+    summary TEXT CHECK (length(summary) <= 2000),  -- the daily note the psychologist reads
     model_version TEXT NOT NULL,
     created_at TEXT NOT NULL,
     UNIQUE (patient_id, for_date, model_version)
@@ -321,14 +322,15 @@ class Store:
         with self.db:
             self.db.execute(
                 """INSERT INTO ai_assessments (patient_id, for_date, level, p_stable, p_fragile, p_distress, factors,
-                       data_days, policy_action, urgency, model_version, created_at)
+                       data_days, policy_action, urgency, summary, model_version, created_at)
                    VALUES (:patient_id, :for_date, :level, :p_stable, :p_fragile, :p_distress, :factors, :data_days,
-                       :policy_action, :urgency, :model_version, :created_at)
+                       :policy_action, :urgency, :summary, :model_version, :created_at)
                    ON CONFLICT (patient_id, for_date, model_version) DO UPDATE SET
                        level = excluded.level, p_stable = excluded.p_stable, p_fragile = excluded.p_fragile,
                        p_distress = excluded.p_distress, factors = excluded.factors, data_days = excluded.data_days,
-                       policy_action = excluded.policy_action, urgency = excluded.urgency, created_at = excluded.created_at""",
-                row | {"factors": json.dumps(row["factors"]), "created_at": _now()},
+                       policy_action = excluded.policy_action, urgency = excluded.urgency, summary = excluded.summary,
+                       created_at = excluded.created_at""",
+                {"summary": None} | row | {"factors": json.dumps(row["factors"]), "created_at": _now()},
             )
             return self.db.execute(
                 "SELECT id FROM ai_assessments WHERE patient_id = ? AND for_date = ? AND model_version = ?",

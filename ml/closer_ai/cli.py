@@ -105,26 +105,25 @@ def _components(store, use_claude: bool, language: str):
     policy, _ = load_policy(ARTIFACTS)
     tree_path = ARTIFACTS / "policy_tree.joblib"
     tree = TreePolicy.load(tree_path) if tree_path.exists() else None
-    reader = explainer = None
+    reader = summarizer = None
     if use_claude:
-        from .claude import ClaudeExplainer, ClaudeReader, StoreCache, check_access
+        from .claude import ClaudeReader, ClaudeSummarizer, StoreCache, check_access
 
         problem = check_access()
         if problem:
-            print(f"Claude unavailable ({problem}): running with the lexicon and template explanations.")
+            print(f"Claude unavailable ({problem}): running with the lexicon and template summaries.")
         else:
             reader = ClaudeReader(cache=StoreCache(store))
-            explainer = ClaudeExplainer(language=language)
-    return assessor, policy, tree, reader, explainer
+            summarizer = ClaudeSummarizer(language=language)
+    return assessor, policy, tree, reader, summarizer
 
 
 def print_digest(decisions, truth: dict | None = None) -> None:
+    """Alerted children first, then everyone else, each with their daily summary."""
     names = {0: "stable", 1: "fragile", 2: "distress"}
     alerted = [d for d in decisions if d.alerts]
     print(f"\n{len(alerted)} of {len(decisions)} children flagged for the psychologist today\n")
     for d in decisions:
-        if not d.alerts and truth is None:
-            continue
         head = max(d.alerts, key=lambda a: {"digest": 0, "priority": 1, "urgent": 2}[a["priority"]]) if d.alerts else None
         tag = head["priority"].upper() if head else "-"
         line = f"[{tag:8}] {d.nickname} ({d.patient_id}) | {d.level}, P(distress) {d.probs[2]:.0%} | action: {d.action}"
@@ -133,8 +132,7 @@ def print_digest(decisions, truth: dict | None = None) -> None:
         print(line)
         for alert in d.alerts:
             print(f"           - {alert['reason']}")
-        if d.alerts:
-            print(f"           why: {d.explanation}")
+        print(f"           summary: {d.summary}")
         if d.rule:
             print(f"           rule: {' and '.join(d.rule)}")
         if truth is not None:
@@ -149,8 +147,8 @@ def _run(args) -> None:
     from .store import Store
 
     store = Store(args.db)
-    assessor, policy, tree, reader, explainer = _components(store, args.claude, args.language)
-    decisions = run_daily(store, assessor, policy, _today(args.date), reader, explainer, tree, write=not args.dry_run)
+    assessor, policy, tree, reader, summarizer = _components(store, args.claude, args.language)
+    decisions = run_daily(store, assessor, policy, _today(args.date), reader, summarizer, tree, write=not args.dry_run)
     print_digest(decisions)
     if reader:
         print(f"\nClaude readings this run: {reader.calls} (cached readings are reused)")
@@ -163,8 +161,8 @@ def _demo(args) -> None:
     store = Store(":memory:")
     today = _today(args.date)
     truth = seed_store(store, args.children, today, args.seed)
-    assessor, policy, tree, reader, explainer = _components(store, args.claude, args.language)
-    decisions = run_daily(store, assessor, policy, today, reader, explainer, tree)
+    assessor, policy, tree, reader, summarizer = _components(store, args.claude, args.language)
+    decisions = run_daily(store, assessor, policy, today, reader, summarizer, tree)
     print_digest(decisions, truth)
 
 
@@ -256,15 +254,15 @@ def main(argv: list[str] | None = None) -> None:
         if name == "seed":
             p.add_argument("--db", default=str(DEFAULT_DB))
         else:
-            p.add_argument("--claude", action="store_true", help="Claude reads notes and explains decisions")
-            p.add_argument("--language", default="English", help="language of Claude's explanations")
+            p.add_argument("--claude", action="store_true", help="Claude reads notes and writes each child's daily summary")
+            p.add_argument("--language", default="English", help="language of the daily summaries")
         p.set_defaults(func=func)
 
     p = sub.add_parser("run", help="the daily job: assess every child, raise alerts, write them to the store")
     p.add_argument("--db", default=str(DEFAULT_DB))
     p.add_argument("--date", help="YYYY-MM-DD, default today")
-    p.add_argument("--claude", action="store_true", help="Claude reads notes and explains decisions")
-    p.add_argument("--language", default="English", help="language of Claude's explanations")
+    p.add_argument("--claude", action="store_true", help="Claude reads notes and writes each child's daily summary")
+    p.add_argument("--language", default="English", help="language of the daily summaries")
     p.add_argument("--dry-run", action="store_true", help="print decisions without writing them")
     p.set_defaults(func=_run)
 
