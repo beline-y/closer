@@ -12,6 +12,7 @@
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
     "db:seed": "supabase db push && supabase db query --linked -f supabase/seed.sql",
+    "db:test": "node scripts/db-test.mjs",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
