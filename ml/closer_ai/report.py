@@ -127,7 +127,7 @@ def build_report(artifacts: Path, out_md: Path, budget: float = 0.4, n_val: int 
     rep = assessor_report(assessor, n_children=200 if quick else 800)
     X, y, _, _ = assessor_dataset(500 if quick else 4000, seed=0, randomize=True, workers=workers)
     Xt, yt, _, _ = assessor_dataset(200 if quick else 800, seed=TEST_SEED, randomize=False, workers=workers)
-    gbt = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05).fit(X, y).predict_proba(Xt)
+    gbt = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05, random_state=0).fit(X, y).predict_proba(Xt)
     a = out["assessor"] = rep | {
         "gbt_auc_distress": roc_auc_score(yt == DISTRESS, gbt[:, DISTRESS]),
         "gbt_auc_fragile_or_distress": roc_auc_score(yt >= FRAGILE, gbt[:, FRAGILE] + gbt[:, DISTRESS]),
@@ -247,6 +247,17 @@ def build_report(artifacts: Path, out_md: Path, budget: float = 0.4, n_val: int 
                "Each method traces workload against harm as its knob moves: the threshold tau, or for the RL agent "
                "the price of an alert lambda (one network, every point).", "",
                f"![{title}]({chart.name})", "",
+               "Unsupported distress days per child-week at equal workload, read off each curve (linear interpolation "
+               "between measured points; best in bold):", "",
+               "| Workload / child-week | Threshold | Threshold + questions | RL agent without questions | RL agent |",
+               "|---|---|---|---|---|"]
+        out["at_equal_workload"] = {}
+        for b in (0.15, 0.2, 0.3, 0.4, 0.5):
+            row = [at_budget([(w, h) for _, w, h in fronts[k]], b)
+                   for k in ("threshold", "threshold_ask", "ppo_no_ask", "ppo")]
+            out["at_equal_workload"][b] = row
+            md.append(f"| {b:.2f} | " + " | ".join(f"**{h:.3f}**" if h == min(row) else f"{h:.3f}" for h in row) + " |")
+        md += ["", "All measured points:", "",
                "| Method | Knob | Workload / child-week | Unsupported distress days / child-week |", "|---|---|---|---|"]
         for key, rows in fronts.items():
             md += [f"| {labels[key][0]} | {labels[key][1]}={knob:.2f} | {load:.2f} | {harm:.3f} |" for knob, load, harm in rows]

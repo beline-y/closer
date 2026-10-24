@@ -16,7 +16,7 @@ SERIES = (  # front key, label, light, dark: fixed slot order, color follows the
     ("threshold_ask", "Threshold + questions", "#1baf7a", "#199e70"),
     ("ppo_no_ask", "RL agent without questions", "#eda100", "#c98500"),
 )
-LABELLED = ("ppo", "threshold")  # direct end labels for the two series the story compares
+END_LABELS = {"ppo": "RL agent", "threshold": "Threshold"}  # short direct labels; the legend has full names
 
 STYLE = """
 svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
@@ -115,9 +115,9 @@ def tradeoff_svg(fronts: dict[str, list[tuple[float, float, float]]], budget: fl
             out.append(f'<circle class="dot f-{key}" cx="{sx(load):.1f}" cy="{sy(harm):.1f}" r="4.5">'
                        f"<title>{escape(label)}, {knob}={value:.2f}: workload {load:.2f}, "
                        f"{harm:.3f} unsupported distress days per child-week</title></circle>")
-        if key in LABELLED:
+        if key in END_LABELS:
             load, harm, _ = rows[-1]
-            out.append(f'<text class="end" x="{sx(load) + 10:.1f}" y="{sy(harm) + 4:.1f}">{escape(label)}</text>')
+            out.append(f'<text class="end" x="{sx(load) + 10:.1f}" y="{sy(harm) + 4:.1f}">{END_LABELS[key]}</text>')
     if reference and reference[1] <= x_max:
         label, load, harm = reference
         out.append(f'<circle class="ref" cx="{sx(load):.1f}" cy="{sy(harm):.1f}" r="5">'
