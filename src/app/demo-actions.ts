@@ -39,6 +39,6 @@ export async function signInAsDemoRole(_prev: DemoSignInState, formData: FormDat
 // of the previous persona stays in memory (Next keeps visited pages in <Activity>).
 export async function switchRole(): Promise<string> {
   const supabase = await createClient();
-  await supabase.auth.signOut({ scope: "local" });
+  await supabase.auth.signOut();
   return isDemoMode() ? "/" : "/login";
 }
