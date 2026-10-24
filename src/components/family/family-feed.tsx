@@ -3,22 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FeedItem } from "@/components/kit/feed-item";
-import { MoodDot } from "@/components/kit/mood-dot";
+import { CheckInCard } from "@/components/checkin-card";
+import { ReactionBar } from "@/components/reaction-bar";
 import { CAST } from "@/lib/cast";
+import type { CheckInView } from "@/lib/data/checkins";
 import { relativeDay } from "@/lib/dates";
-import { CHECKINS, COMFORT_CARDS, MEMORIES, QUICK_REPLIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
-import { PATIENT_IDS } from "@/lib/cast";
-import { cn } from "@/lib/utils";
+import { COMFORT_CARDS, MEMORIES, QUICK_REPLIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 
-const CHECKIN_REACTIONS = ["❤️", "🤗", "⭐", "💪"];
-
-// Emma's home. Nudges stay pinned on top until answered.
-// Saved for this visit only; Realtime arrives with the nudges and check-in features.
-export function FamilyFeed() {
+// Emma's home. Check-ins are real and live (see the page); nudges, the volunteer request,
+// memories and cards are still placeholder data until their features land.
+export function FamilyFeed({ checkins, me }: { checkins: CheckInView[]; me: string }) {
   const [reply, setReply] = useState<string | null>(null);
-  const [reaction, setReaction] = useState<string | null>(null);
   const [request, setRequest] = useState<"pending" | "approved" | "declined">("pending");
-  const checkin = CHECKINS[PATIENT_IDS.leo][0];
   const opened = COMFORT_CARDS.find((c) => c.from === "emma" && !c.sealed);
   const memory = MEMORIES.find((m) => m.by !== "emma");
   const maya = VOLUNTEER_STORIES.maya;
@@ -68,29 +64,21 @@ export function FamilyFeed() {
         Dad answered today&apos;s question. Answer to see it: “{TODAY_QUESTION.text}”
       </Link>
 
-      <FeedItem person={CAST.leo} when={`Today, ${checkin.time}`} line={<><strong>Leo</strong> checked in</>}>
-        <div className="flex flex-col gap-2 rounded-2xl bg-role-patient-soft p-3">
-          <MoodDot value={checkin.mood} className="text-lg font-bold" />
-          {checkin.note && <p className="text-lg">“{checkin.note}”</p>}
-          <p className="text-sm text-muted-foreground">
-            {checkin.activity} · Ate {checkin.meal?.toLowerCase()}
-          </p>
-        </div>
-        <div role="group" aria-label="React to the check-in" className="flex gap-2">
-          {CHECKIN_REACTIONS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              aria-pressed={reaction === e}
-              aria-label={`React ${e}`}
-              onClick={() => setReaction(reaction === e ? null : e)}
-              className={cn("flex size-12 items-center justify-center rounded-full text-xl transition active:scale-90", reaction === e ? "bg-role-family-soft ring-2 ring-role-family" : "bg-muted")}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
-      </FeedItem>
+      {checkins.length === 0 && (
+        <p className="rounded-2xl bg-muted px-4 py-3 text-muted-foreground">Leo hasn&apos;t checked in this week yet. You&apos;ll see it here as soon as he does 💛</p>
+      )}
+      {checkins.map((c) => (
+        <FeedItem
+          key={c.id}
+          person={CAST.leo}
+          when={`${relativeDay(c.daysAgo)}, ${c.time}`}
+          line={<><strong>Leo</strong> checked in</>}
+        >
+          <CheckInCard checkin={c}>
+            <ReactionBar checkinId={c.id} reactions={c.reactions} me={me} />
+          </CheckInCard>
+        </FeedItem>
+      ))}
 
       {memory && (
         <FeedItem person={CAST[memory.by]} when={relativeDay(memory.sharedDaysAgo)} line={<><strong>{CAST[memory.by].name}</strong> shared a memory</>}>

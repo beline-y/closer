@@ -106,7 +106,7 @@ npm run db:test                       # RLS tests
 
 Then commit the migration file and the regenerated types in your PR.
 
-Seed data (`supabase/seed.sql`, fictional only) is applied with `npm run db:seed` (pending migrations, then the whole seed file). It's safe to re-run: it resets the demo cast and their data.
+Seed data (`supabase/seed.sql`, fictional only) is applied with `npm run db:seed`: pending migrations, then the whole seed file, then the fictional check-in photos from `supabase/seed-photos/` (uploaded as Leo by `scripts/seed-photos.mjs`, which needs `DEMO_PATIENT_PIN` in `.env.local`). It's safe to re-run: it resets the demo cast and their data, relative to today.
 
 Rules:
 
@@ -121,7 +121,7 @@ Rules:
 | `npm run check` | Lint + typecheck. Run it before every commit. |
 | `npm run build` | Production build (CI also runs this) |
 | `npm run db:push` | Apply new migrations to the dev project |
-| `npm run db:seed` | Apply migrations + seed data |
+| `npm run db:seed` | Apply migrations + seed data + seed photos |
 | `npm run db:test` | Run the pgTAP RLS tests in `supabase/tests/` on the dev project (rolled back, writes nothing) |
 | `npm run db:types` | Regenerate `database.types.ts` |
 
