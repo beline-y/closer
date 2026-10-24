@@ -20,7 +20,7 @@ No space on your machine? Use **GitHub Codespaces** (see below).
 ## Setup (about 5 minutes)
 
 ```bash
-git clone https://github.com/<owner>/closer.git
+git clone https://github.com/beline-y/closer.git
 cd closer
 npm install
 cp .env.example .env.local
