@@ -11,6 +11,11 @@ and media. Three things keep the problem honest:
 - treatment fatigue lowers mood and activity without any psychological distress;
 - some children mask distress behind good moods and cheerful notes.
 
+The nurse's round adds a second, independent view: brief and often skipped, but less
+fooled by masking. What a child eats depends on the menu as much as on their mood, so
+the ward's intake of the same dish is the baseline. Some children's app usage is not
+tracked at all.
+
 Randomness uses one stream per (child, day, purpose), so two policies that leave a child
 in the same state see the same future draws (common random numbers).
 """
@@ -22,7 +27,10 @@ from datetime import date, timedelta
 
 import numpy as np
 
-from .contract import ChildHistory, ChildProfile, ContextEvent, DayRecord, Drawing, MediaLog, interest_groups
+from .contract import (
+    INTAKE_SCORE, WARD_MEALS, ChildHistory, ChildProfile, ContextEvent, DayRecord, Drawing, MediaLog, NurseObservation,
+    WardMeal, interest_groups,
+)
 from .notes_gen import generate_note
 
 STABLE, FRAGILE, DISTRESS = 0, 1, 2
@@ -46,6 +54,16 @@ _DRAWING_TITLES = {
     "sport": {"fr": ["un match de foot"], "en": ["a soccer game"]},
     "food": {"fr": ["une pizza"], "en": ["a pizza"]},
     "other": {"fr": ["un dessin"], "en": ["a drawing"]},
+}
+# Hospital dishes and how much children like them (shifts everyone's intake that day).
+_DISHES = {
+    "lunch": [({"fr": "pâtes bolognaise", "en": "pasta bolognese"}, 0.7), ({"fr": "poisson et riz", "en": "fish and rice"}, -0.6),
+              ({"fr": "poulet frites", "en": "chicken and fries"}, 0.8), ({"fr": "lentilles", "en": "lentil stew"}, -0.5),
+              ({"fr": "lasagnes", "en": "lasagna"}, 0.5), ({"fr": "quiche aux épinards", "en": "spinach quiche"}, -0.7),
+              ({"fr": "steak haché purée", "en": "burger and mash"}, 0.4), ({"fr": "omelette", "en": "omelette"}, 0.0)],
+    "dinner": [({"fr": "soupe de légumes", "en": "vegetable soup"}, -0.6), ({"fr": "pizza", "en": "pizza"}, 0.9),
+               ({"fr": "jambon coquillettes", "en": "ham and pasta"}, 0.6), ({"fr": "gratin de courgettes", "en": "zucchini gratin"}, -0.5),
+               ({"fr": "croque-monsieur", "en": "grilled cheese"}, 0.5), ({"fr": "riz cantonais", "en": "fried rice"}, 0.2)],
 }
 _ACTIVITY_LINKS = {"drawing": ("crafts",), "sport": ("sport", "walk"), "nature": ("walk",), "games": ("play",),
                    "school": ("school",)}
@@ -75,6 +93,9 @@ class SimConfig:
     note_scale: float = 1.0
     intervention_effect: float = 1.5
     intervention_days: int = 5
+    nurse_rate: tuple[float, float] = (0.45, 0.95)  # share of days with a nurse observation, per child
+    nurse_masking: float = 0.5  # share of their distress a masking child still shows the nurse
+    untracked_share: float = 0.2  # children whose app usage data never reaches the store
 
     def randomized(self, rng: np.random.Generator) -> SimConfig:
         """Domain randomization over the parameters we are least sure about."""
@@ -88,6 +109,10 @@ class SimConfig:
             note_scale=float(rng.uniform(0.6, 1.4)),
             intervention_effect=float(rng.uniform(0.8, 2.0)),
         )
+
+    def randomized_ward(self, rng: np.random.Generator) -> SimConfig:
+        """Same idea for the nurse's round and the app data, from a stream of their own."""
+        return replace(self, nurse_masking=float(rng.uniform(0.3, 0.8)), untracked_share=float(rng.uniform(0.05, 0.4)))
 
 
 @dataclass
@@ -123,6 +148,13 @@ class ChildParams:
 
 
 @dataclass
+class WardParams:
+    nurse_rate: float
+    appetite: float
+    tracked: bool
+
+
+@dataclass
 class Truth:
     """What really happened, hidden from the policy: used for rewards and metrics."""
 
@@ -149,6 +181,14 @@ class ChildSimulator:
         rng = np.random.default_rng([self.seed, 1_000_000])
         self.config = self.base_config.randomized(rng) if randomize else self.base_config
         self.params = self._sample_child(rng)
+        # Separate stream: adding the ward side left every child's own draws unchanged.
+        ward_rng = np.random.default_rng([self.seed, 1_000_001])
+        if randomize:
+            self.config = self.config.randomized_ward(ward_rng)
+        self.ward = WardParams(
+            nurse_rate=float(ward_rng.uniform(*self.config.nurse_rate)), appetite=float(ward_rng.normal(0, 0.4)),
+            tracked=bool(ward_rng.random() >= self.config.untracked_share),
+        )
         p = self.params
         self.groups = interest_groups(p.interests)
         self.profile = ChildProfile(
@@ -263,8 +303,16 @@ class ChildSimulator:
         record = self._observe(day, z, w, pain, fatigue, visitors, big_today, big_tomorrow, isolation)
         if t in self._pending_screening:
             record.screening = float(np.clip(self._rng(t, 5).normal((0.15, 0.45, 0.75)[z], 0.12), 0, 1))
+        record.ward_meals, popularity = self._menu(day)
+        record.nurse = self._nurse(day, z, pain, fatigue, big_today, isolation, popularity)
         contact = record.family_contacts > 0 or family_visit
         self._days_without_family = 0 if contact else self._days_without_family + 1
+        if not self.ward.tracked:  # the child still lives it; the store just never hears about it
+            record.engagement_known = False
+            record.minutes_in_app = record.night_minutes = 0.0
+            record.nudges_sent = record.nudge_replies = record.cards_opened = 0
+            record.family_contacts = record.friend_contacts = 0
+            record.question_answered = False
         self.history.days.append(record)
         return record
 
@@ -414,6 +462,65 @@ class ChildSimulator:
             for _ in range(int(rng.poisson(p.media_rate * (1.0, 1.1, 1.2)[z] * (1 + 0.3 * fatigue))))
         )
         return rec
+
+    def _menu(self, day: date) -> tuple[tuple[WardMeal, ...], dict[str, float]]:
+        """Today's dishes and the leave-one-out intake of ten other children (mostly stable)."""
+        rng = self._rng(self.t, 7)
+        meals, popularity = [], {}
+        for meal in WARD_MEALS:
+            names, liked = _DISHES[meal][int(rng.integers(len(_DISHES[meal])))]
+            popularity[meal] = liked + float(rng.normal(0, 0.2))
+            others = []
+            for _ in range(10):
+                if rng.random() < 0.7:  # observed by the nurse
+                    v = float(rng.choice([0.0, 1.0, 2.0], p=[0.8, 0.16, 0.04]))
+                    others.append(self._eaten(rng, rng.normal(0, 0.4) + popularity[meal], v, 2.0, 0.15))
+            intake = float(np.mean([INTAKE_SCORE[o] for o in others])) if others else None
+            meals.append(WardMeal(meal, names[self.params.lang], intake))
+        return tuple(meals), popularity
+
+    @staticmethod
+    def _eaten(rng, appetite: float, shown: float, pain: float, fatigue: float) -> str:
+        s = 0.9 + appetite - 0.45 * shown - 0.12 * max(pain - 3, 0) - 1.2 * fatigue + rng.normal(0, 0.6)
+        return "all" if s > 0.6 else "half" if s > -0.2 else "little" if s > -1.0 else "none"
+
+    def _nurse(self, day: date, z: int, pain: float, fatigue: float, big_today: bool, isolation: bool,
+               popularity: dict[str, float]) -> NurseObservation | None:
+        """The nurse's round: brief, partial, and less fooled by masking than the app."""
+        p, rng = self.params, self._rng(self.t, 6)
+        if rng.random() >= self.ward.nurse_rate * (0.7 if day.weekday() >= 5 else 1.0):
+            return None
+        shown = (0.0, 1.0, 2.0)[z] * (self.config.nurse_masking if p.masking else 1.0) - 0.8 * self._eps
+        shown = max(0.0, shown + float(rng.normal(0, 0.5)))
+        chances = {
+            "calm": _sigmoid(0.6 - 1.1 * shown - 0.8 * big_today),
+            "cheerful": _sigmoid(0.2 - 1.3 * shown - 1.5 * fatigue),
+            "sad": _sigmoid(-3.2 + 1.3 * shown),
+            "tearful": _sigmoid(-4.2 + 1.2 * shown + 0.8 * big_today),
+            "anxious": _sigmoid(-3.0 + 0.8 * shown + 1.5 * big_today),
+            "withdrawn": _sigmoid(-3.6 + 1.3 * shown + 2.0 * fatigue),  # fatigue looks the same from the door
+            "irritable": _sigmoid(-3.4 + 0.8 * shown + 0.15 * pain),
+            "agitated": _sigmoid(-4.5 + 0.8 * shown),
+            "tired": _sigmoid(-2.2 + 4.0 * fatigue + 0.1 * pain),
+        }
+        ticked = [name for name, chance in chances.items() if rng.random() < chance]
+        affect = tuple(sorted(rng.permutation(ticked)[:3].tolist())) if ticked else ()
+        s = 1.0 - 0.6 * shown - 1.2 * fatigue - 0.08 * pain + rng.normal(0, 0.7)
+        engagement = ("engaged" if s > 0.2 else "quiet" if s > -0.9 else "refuses") if rng.random() < 0.8 else None
+        q = 0.8 - 0.4 * z - 0.12 * pain - 0.3 * isolation + rng.normal(0, 0.7)
+        sleep = ("good" if q > 0.2 else "restless" if q > -0.6 else "poor") if rng.random() < 0.6 else None
+        eaten = {}
+        for meal in WARD_MEALS:
+            if meal == "lunch" and big_today and rng.random() < 0.4:
+                eaten[meal] = "fasting"
+            elif rng.random() < 0.85:
+                eaten[meal] = self._eaten(rng, self.ward.appetite + popularity[meal], shown, pain, fatigue)
+        return NurseObservation(
+            lunch=eaten.get("lunch"), dinner=eaten.get("dinner"), affect=affect, engagement=engagement,
+            pain=int(np.clip(round(pain + rng.normal(0, 0.8)), 0, 10)) if rng.random() < 0.7 else None,
+            night_sleep=sleep, refused_care=bool(rng.random() < _sigmoid(-4.5 + 0.9 * shown + 0.8 * big_today)),
+            asks_psychologist=bool(rng.random() < _sigmoid(-6.0 + 1.9 * shown)),
+        )
 
     def _feelings(self, rng, z: int, big_tomorrow: bool, lonely: bool, fatigue: float) -> tuple[str, ...]:
         pool = {

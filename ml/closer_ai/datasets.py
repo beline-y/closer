@@ -10,16 +10,20 @@ from .features import build
 from .simulator import SimConfig, simulate_stay
 
 
-def _child_rows(args: tuple[int, SimConfig | None, bool]) -> tuple[np.ndarray, np.ndarray, int]:
+def _child_rows(args: tuple[int, SimConfig | None, bool]) -> tuple[np.ndarray, np.ndarray, int, bool]:
     seed, config, randomize = args
     sim = simulate_stay(seed, config, randomize)
-    return build(sim.history).matrix(), np.array(sim.truth.states), sim.profile.age
+    return build(sim.history).matrix(), np.array(sim.truth.states), sim.profile.age, sim.params.masking
 
 
 def assessor_dataset(
     n_children: int, seed: int = 0, config: SimConfig | None = None, randomize: bool = True, workers: int = 8,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Feature rows, hidden states, child index and age for `n_children` simulated stays (no AI alerts)."""
+    with_masking: bool = False,
+) -> tuple[np.ndarray, ...]:
+    """Feature rows, hidden states, child index and age for `n_children` simulated stays (no AI alerts).
+
+    with_masking adds a fifth array: whether the row's child hides distress behind good moods.
+    """
     jobs = [(seed + i, config, randomize) for i in range(n_children)]
     if workers > 1:
         with ProcessPoolExecutor(workers) as pool:
@@ -30,4 +34,6 @@ def assessor_dataset(
     y = np.concatenate([r[1] for r in results])
     child = np.concatenate([np.full(len(r[1]), i) for i, r in enumerate(results)])
     age = np.concatenate([np.full(len(r[1]), r[2]) for r in results])
+    if with_masking:
+        return X, y, child, age, np.concatenate([np.full(len(r[1]), r[3]) for r in results])
     return X, y, child, age

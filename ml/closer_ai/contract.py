@@ -1,9 +1,10 @@
-"""Data contract shared by the simulator and the Supabase source.
+"""Data contract shared by the simulator, the store and the app bridge.
 
 A child is one ChildHistory: a small profile, one DayRecord per local day (contiguous,
 empty days included) and the care context events entered so far. Every field maps to a
-column the care team can already see (docs/SPEC.md, "AI wellbeing analysis"). Comfort
-cards, question answers, photos and unshared drawings never reach the model.
+column the care team can already see (docs/SPEC.md, "AI wellbeing analysis"), or to what
+the nurse notes on the daily round. Comfort cards, question answers, photos and unshared
+drawings never reach the model.
 """
 
 from __future__ import annotations
@@ -31,6 +32,15 @@ CONTEXT_KINDS = (
     "big_day", "isolation", "room_change", "roommate_left", "discharge_planned", "visit_restrictions",
 )
 LEVELS = ("stable", "fragile", "distress")
+# The nurse's round. "fasting" means nothing by mouth (before a procedure), so it says nothing about appetite.
+WARD_MEALS = ("lunch", "dinner")
+INTAKE = ("all", "half", "little", "none", "fasting")
+INTAKE_SCORE = {"all": 1.0, "half": 0.5, "little": 0.2, "none": 0.0}
+AFFECTS_POSITIVE = ("calm", "cheerful")
+AFFECTS_NEGATIVE = ("sad", "tearful", "anxious", "withdrawn", "irritable", "agitated")
+AFFECTS = AFFECTS_POSITIVE + AFFECTS_NEGATIVE + ("tired",)
+ENGAGEMENT = ("engaged", "quiet", "refuses")
+NIGHT_SLEEP = ("good", "restless", "poor")
 
 
 @dataclass(frozen=True)
@@ -69,6 +79,38 @@ class ContextEvent:
         return self.known_on is None or self.known_on <= day
 
 
+@dataclass(frozen=True)
+class NurseObservation:
+    """What the nurse saw today. Every field is optional: a quick round still counts."""
+
+    lunch: str | None = None  # INTAKE: how much of the ward's lunch the child ate
+    dinner: str | None = None
+    affect: tuple[str, ...] = ()  # AFFECTS: how the child looked
+    engagement: str | None = None  # ENGAGEMENT: with the care team during care
+    pain: int | None = None  # 0..10, the nurse's pain score
+    night_sleep: str | None = None  # NIGHT_SLEEP, from the night shift
+    refused_care: bool = False
+    asks_psychologist: bool = False  # "I'd like the psychologist to see this child"
+    note: str | None = None  # <= 280 characters
+
+    def intakes(self) -> list[tuple[str, float]]:
+        """(meal, share eaten) for the meals the child was served; fasting meals are left out."""
+        return [(meal, INTAKE_SCORE[value]) for meal, value in (("lunch", self.lunch), ("dinner", self.dinner))
+                if value in INTAKE_SCORE]
+
+
+@dataclass(frozen=True)
+class WardMeal:
+    """One meal of the ward's menu, and how much the other observed children ate of it (0..1).
+
+    A child who eats little on a day nobody liked the fish is not a child losing appetite.
+    """
+
+    meal: str  # WARD_MEALS
+    dish: str | None = None
+    ward_intake: float | None = None
+
+
 @dataclass
 class DayRecord:
     day: date
@@ -91,6 +133,7 @@ class DayRecord:
     nudge_replies: int = 0
     cards_opened: int = 0
     question_answered: bool = False
+    engagement_known: bool = True  # False when the app sent no usage data that day (the fields above are unknown)
     # People around the child
     family_contacts: int = 0
     friend_contacts: int = 0
@@ -101,6 +144,9 @@ class DayRecord:
     media: tuple[MediaLog, ...] = ()
     # Validated scale chosen by the psychologist, normalized to 0..1 (higher = more distress)
     screening: float | None = None
+    # The nurse's round and the ward's menu
+    nurse: NurseObservation | None = None
+    ward_meals: tuple[WardMeal, ...] = ()
 
     @property
     def checked_in(self) -> bool:

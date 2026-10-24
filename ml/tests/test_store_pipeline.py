@@ -1,6 +1,6 @@
 import sqlite3
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -55,7 +55,7 @@ def test_alerts_are_idempotent_and_reviews_become_psy_contacts():
     assert store.save_alert(alert) and not store.save_alert(alert)
     alert_id = store.alerts()[0]["id"]
     store.review_alert(alert_id, "support_needed", "Dr. Martin")
-    state = store.load(TODAY)[0].state
+    state = store.load(TODAY + timedelta(days=1))[0].state  # today's own alerts are raised again by today's run
     assert state.alerts and state.psy_contacts
     assert store.labels()[0]["outcome"] == "support_needed"
 
