@@ -63,3 +63,21 @@ def test_every_feature_can_be_described():
     for name in FEATURES:
         assert describe(name, 1.0)
         assert describe(name, math.nan)
+
+
+def test_simulation_does_not_depend_on_hash_order():
+    """Paired comparisons rely on identical children in every process, whatever PYTHONHASHSEED is."""
+    import os
+    import subprocess
+    import sys
+
+    code = ("from closer_ai.simulator import simulate_stay\n"
+            "for s in range(5):\n"
+            "    sim = simulate_stay(s)\n"
+            "    print([(d.mood, d.activity, d.note, len(d.media)) for d in sim.history.days])")
+    outputs = {
+        subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True,
+                       env=os.environ | {"PYTHONHASHSEED": seed}).stdout
+        for seed in ("1", "2")
+    }
+    assert len(outputs) == 1

@@ -436,7 +436,7 @@ class ChildSimulator:
         return tuple(rng.choice(names, size=k, replace=False, p=weights / weights.sum()).tolist())
 
     def _activity(self, rng, z: int, visited: bool, engaged: float, fatigue: float) -> str:
-        linked = [a for g in self.groups for a in _ACTIVITY_LINKS.get(g, ())]
+        linked = [a for g in sorted(self.groups) for a in _ACTIVITY_LINKS.get(g, ())]
         if rng.random() < 0.5 * fatigue:
             return "rest"
         if linked and rng.random() < engaged:
@@ -449,7 +449,7 @@ class ChildSimulator:
         return str(rng.choice(options))
 
     def _themes(self, rng, z: int, lonely: bool, engaged: float) -> tuple[str, ...]:
-        linked = [t for g in self.groups for t in _THEME_LINKS.get(g, ())]
+        linked = [t for g in sorted(self.groups) for t in _THEME_LINKS.get(g, ())]
         if linked and rng.random() < engaged:
             return (str(rng.choice(linked)),)
         pool = [("animals", "nature", "family", "superheroes", "friends", "food", "monsters", "home"),
@@ -462,7 +462,7 @@ class ChildSimulator:
 
     def _media(self, rng, z: int, w: float, isolation: bool, visited: bool, engaged: float) -> MediaLog:
         p = self.params
-        linked = [k for g in self.groups for k in _MEDIA_LINKS.get(g, ())]
+        linked = [k for g in sorted(self.groups) for k in _MEDIA_LINKS.get(g, ())]
         if linked and rng.random() < engaged:
             kind = str(rng.choice(linked))
         elif p.age <= 9:
