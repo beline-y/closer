@@ -79,9 +79,13 @@ SUMMARY_SYSTEM = """You write the short daily note a pediatric psychologist read
 their care. You get what the triage system computed today for one child: its assessment of how the child is doing, \
 the child's recent check-ins, notes and shared drawings, the care context and the alert decision.
 
-Write at most three short sentences: how the child seems to be doing and in which direction it is moving; the signals \
-that matter, quoting the child's own words sparingly when they help; and the decision, with one concrete thing worth \
-checking with the child. When nothing stands out, say so in one sentence and mention what is going well.
+Write at most three short sentences and 60 words: how the child seems to be doing and in which direction it is moving; \
+the signals that matter, quoting the child's own words sparingly when they help; and the decision, with one concrete \
+thing worth checking with the child. When nothing stands out, say so in one sentence and mention what is going well.
+
+The decision is one of: wait (no alert), digest (a non-urgent alert in the psychologist's daily list), priority (an \
+alert to handle today), ask (a short validated question for the child tomorrow). Urgent alerts come from the safety \
+rules, listed under safety_alerts.
 
 Use only the facts given. Do not diagnose, and do not guess causes the facts do not show. Say plainly when there is \
 little data. Call the child by their nickname. Moods are on a 1 to 5 scale, oldest first; null means no check-in that \

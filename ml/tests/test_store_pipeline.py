@@ -91,3 +91,20 @@ def test_shifted_history_keeps_its_shape():
     shifted = shift_history(sim.history, TODAY)
     assert shifted.days[-1].day == TODAY
     assert [replace(d, day=None) for d in shifted.days] == [replace(d, day=None) for d in sim.history.days]
+
+
+def test_local_env_only_loads_anthropic_settings(tmp_path, monkeypatch):
+    from closer_ai.cli import load_local_env
+
+    env_file = tmp_path / ".env.local"
+    env_file.write_text("NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co\nANTHROPIC_API_KEY=from-file\n"
+                        "CLOSER_CLAUDE_MODEL=\n")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("NEXT_PUBLIC_SUPABASE_URL", raising=False)
+    monkeypatch.setenv("CLOSER_CLAUDE_MODEL", "already-set")
+    load_local_env(env_file)
+    import os
+
+    assert os.environ["ANTHROPIC_API_KEY"] == "from-file"
+    assert "NEXT_PUBLIC_SUPABASE_URL" not in os.environ
+    assert os.environ["CLOSER_CLAUDE_MODEL"] == "already-set"

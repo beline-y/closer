@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import time
 from datetime import date
 from pathlib import Path
@@ -19,6 +20,19 @@ NICKNAMES = {
     "en": ("Mia", "Liam", "Ava", "Ethan", "Zoe", "Lucas", "Ella", "Owen", "Ivy", "Max", "Ruby", "Leo", "Nora", "Finn",
            "Isla", "Theo"),
 }
+
+
+CLAUDE_VARIABLES = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLOSER_CLAUDE_MODEL")
+
+
+def load_local_env(path: Path = ML_DIR.parent / ".env.local") -> None:
+    """Read the Anthropic settings from the repo's git-ignored .env.local; the environment wins."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        key, sep, value = line.partition("=")
+        if sep and key.strip() in CLAUDE_VARIABLES and value.strip():
+            os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
 def _today(value: str | None) -> date:
@@ -221,6 +235,7 @@ def _eval_reader(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    load_local_env()
     parser = argparse.ArgumentParser(prog="closer_ai", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
