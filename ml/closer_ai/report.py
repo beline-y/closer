@@ -17,15 +17,15 @@ from sklearn.metrics import roc_auc_score
 
 from .assessor import DISTRESS, FRAGILE, Assessor
 from .datasets import assessor_dataset
-from .chart import tradeoff_svg
+from .chart import policy_map_svg, tradeoff_svg
 from .evaluate import (
     TEST_SEED, VALIDATION_SEED, assessor_report, at_budget, make_pool, paired_bootstrap, run_cohort, summarize,
 )
 from .policy.baselines import PPOPolicy
 from .policy.distill import TreePolicy, viper
 from .policy.env import AlertEnv
-from .policy.obs import LAMBDA_RANGE
-from .policy.whittle import indexability, run_ward
+from .policy.obs import ACTIONS, LAMBDA_RANGE, AlertState, observe
+from .policy.whittle import GRID, indexability, run_ward
 from .safety import check_text
 from .simulator import SimConfig, simulate_stay
 
@@ -53,6 +53,31 @@ def _within_budget(front: list[tuple[float, float, float]], budget: float) -> fl
     """The knob value whose workload is the largest one within budget (rows: knob, load, harm)."""
     within = [row for row in front if row[1] <= budget]
     return max(within, key=lambda row: row[1])[0] if within else min(front, key=lambda row: row[1])[0]
+
+
+def policy_map(ppo_path: str, lam: float) -> tuple[list[list[str]], list[float], list[float]]:
+    """The agent's action on a typical child-day, for each P(distress) and each price of an alert."""
+    policy = PPOPolicy(ppo_path, lam)
+    p_values = [float(p) for p in np.linspace(0.02, 0.98, 25)]
+    obs = []
+    for p in p_values:
+        fragile = 0.35 * (1 - p)
+        probs = [np.array([1 - p - fragile, fragile, p])] * 11
+        checkins = [True, False, True] * 3 + [True, True]
+        obs.append(observe(probs, checkins, 10, AlertState(), age=12, day_of_stay=10, has_family=True,
+                           concern_3d=0.0, lam=lam))
+    actions = policy.actions_for_lambdas(np.stack(obs), np.ones((len(p_values), 4), dtype=bool), GRID)
+    return [[ACTIONS[a] for a in row] for row in actions], [float(x) for x in GRID], p_values
+
+
+def describe_column(actions: list[list[str]], p_values: list[float], j: int) -> str:
+    """'wait below 0.30, ask from 0.30, digest from 0.45, priority from 0.70' for one price."""
+    parts, previous = [], None
+    for i, p in enumerate(p_values):
+        if actions[i][j] != previous:
+            parts.append(f"{actions[i][j]} from {p:.2f}" if parts else f"{actions[i][j]}")
+            previous = actions[i][j]
+    return ", ".join(parts)
 
 
 def safety_report(n_children: int = 3000, seed: int = 500_000) -> dict:
@@ -242,7 +267,18 @@ def build_report(artifacts: Path, out_md: Path, budget: float = 0.4, n_val: int 
                 md.append(f"| {shift} | {label} | {m['unsupported_per_week']:.3f} | {m['load_per_week']:.2f} |")
         md.append("")
 
-        # 7. VIPER ------------------------------------------------------------------------------------------------------
+        # 7. What the agent learned: policy map, then VIPER ----------------------------------------------------------------
+        actions, lams, p_values = policy_map(ppo_path, lam_b)
+        map_chart = out_md.with_name(out_md.stem + "_policy_map.svg")
+        map_chart.write_text(policy_map_svg(actions, lams, p_values, lam_b))
+        md += ["## 6. What the agent learned", "", "### The price of an alert changes the behavior", "",
+               f"![What the RL agent does, by belief and price of an alert]({map_chart.name})", "",
+               "| Price lambda | Action as P(distress) rises (typical 12-year-old, day 10, nothing recent) |", "|---|---|"]
+        for target in (0.05, 0.2, lam_b, 1.0, 2.5):
+            j = int(np.argmin([abs(math.log(x) - math.log(target)) for x in lams]))
+            md.append(f"| {lams[j]:.2f}{' (deployed)' if target == lam_b else ''} | "
+                      f"{describe_column(actions, p_values, j)} |")
+        md.append("")
         print("VIPER distillation...", flush=True)
         student_path = artifacts / "_student.joblib"
 
@@ -262,7 +298,7 @@ def build_report(artifacts: Path, out_md: Path, budget: float = 0.4, n_val: int 
         alert_fidelity = checks[-1]["alert_fidelity"] if checks else None
         out["viper"] = {"log": log, "test": mt, "leaves": int(tree.tree.get_n_leaves())}
         md += [
-            "## 6. What the agent learned: VIPER distillation into a decision tree", "",
+            "### The rules it follows: VIPER distillation into a decision tree", "",
             f"{tree.tree.get_n_leaves()} leaves, extracted by Q-weighted DAgger. On states the tree itself visits, it takes "
             f"the network's action {_pct(fidelity)} of the time, and {_pct(alert_fidelity)} of the time when the network "
             "raises an alert.", "",

@@ -56,5 +56,5 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 /ml/data/
-/ml/RESULTS.quick.md
+/ml/RESULTS.quick*
 /ml/artifacts/_student.joblib
