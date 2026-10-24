@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { dayLabel } from "@/lib/dates";
 import { getMood, type MoodPoint, MOODS } from "@/lib/mood";
+import { type AiLevel, LEVELS } from "@/lib/nurse-round";
 import { useToday } from "@/lib/use-today";
 import { cn } from "@/lib/utils";
 
@@ -265,6 +266,109 @@ export function InteractionBars({ counts }: { counts: number[] }) {
           )}
         </div>
       )}
+    </figure>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Chance of distress per day (AI reading), for the patient page
+// ---------------------------------------------------------------------------
+export type DistressPoint = { daysAgo: number; p: number | null; level: AiLevel | null };
+
+export function DistressBars({ points }: { points: DistressPoint[] }) {
+  const today = useToday();
+  const [hover, setHover] = useState<number | null>(null);
+  const [asTable, setAsTable] = useState(false);
+  const titleId = useId();
+  const w = 600;
+  const h = 120;
+  const pad = { l: 50, r: 8, t: 10, b: 26 };
+  const ih = h - pad.t - pad.b;
+  const slot = (w - pad.l - pad.r) / points.length;
+  const barW = slot - 2; // 2px gap between bars
+  const label = (pt: DistressPoint) => (pt.p === null || !pt.level ? "No reading" : `${LEVELS[pt.level].label} · ${Math.round(pt.p * 100)}%`);
+
+  return (
+    <figure className="flex flex-col gap-2" aria-labelledby={titleId}>
+      <div className="flex items-center justify-between gap-2">
+        <figcaption id={titleId} className="text-sm font-bold text-muted-foreground">
+          Chance of distress, last 14 days
+        </figcaption>
+        <button type="button" onClick={() => setAsTable((t) => !t)} className="min-h-9 rounded-lg px-3 text-sm font-bold text-role-care-ink hover:bg-muted">
+          {asTable ? "Show chart" : "Show table"}
+        </button>
+      </div>
+      {asTable ? (
+        <div className="max-h-56 overflow-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted text-left">
+              <tr>
+                <th className="px-3 py-2">Day</th>
+                <th className="px-3 py-2">Reading</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...points].reverse().map((pt) => (
+                <tr key={pt.daysAgo} className="border-t">
+                  <td className="px-3 py-1.5">{dayLabel(today, pt.daysAgo, "long")}</td>
+                  <td className="px-3 py-1.5 tabular-nums">{label(pt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="relative" onPointerLeave={() => setHover(null)}>
+          <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Chance of distress per day over two weeks. Use Show table for the values.">
+            {[0, 0.5, 1].map((t) => {
+              const ty = pad.t + ih - t * ih;
+              return (
+                <g key={t}>
+                  <line x1={pad.l} x2={w - pad.r} y1={ty} y2={ty} stroke="var(--border)" />
+                  <text x={pad.l - 6} y={ty} dy="0.35em" textAnchor="end" fontSize="13" fill="var(--muted-foreground)">
+                    {t * 100}%
+                  </text>
+                </g>
+              );
+            })}
+            {points.map((pt, i) => {
+              const bh = Math.max(4, (pt.p ?? 0) * ih);
+              const bx = pad.l + i * slot + 1;
+              const by = pad.t + ih - bh;
+              return (
+                <g key={pt.daysAgo} onPointerEnter={() => setHover(i)}>
+                  <rect x={pad.l + i * slot} y={pad.t} width={slot} height={ih} fill="transparent" />
+                  {pt.p !== null && pt.level && (
+                    <path
+                      d={`M${bx},${pad.t + ih} V${by + 4} q0,-4 4,-4 h${barW - 8} q4,0 4,4 V${pad.t + ih} Z`}
+                      fill={LEVELS[pt.level].color}
+                      opacity={hover === null || hover === i ? 1 : 0.55}
+                    />
+                  )}
+                  {(i % 3 === 1 || i === points.length - 1) && (
+                    <text x={bx + barW / 2} y={h - 8} textAnchor="middle" fontSize="13" fill="var(--muted-foreground)">
+                      {dayLabel(today, pt.daysAgo)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+          {hover !== null && (
+            <Tooltip x={((pad.l + hover * slot + slot / 2) / w) * 100} y={((pad.t + ih - (points[hover].p ?? 0) * ih) / h) * 100 - 3}>
+              {dayLabel(today, points[hover].daysAgo, "long")} · {label(points[hover])}
+            </Tooltip>
+          )}
+        </div>
+      )}
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
+        {(Object.keys(LEVELS) as AiLevel[]).map((level) => (
+          <li key={level} className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rounded-sm" style={{ background: LEVELS[level].color }} aria-hidden />
+            <span aria-hidden>{LEVELS[level].icon}</span> {LEVELS[level].label}
+          </li>
+        ))}
+      </ul>
     </figure>
   );
 }
