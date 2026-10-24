@@ -53,6 +53,18 @@ update public.profiles set account_type = 'care_team'
 update public.profiles set account_type = 'volunteer'
   where id = '66666666-6666-4666-8666-666666666666';
 
+-- Mirror account_type into app_metadata so it lands in the JWT. src/proxy.ts reads it
+-- to send each role to its dashboard. Users can't edit app_metadata, only the server can.
+update auth.users u
+  set raw_app_meta_data = u.raw_app_meta_data || jsonb_build_object('account_type', p.account_type)
+  from public.profiles p
+  where p.id = u.id
+    and u.id in (
+      '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222',
+      '33333333-3333-4333-8333-333333333333', '44444444-4444-4444-8444-444444444444',
+      '55555555-5555-4555-8555-555555555555', '66666666-6666-4666-8666-666666666666'
+    );
+
 -- ---------------------------------------------------------------------------
 -- Patients
 -- ---------------------------------------------------------------------------
