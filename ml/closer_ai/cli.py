@@ -22,16 +22,17 @@ NICKNAMES = {
 }
 
 
-CLAUDE_VARIABLES = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLOSER_CLAUDE_MODEL")
+# Only these are read from .env.local: the Anthropic settings and the secret shared with the app's server.
+LOCAL_VARIABLES = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLOSER_CLAUDE_MODEL", "CLOSER_AI_TOKEN")
 
 
 def load_local_env(path: Path = ML_DIR.parent / ".env.local") -> None:
-    """Read the Anthropic settings from the repo's git-ignored .env.local; the environment wins."""
+    """Read the Anthropic settings and CLOSER_AI_TOKEN from the repo's git-ignored .env.local; the environment wins."""
     if not path.exists():
         return
     for line in path.read_text().splitlines():
         key, sep, value = line.partition("=")
-        if sep and key.strip() in CLAUDE_VARIABLES and value.strip():
+        if sep and key.strip() in LOCAL_VARIABLES and value.strip():
             os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
@@ -180,6 +181,38 @@ def _demo(args) -> None:
     print_digest(decisions, truth)
 
 
+def _serve(args) -> None:
+    import logging
+
+    from .bridge import Engine
+    from .server import CareTabAPI
+
+    token = os.environ.get("CLOSER_AI_TOKEN", "")
+    if len(token) < 24:
+        raise SystemExit("Set CLOSER_AI_TOKEN (24+ random characters) in the repo's .env.local, the same value the "
+                         "app's server uses. For example: python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    from .assessor import Assessor
+    from .pipeline import load_policy
+    from .policy.distill import TreePolicy
+
+    policy, _ = load_policy(ARTIFACTS)
+    tree_path = ARTIFACTS / "policy_tree.joblib"
+    client = None
+    if not args.no_claude:
+        import anthropic
+
+        from .claude import check_access
+
+        if problem := check_access():
+            print(f"Claude unavailable ({problem}): template summaries and the lexicon only.")
+        else:
+            client = anthropic.Anthropic()
+    engine = Engine(Assessor.load(ARTIFACTS / "assessor.joblib"), policy,
+                    TreePolicy.load(tree_path) if tree_path.exists() else None, client, args.language)
+    CareTabAPI(args.db, engine, token).serve(args.host, args.port)
+
+
 def _alerts(args) -> None:
     from .store import Store
 
@@ -280,6 +313,14 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--language", default="English", help="language of the daily summaries")
     p.add_argument("--dry-run", action="store_true", help="print decisions without writing them")
     p.set_defaults(func=_run)
+
+    p = sub.add_parser("serve", help="JSON API for the app's care tab (localhost, secret in CLOSER_AI_TOKEN)")
+    p.add_argument("--db", default=str(DEFAULT_DB))
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8787)
+    p.add_argument("--no-claude", action="store_true", help="template summaries and the lexicon only")
+    p.add_argument("--language", default="English", help="language of the daily summaries")
+    p.set_defaults(func=_serve)
 
     p = sub.add_parser("alerts", help="the psychologist's inbox")
     p.add_argument("--db", default=str(DEFAULT_DB))
