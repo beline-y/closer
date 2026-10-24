@@ -18,13 +18,13 @@ export const MEAL_AMOUNTS: { value: MealAmount; emoji: string; label: string }[]
   { value: "a_little", emoji: "🤏", label: "A little" },
 ];
 
-/** How much the patient liked a dish, yuck to yum. "said" completes "Leo … it". */
-export const LIKINGS: { value: number; emoji: string; label: string; said: string }[] = [
-  { value: 1, emoji: "🤢", label: "Yuck", said: "didn't like" },
-  { value: 2, emoji: "😕", label: "Not really", said: "didn't really like" },
-  { value: 3, emoji: "😐", label: "Okay", said: "thought it was okay" },
-  { value: 4, emoji: "😋", label: "Yummy", said: "liked" },
-  { value: 5, emoji: "🤩", label: "Yum yum!", said: "loved" },
+/** How much the patient liked a dish, yuck to yum. */
+export const LIKINGS: { value: number; emoji: string; label: string }[] = [
+  { value: 1, emoji: "🤢", label: "Yuck" },
+  { value: 2, emoji: "😕", label: "Not really" },
+  { value: 3, emoji: "😐", label: "Okay" },
+  { value: 4, emoji: "😋", label: "Yummy" },
+  { value: 5, emoji: "🤩", label: "Yum yum!" },
 ];
 
 export const ACTIVITIES: { value: ActivityKind; emoji: string; label: string }[] = [
@@ -63,13 +63,19 @@ export type CheckInInput = {
 
 export type RatedDish = { meal: MealKind; dish: string; icon: string; liking: number | null; amount: MealAmount | null };
 
-/** "Lunch: pasta with tomato sauce, Leo loved it" (family side). */
-export function ratedDishLine(r: RatedDish, name = "Leo"): string {
-  const meal = MEALS.find((m) => m.value === r.meal)?.label ?? r.meal;
-  const liking = LIKINGS.find((l) => l.value === r.liking);
-  const amount = MEAL_AMOUNTS.find((a) => a.value === r.amount);
-  const parts = [liking ? `${name} ${liking.said} it` : null, amount ? `ate ${amount.label.toLowerCase()}` : null].filter(Boolean);
-  return `${meal}: ${r.dish.toLowerCase()}${parts.length ? `, ${parts.join(", ")}` : ""}`;
+/** Food satisfaction of the day: the average of the dish ratings as one emoji + label. */
+export const FOOD_SCORES: Record<number, { emoji: string; label: string }> = {
+  1: { emoji: "🤢", label: "Didn't like it" },
+  2: { emoji: "😕", label: "Not really" },
+  3: { emoji: "😐", label: "It was okay" },
+  4: { emoji: "😋", label: "Liked it" },
+  5: { emoji: "🤩", label: "Loved it" },
+};
+
+export function foodScore(dishes: RatedDish[]): { emoji: string; label: string } | null {
+  const likings = dishes.map((d) => d.liking).filter((l): l is number => l !== null);
+  if (likings.length === 0) return null;
+  return FOOD_SCORES[Math.round(likings.reduce((a, b) => a + b, 0) / likings.length)];
 }
 
 /** "🎨 Drew · 👨‍👩‍👦 Had a visit · Noah called" (each activity with its own icon). */
