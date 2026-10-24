@@ -40,7 +40,7 @@ For the demo role picker, also fill in the demo passwords (they're in the table 
 ```dotenv
 DEMO_MODE=true
 DEMO_PASSWORD=...      # the adults' password
-DEMO_PATIENT_PIN=...   # Léo's PIN
+DEMO_PATIENT_PIN=...   # Leo's PIN
 ```
 
 Leave the other values empty unless a feature needs them.
@@ -66,16 +66,19 @@ Previews and `main` both use the shared **dev** Supabase project for now. Produc
 
 ## Demo accounts (fictional)
 
-With `DEMO_MODE=true`, the landing page shows **Choose a demo role**: one tap signs you in as Léo, Camille, Nurse Inès or Jordan. The banner's **Switch role** button signs you out and brings you back to the picker.
+With `DEMO_MODE=true`, the landing page shows **Choose a demo role**: one tap signs you in as Leo, Emma, Sarah or Maya. The banner's **Switch role** button signs you out and brings you back to the picker.
 
 | Who | Role | Email | Password |
 |---|---|---|---|
-| Léo, 9 | Patient | `leo.patient@example.com` | PIN `135790` (patient code `LEO123`) |
-| Camille | Family (mom, guardian of Léo) | `camille@example.com` | `CloserDemo2026!` |
-| Sam | Family (Léo's brother) | `sam@example.com` | `CloserDemo2026!` |
-| Nurse Inès | Care team (Léo and Maya) | `ines.nurse@example.com` | `CloserDemo2026!` |
-| Maya, 34 | Patient (adult, no family linked) | `maya.patient@example.com` | PIN `246802` (patient code `MAYA42`) |
-| Jordan | Volunteer | `jordan.volunteer@example.com` | `CloserDemo2026!` |
+| Leo, 9 | Patient | `leo.patient@example.com` | PIN `135790` (patient code `LEO123`) |
+| Emma | Family (mom, guardian of Leo) | `emma@example.com` | `CloserDemo2026!` |
+| James | Family (dad) | `james@example.com` | `CloserDemo2026!` |
+| Noah | Friend (Leo's best friend from school) | `noah@example.com` | `CloserDemo2026!` |
+| Sarah | Care team (pediatric nurse) | `sarah.nurse@example.com` | `CloserDemo2026!` |
+| Maya | Volunteer (marine biologist) | `maya.volunteer@example.com` | `CloserDemo2026!` |
+| Daniel | Volunteer (airline pilot) | `daniel.volunteer@example.com` | `CloserDemo2026!` |
+
+Volunteers are never linked to a patient and can't read any patient data (see the SPEC, design principle 5).
 
 These passwords are public on purpose: they only unlock fictional demo data in the dev project. Never reuse them for anything real.
 
@@ -94,15 +97,16 @@ Each new migration:
 
 ```bash
 npm run db:new -- add_mood_checkins   # creates supabase/migrations/<timestamp>_add_mood_checkins.sql
-# write your SQL, including RLS for every new table
+# write your SQL, including RLS for every new table, and pgTAP tests in supabase/tests/
 npx supabase db push --dry-run        # shows what would run, changes nothing
 npm run db:push                       # applies it to the shared dev project
 npm run db:types                      # regenerates TypeScript types from the database
+npm run db:test                       # RLS tests
 ```
 
 Then commit the migration file and the regenerated types in your PR.
 
-Seed data (`supabase/seed.sql`, fictional only) is applied with `npm run db:seed` (pending migrations, then the whole seed file). It's safe to re-run.
+Seed data (`supabase/seed.sql`, fictional only) is applied with `npm run db:seed` (pending migrations, then the whole seed file). It's safe to re-run: it resets the demo cast and their data.
 
 Rules:
 
@@ -118,6 +122,7 @@ Rules:
 | `npm run build` | Production build (CI also runs this) |
 | `npm run db:push` | Apply new migrations to the dev project |
 | `npm run db:seed` | Apply migrations + seed data |
+| `npm run db:test` | Run the pgTAP RLS tests in `supabase/tests/` on the dev project (rolled back, writes nothing) |
 | `npm run db:types` | Regenerate `database.types.ts` |
 
 ## Project structure
