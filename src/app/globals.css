@@ -43,6 +43,30 @@
   --color-role-family: var(--role-family);
   --color-role-care: var(--role-care);
   --color-role-volunteer: var(--role-volunteer);
+  /* Tinted backgrounds and text-safe (>= 4.5:1) shades of each role color */
+  --color-role-patient-soft: var(--role-patient-soft);
+  --color-role-family-soft: var(--role-family-soft);
+  --color-role-care-soft: var(--role-care-soft);
+  --color-role-volunteer-soft: var(--role-volunteer-soft);
+  --color-role-patient-ink: var(--role-patient-ink);
+  --color-role-family-ink: var(--role-family-ink);
+  --color-role-care-ink: var(--role-care-ink);
+  --color-role-volunteer-ink: var(--role-volunteer-ink);
+  /* Mood scale 1-5: rainy blue -> neutral sand -> sunshine. Always shown with emoji + label. */
+  --color-mood-1: var(--mood-1);
+  --color-mood-2: var(--mood-2);
+  --color-mood-3: var(--mood-3);
+  --color-mood-4: var(--mood-4);
+  --color-mood-5: var(--mood-5);
+  --color-presence: var(--presence);
+  --color-alert: var(--alert);
+  --color-alert-soft: var(--alert-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --animate-pop: pop var(--dur) var(--ease-spring) both;
+  --animate-rise: rise var(--dur) ease-out both;
+  --animate-wiggle: wiggle 600ms ease-in-out both;
+  --animate-heart: heart 900ms var(--ease-spring) both;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -82,6 +106,30 @@
   --role-care: oklch(0.62 0.1 185);
   --role-volunteer: oklch(0.62 0.15 295);
   --radius: 1rem;
+  --role-patient-soft: oklch(0.95 0.05 80);
+  --role-family-soft: oklch(0.95 0.035 15);
+  --role-care-soft: oklch(0.95 0.025 190);
+  --role-volunteer-soft: oklch(0.95 0.035 295);
+  --role-patient-ink: oklch(0.48 0.11 60);
+  --role-family-ink: oklch(0.5 0.16 15);
+  --role-care-ink: oklch(0.45 0.08 195);
+  --role-volunteer-ink: oklch(0.47 0.15 295);
+  --mood-1: #3a4fc0;
+  --mood-2: #94a5ee;
+  --mood-3: #8c877f;
+  --mood-4: #eba200;
+  --mood-5: #c25400;
+  --presence: oklch(0.68 0.17 150);
+  --alert: oklch(0.52 0.19 25);
+  --alert-soft: oklch(0.95 0.04 25);
+  --success: oklch(0.5 0.12 155);
+  --success-soft: oklch(0.95 0.04 155);
+  /* Motion: short and springy on the patient side; reduced-motion turns it off */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms;
+  --dur: 280ms;
+  /* Tone: playful (patient, family, volunteer) or calm (care team), set with data-tone */
+  --tap: 3.5rem;
   --sidebar: oklch(0.98 0.012 75);
   --sidebar-foreground: oklch(0.25 0.03 50);
   --sidebar-primary: oklch(0.66 0.17 40);
@@ -130,6 +178,37 @@
   --sidebar-ring: oklch(0.74 0.15 45);
 }
 
+[data-tone="calm"] {
+  --tap: 2.75rem;
+}
+
+@keyframes pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes rise {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-4deg); }
+  75% { transform: rotate(4deg); }
+}
+@keyframes heart {
+  0% { transform: scale(0.4); opacity: 0; }
+  40% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -145,5 +224,11 @@
   }
   h1, h2, h3 {
     @apply font-heading;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  dialog::backdrop {
+    background: oklch(0.25 0.03 50 / 45%);
   }
 }

@@ -7,8 +7,9 @@ import { requireSupabasePublicEnv } from "./env";
 // Supabase client for Server Components, Server Actions and Route Handlers.
 // It acts as the signed-in user (via auth cookies), so RLS applies.
 export async function createClient() {
-  const { url, publishableKey } = requireSupabasePublicEnv();
+  // cookies() first: it defers the work to request time, so builds without env vars (CI) still prerender.
   const cookieStore = await cookies();
+  const { url, publishableKey } = requireSupabasePublicEnv();
 
   return createServerClient<Database>(url, publishableKey, {
     cookies: {

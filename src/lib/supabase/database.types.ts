@@ -14,6 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
+      checkin_photos: {
+        Row: {
+          checkin_id: string
+          created_at: string
+          id: string
+          path: string
+          patient_id: string
+        }
+        Insert: {
+          checkin_id: string
+          created_at?: string
+          id?: string
+          path: string
+          patient_id: string
+        }
+        Update: {
+          checkin_id?: string
+          created_at?: string
+          id?: string
+          path?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_photos_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: true
+            referencedRelation: "mood_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_photos_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkin_reactions: {
+        Row: {
+          checkin_id: string
+          created_at: string
+          emoji: string
+          user_id: string
+        }
+        Insert: {
+          checkin_id: string
+          created_at?: string
+          emoji: string
+          user_id: string
+        }
+        Update: {
+          checkin_id?: string
+          created_at?: string
+          emoji?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_reactions_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "mood_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mood_checkins: {
+        Row: {
+          activities: Database["public"]["Enums"]["activity_kind"][]
+          activity_note: string | null
+          created_at: string
+          id: string
+          local_date: string
+          meal_amount: Database["public"]["Enums"]["meal_amount"] | null
+          meal_note: string | null
+          meals: Database["public"]["Enums"]["meal_kind"][]
+          mood: number
+          note: string | null
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          activities?: Database["public"]["Enums"]["activity_kind"][]
+          activity_note?: string | null
+          created_at?: string
+          id?: string
+          local_date?: string
+          meal_amount?: Database["public"]["Enums"]["meal_amount"] | null
+          meal_note?: string | null
+          meals?: Database["public"]["Enums"]["meal_kind"][]
+          mood: number
+          note?: string | null
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          activities?: Database["public"]["Enums"]["activity_kind"][]
+          activity_note?: string | null
+          created_at?: string
+          id?: string
+          local_date?: string
+          meal_amount?: Database["public"]["Enums"]["meal_amount"] | null
+          meal_note?: string | null
+          meals?: Database["public"]["Enums"]["meal_kind"][]
+          mood?: number
+          note?: string | null
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_checkins_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_links: {
         Row: {
           approved_by: string | null
@@ -159,8 +287,19 @@ export type Database = {
     }
     Enums: {
       account_type: "patient" | "family" | "care_team" | "volunteer"
+      activity_kind:
+        | "played"
+        | "movie"
+        | "drew"
+        | "school"
+        | "visit"
+        | "treatment"
+        | "rested"
+        | "walk"
       link_role: "care_team" | "family" | "friend" | "volunteer"
       link_status: "pending" | "active" | "revoked"
+      meal_amount: "all" | "half" | "a_little"
+      meal_kind: "breakfast" | "lunch" | "dinner" | "snack"
       patient_status: "pending_consent" | "active" | "discharged"
     }
     CompositeTypes: {
@@ -290,8 +429,20 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["patient", "family", "care_team", "volunteer"],
+      activity_kind: [
+        "played",
+        "movie",
+        "drew",
+        "school",
+        "visit",
+        "treatment",
+        "rested",
+        "walk",
+      ],
       link_role: ["care_team", "family", "friend", "volunteer"],
       link_status: ["pending", "active", "revoked"],
+      meal_amount: ["all", "half", "a_little"],
+      meal_kind: ["breakfast", "lunch", "dinner", "snack"],
       patient_status: ["pending_consent", "active", "discharged"],
     },
   },
