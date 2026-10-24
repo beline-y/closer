@@ -38,6 +38,10 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - **Patient answers shown to volunteers:** only answers the patient chose to share ("Volunteers can read it, without my name", off by default). They go through a privacy filter (masks names, places, hospital names, emails, phone numbers) **and** need care team approval ("shareable"). The care team sees only those opted-in answers, already masked, in its review queue. Only the approved, masked copy reaches volunteers, in a table with no `patient_id`.
 - **Placeholder data:** screens whose feature isn't built yet read typed fixtures from `src/lib/demo-fixtures.ts` (same cast, relative dates). Each feature branch replaces its slice with a real table, RLS and seed. People, patients and links already come from Supabase.
 - **Background patients:** Ava (12) and Lucas (7) have no app account and no family linked; only Sarah follows them. They fill the care dashboard and trigger alerts.
+- **Meals come from the hospital menu.** The care team sets the menu per unit, day and meal (dish name + icon, "Copy last week" fills the empty days). The patient rates each dish (yuck to yum) and optionally how much they ate. Family reads "Lunch: pasta with tomato sauce, Leo loved it"; the care team reads ratings and amounts (appetite indicator).
+- **Streak celebrates, never punishes.** Computed from `mood_checkins` only. Headline = total days connected. One rest day per 7 days keeps the run going. After a break: "Welcome back!", never "you lost your streak". Badges at 3, 7, 14 and 30 days, also shown in the family feed.
+- **Reactions:** one per person per check-in (❤️ heart, 🤗 hug, 💪 strong, 😂 laugh), changeable. Family and friends only.
+- **Activities are done in the app** (draw, make and snap, quiz, story, challenge with family) and end with a result. The patient chooses: share with family, add to Memories, or keep for themselves. A challenge is revealed side by side only when both are done. The care team only gets completion counts.
 - **Memories** are shared by the patient's circle only. The care team and volunteers never see them.
 - **Cloud-only workflow:** no Docker, no local Supabase. One shared Supabase cloud project (US) is the dev database for every branch preview and for `main`. Migrations go through `supabase db push`, one person at a time. Features are tested on Vercel preview URLs. Production will get its own Supabase project later.
 
@@ -81,7 +85,7 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 7. Question of the day from the question bank, with lock until you've answered.
 8. Care team dashboard, session tracking, live alerts, settings.
 9. Memories: shared album between the patient and their circle.
-10. Journal, then activities.
+10. Journal. (Activities are done in the app since `feature/checkin-v2-activities`.)
 11. Volunteers: questions, My story, events, requests (with care team approvals).
 12. Data export and account deletion.
 13. Seed data (2 weeks relative to today, `npm run db:seed`) and pgTAP RLS tests for every feature (`npm run db:test`); lint and typecheck before every commit.
@@ -94,11 +98,12 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 
 **Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet; tabs Today · Connect · Question · Memories · Me):
 - Today: greeting, "who's thinking of you" avatars, mood check-in, today's question, one suggested activity, new memories ("Emma shared a memory").
-- Check-in: five emoji, then optional chips, photo and note, then a celebration.
+- Check-in: five emoji, then optional photo, today's menu dishes to rate (yuck to yum, how much), activities and note, then a celebration with the streak ("Connected for 12 days!", badges at 3, 7, 14, 30).
 - Connect: five nudge buttons (I miss you, Call me, I'm bored, I'm proud of myself, I need a hug) with a cooldown ring, then a recipient picker, then "Sent! ❤️"; sealed comfort cards to open (envelope stack, open animation, archive).
 - Question: answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
 - Memories: the same album as the family.
-- Me: journal and activities.
+- Me: things to do (activity library), my creations (with reactions and comments), journal.
+- Activity: full-screen drawing (finger and stylus, colors, sizes, eraser, undo, clear), make and snap (steps then photo), quiz (5 questions, score), story (write or dictate), challenge with family (both draw, reveal side by side). Then: share with family, add to Memories, or keep for myself.
 
 **Family** (phone first, works on desktop; tabs Feed · Question · Cards · Memories, patient switcher in the header):
 - Feed: check-ins, nudges pinned on top until answered, opened cards, question reveals, new memories, with reactions. Presence lines ("Leo opened your card", "Leo is waiting for your answer"). The guardian also sees volunteer contact requests to approve.
@@ -113,7 +118,8 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 - Events: list, details, sign up or cancel.
 - Requests: approved requests only, with status. No messaging.
 
-**Care team** (desktop first, tablet landscape; sidebar Patients · Alerts · Volunteers · Events · Settings):
+**Care team** (desktop first, tablet landscape; sidebar Patients · Alerts · Volunteers · Menus · Events · Settings):
+- Menus: week view per unit, add and remove dishes per day and meal, "Copy last week".
 - Patients: sortable, filterable table (name, 7-day mood sparkline, last check-in, time in app today, family contact today, alert badge).
 - Patient detail: mood chart (7 / 30 days), check-ins (mood, activity, meal, note only; no photos), family interactions per day, thresholds (low moods in a row, days without check-in, days without family contact, nudge cooldown).
 - Alerts: triggered alerts with "Mark as reviewed".
@@ -141,9 +147,12 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `patient_links` | patient_id, user_id, role (care_team/family/friend; `volunteer` stays unused: volunteers are never linked to a patient), relationship, is_guardian, status, invite_id | You see your own links. Care team and guardian see all links for the patient. Created only by `redeem_invite()`. |
 | `invites` | code_hash, role, is_guardian_invite, max_uses, used_count, expires_at, revoked_at | Care team only. Redeemed via `redeem_invite(code)`, which checks the account type matches the role. |
 | `guardian_consents` | guardian_id, consent_version, scopes, granted_at, withdrawn_at | Guardian inserts and withdraws. Guardian and care team read. Never deleted. |
-| `mood_checkins` | local_date (set by the database, patient timezone), mood 1–5, meals[] (breakfast/lunch/dinner/snack), meal_amount (all/half/a little), meal_note, activities[] (played, movie, drew, school, visit, treatment, rested, walk), activity_note, note ≤ 280 | Patient writes and edits today's only (until midnight). Family and care team read. Volunteers: none. Unique (patient, day). Realtime. |
+| `mood_checkins` | local_date (set by the database, patient timezone), mood 1–5, activities[] (played, movie, drew, school, visit, treatment, rested, walk), activity_note, note ≤ 280 | Patient writes and edits today's only (until midnight). Family and care team read. Volunteers: none. Unique (patient, day). Realtime. |
 | `checkin_photos` | checkin_id (one photo per check-in), patient_id, path | **Patient and family only.** Storage bucket uses the same rule. Photos are resized (max 1600px) and re-encoded to WebP on the device, which strips EXIF and GPS. Realtime. |
-| `checkin_reactions` | checkin_id, user_id, emoji (❤️ 🤗 ⭐ 💪 😂) | Patient and family read; family and friends add and remove their own. Realtime. |
+| `checkin_reactions` | checkin_id, user_id (one per person), emoji (❤️ 🤗 💪 😂) | Patient and family read; family and friends add, change and remove their own. Realtime. |
+| `care_units`, `care_unit_members` | name; unit_id, user_id. `patients.unit_id` | Members and the unit's patients and circles read. Written by seed or admin. |
+| `menu_items` | unit_id, menu_date, meal, dish_name, icon, position | The unit's care team writes. The unit's patients and their circle read. Volunteers: none. |
+| `meal_ratings` | checkin_id, menu_item_id, patient_id, liking 1–5, amount | Patient rates today's dishes of their unit only. Patient, circle and care team read. Realtime. |
 | `nudges` | patient_id, kind (miss_you, call_me, bored, proud, hug) | Created only by `send_nudge(kind, recipients)`: active patient only, per-type cooldown from `patient_settings`, recipients limited to the patient's family and friends (default: all). Patient and recipients read. No care team, no volunteers. Realtime. |
 | `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji (❤️ 📞 🤗 ⭐), reply_text ≤ 140, replied_at | Recipient reads and replies on their own row only. The patient reads every reply (never "no reply"). Realtime. |
 | `comfort_cards` | author_id, body ≤ 1000, color, opened_at | Author reads their own. Patient reads only opened cards. `sealed_cards()` and `open_comfort_card()` handle sealed ones. No care team access. |
@@ -166,6 +175,15 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `memory_reactions` | memory_id, user_id, emoji | Patient and circle. |
 | `memory_comments` | memory_id, user_id, body ≤ 200 | Patient and circle. Author deletes. |
 
+**Activities:**
+
+| Table | Key columns | RLS |
+|---|---|---|
+| `activities` | type (draw, make_snap, quiz, story, challenge), title, emoji, instructions, theme, steps[], quiz (jsonb), minutes | Everyone signed in except volunteers reads. Seeded library. |
+| `activity_sessions` | patient_id, activity_id, status (started, waiting_partner, completed), result_path, result_text, score, visibility (private/family), in_memories, partner_id, local_date | Patient owns. Circle reads only finished ones shared with family or in Memories. Care team and volunteers: none (`activity_counts()` gives the care team counts only). Realtime. |
+| `challenge_entries` | session_id, user_id, result_path, completed_at | Created empty for the partner when the challenge is sent. The partner reads and completes their own; patient and circle see it only once both are done. Realtime. |
+| `activity_reactions`, `activity_comments` | session_id, user_id, emoji (one per person) / body ≤ 200 | On shared results only. Circle reacts; patient and circle comment. Realtime. |
+
 **Volunteers.** Volunteers have **no SELECT** on `patients`, patient `profiles`, `patient_links`, `mood_checkins`, `journal_entries`, `memories`, `comfort_cards`, `nudges` or any patient-keyed table. Everything they can read lives in tables with **no `patient_id`**:
 
 | Table | Key columns | RLS |
@@ -181,7 +199,7 @@ These are `security definer` SQL functions in the `private` schema with `search_
 
 **Privacy filter** (`private.mask_personal_info(text)`, server-side): masks emails, phone numbers, the names of everyone linked to the patient, known places and hospital names, and capitalized words after "I live in" / "at" etc., replacing them with `[name]`, `[place]`, `[contact]`. For the demo, care team approval is still required on top of it.
 
-**Storage:** private buckets `checkin-photos` (`{patient_id}/{uuid}.jpg`), `memories` (`{patient_id}/{uuid}.jpg`) and `volunteer-photos` (`{volunteer_id}/{uuid}.jpg`), served through signed URLs. EXIF stripped before upload.
+**Storage:** private buckets `checkin-photos` (`{patient_id}/{uuid}.webp`), `activity-results` (`{patient_id}/{uuid}.webp`, challenge partner `{patient_id}/{session_id}/partner.webp`, readable only through a row the reader can see), `memories` and `volunteer-photos`, served through signed URLs. Images are resized (max 1600px) and re-encoded on the device, which strips EXIF and GPS.
 
 **Post-MVP tables:** journal_prompts, activity_participations, exchange_messages (moderated, logged), content_reports, moderation_log, ai_generations.
 
@@ -196,13 +214,13 @@ One branch and one Vercel preview per step. Tested on the preview, then merged.
 | English personas, SPEC update, RLS tests | `chore/personas` | ✅ |
 | Role shells (layout, navigation, main screens) | `feature/role-shells` | ✅ |
 | Mood check-in | `feature/mood-checkin` | ✅ |
-| Nudges + notifications | `feature/nudges` | |
+| Nudges + notifications | `feature/nudges` | ✅ |
+| Menus, dish ratings, streak, one reaction, activities | `feature/checkin-v2-activities` | |
 | Comfort cards | `feature/comfort-cards` | |
 | Question of the day | `feature/daily-question` | |
 | Care dashboard + alerts | `feature/care-dashboard` | |
 | Memories | `feature/memories` | |
 | Journal | `feature/journal` | |
-| Activities | `feature/activities` | |
 | Volunteers: questions, My story, events, requests | `feature/volunteers` | |
 | Export, delete, accessibility | `feature/privacy-polish` | |
 | Real auth (issue #9) | `feature/auth` | post-demo |

@@ -15,8 +15,8 @@ const REACTIONS = ["❤️", "😂", "🥹", "⭐"];
 
 // Shared album between Leo and his circle. The care team and volunteers never see it.
 // Saved for this visit only until the memories feature lands.
-export function MemoriesAlbum({ viewer, big }: { viewer: CastId; big?: boolean }) {
-  const [memories, setMemories] = useState<Memory[]>(MEMORIES);
+export function MemoriesAlbum({ viewer, big, fromActivities = [] }: { viewer: CastId; big?: boolean; fromActivities?: Memory[] }) {
+  const [memories, setMemories] = useState<Memory[]>([...fromActivities, ...MEMORIES]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState<MemoryTag | "all">("all");
