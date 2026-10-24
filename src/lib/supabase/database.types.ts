@@ -14,6 +14,283 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          instructions: string | null
+          minutes: number
+          quiz: Json | null
+          steps: string[]
+          theme: string | null
+          title: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          instructions?: string | null
+          minutes?: number
+          quiz?: Json | null
+          steps?: string[]
+          theme?: string | null
+          title: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          instructions?: string | null
+          minutes?: number
+          quiz?: Json | null
+          steps?: string[]
+          theme?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["activity_type"]
+        }
+        Relationships: []
+      }
+      activity_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_comments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "activity_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_reactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "activity_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_sessions: {
+        Row: {
+          activity_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          in_memories: boolean
+          local_date: string
+          partner_id: string | null
+          patient_id: string
+          result_path: string | null
+          result_text: string | null
+          score: number | null
+          score_total: number | null
+          status: Database["public"]["Enums"]["activity_status"]
+          visibility: Database["public"]["Enums"]["activity_visibility"]
+        }
+        Insert: {
+          activity_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          in_memories?: boolean
+          local_date?: string
+          partner_id?: string | null
+          patient_id: string
+          result_path?: string | null
+          result_text?: string | null
+          score?: number | null
+          score_total?: number | null
+          status?: Database["public"]["Enums"]["activity_status"]
+          visibility?: Database["public"]["Enums"]["activity_visibility"]
+        }
+        Update: {
+          activity_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          in_memories?: boolean
+          local_date?: string
+          partner_id?: string | null
+          patient_id?: string
+          result_path?: string | null
+          result_text?: string | null
+          score?: number | null
+          score_total?: number | null
+          status?: Database["public"]["Enums"]["activity_status"]
+          visibility?: Database["public"]["Enums"]["activity_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_sessions_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_sessions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_sessions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_unit_members: {
+        Row: {
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_unit_members_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "care_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_unit_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_units: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      challenge_entries: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          result_path: string | null
+          result_text: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          result_path?: string | null
+          result_text?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          result_path?: string | null
+          result_text?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "activity_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkin_photos: {
         Row: {
           checkin_id: string
@@ -85,6 +362,106 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_ratings: {
+        Row: {
+          amount: Database["public"]["Enums"]["meal_amount"] | null
+          checkin_id: string
+          created_at: string
+          liking: number | null
+          menu_item_id: string
+          patient_id: string
+        }
+        Insert: {
+          amount?: Database["public"]["Enums"]["meal_amount"] | null
+          checkin_id: string
+          created_at?: string
+          liking?: number | null
+          menu_item_id: string
+          patient_id: string
+        }
+        Update: {
+          amount?: Database["public"]["Enums"]["meal_amount"] | null
+          checkin_id?: string
+          created_at?: string
+          liking?: number | null
+          menu_item_id?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_ratings_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "mood_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_ratings_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_ratings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dish_name: string
+          icon: string
+          id: string
+          meal: Database["public"]["Enums"]["meal_kind"]
+          menu_date: string
+          position: number
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dish_name: string
+          icon?: string
+          id?: string
+          meal: Database["public"]["Enums"]["meal_kind"]
+          menu_date: string
+          position?: number
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dish_name?: string
+          icon?: string
+          id?: string
+          meal?: Database["public"]["Enums"]["meal_kind"]
+          menu_date?: string
+          position?: number
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "care_units"
             referencedColumns: ["id"]
           },
         ]
@@ -337,6 +714,7 @@ export type Database = {
           nickname: string
           status: Database["public"]["Enums"]["patient_status"]
           timezone: string
+          unit_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -351,6 +729,7 @@ export type Database = {
           nickname: string
           status?: Database["public"]["Enums"]["patient_status"]
           timezone?: string
+          unit_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -365,10 +744,19 @@ export type Database = {
           nickname?: string
           status?: Database["public"]["Enums"]["patient_status"]
           timezone?: string
+          unit_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "care_units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -402,6 +790,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activity_counts: {
+        Args: { p_days?: number; p_patient_id: string }
+        Returns: {
+          completed: number
+          local_date: string
+        }[]
+      }
+      my_pending_challenges: {
+        Args: never
+        Returns: {
+          activity_id: string
+          created_at: string
+          emoji: string
+          patient_id: string
+          session_id: string
+          theme: string
+          title: string
+        }[]
+      }
       send_nudge: {
         Args: {
           p_kind: Database["public"]["Enums"]["nudge_kind"]
@@ -421,6 +828,9 @@ export type Database = {
         | "treatment"
         | "rested"
         | "walk"
+      activity_status: "started" | "waiting_partner" | "completed"
+      activity_type: "draw" | "make_snap" | "quiz" | "story" | "challenge"
+      activity_visibility: "private" | "family"
       link_role: "care_team" | "family" | "friend" | "volunteer"
       link_status: "pending" | "active" | "revoked"
       meal_amount: "all" | "half" | "a_little"
@@ -565,6 +975,9 @@ export const Constants = {
         "rested",
         "walk",
       ],
+      activity_status: ["started", "waiting_partner", "completed"],
+      activity_type: ["draw", "make_snap", "quiz", "story", "challenge"],
+      activity_visibility: ["private", "family"],
       link_role: ["care_team", "family", "friend", "volunteer"],
       link_status: ["pending", "active", "revoked"],
       meal_amount: ["all", "half", "a_little"],
