@@ -35,8 +35,10 @@ export async function signInAsDemoRole(_prev: DemoSignInState, formData: FormDat
   redirect(getRole(role).href);
 }
 
-export async function switchRole() {
+// Returns where to go next: the banner then does a full page load, so no hidden page
+// of the previous persona stays in memory (Next keeps visited pages in <Activity>).
+export async function switchRole(): Promise<string> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect(isDemoMode() ? "/" : "/login");
+  return isDemoMode() ? "/" : "/login";
 }
