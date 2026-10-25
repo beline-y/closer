@@ -1,0 +1,6 @@
+{
+ "lambda": 0.402921093880741,
+ "lambda_no_ask": 0.49999999999999994,
+ "budget": 0.4,
+ "threshold_tau": 0.3
+}

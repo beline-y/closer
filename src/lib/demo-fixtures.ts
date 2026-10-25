@@ -48,8 +48,6 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 };
 
 // ---------------------------------------------------------------------------
-// Comfort cards
-// ---------------------------------------------------------------------------
 export type ComfortCard = {
   id: string;
   from: CastId;

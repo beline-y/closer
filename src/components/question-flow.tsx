@@ -36,19 +36,26 @@ export function QuestionFlow({ viewer }: { viewer: Viewer }) {
       </section>
 
       {answer ? (
-        <section aria-labelledby="answers-title" className="flex flex-col gap-3">
+        <section aria-labelledby="answers-title" className="flex flex-col gap-4">
           <h2 id="answers-title" className="text-2xl font-extrabold">
             Answers 🎉
           </h2>
-          <AnswerBubble who={CAST[viewer]} label="You" body={answer} />
-          {others.map(([id, body]) => (
-            <AnswerBubble key={id} who={CAST[id]} label={nameFor(id)} body={body} />
-          ))}
-          {waitingFor.map((id) => (
-            <p key={id} className="rounded-2xl bg-muted px-4 py-3 text-muted-foreground">
-              {nameFor(id)} hasn&apos;t answered yet. You&apos;ll see it here 💛
-            </p>
-          ))}
+          {/* One column, same gap everywhere, every bubble full width and top-aligned. */}
+          <ul className="flex flex-col gap-3">
+            <li>
+              <AnswerBubble who={CAST[viewer]} label="You" body={answer} />
+            </li>
+            {others.map(([id, body]) => (
+              <li key={id}>
+                <AnswerBubble who={CAST[id]} label={nameFor(id)} body={body} />
+              </li>
+            ))}
+            {waitingFor.map((id) => (
+              <li key={id}>
+                <AnswerBubble who={CAST[id]} label={nameFor(id)} waiting />
+              </li>
+            ))}
+          </ul>
           {isLeo && shareWithVolunteers && (
             <p className="text-sm text-muted-foreground">Sarah will check your answer first. Volunteers never see your name.</p>
           )}
@@ -104,13 +111,18 @@ export function QuestionFlow({ viewer }: { viewer: Viewer }) {
   );
 }
 
-function AnswerBubble({ who, label, body }: { who: (typeof CAST)[CastId]; label: string; body: string }) {
+function AnswerBubble({ who, label, body, waiting }: { who: (typeof CAST)[CastId]; label: string; body?: string; waiting?: boolean }) {
   return (
     <div className="flex animate-rise items-start gap-3">
-      <PersonaAvatar person={who} size="md" decorative />
-      <div className="flex flex-col gap-1 rounded-3xl rounded-tl-md bg-card p-4 shadow-sm ring-1 ring-border">
+      <PersonaAvatar person={who} size="md" decorative className={cn(waiting && "opacity-50")} />
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col gap-1 rounded-3xl rounded-tl-md p-4",
+          waiting ? "bg-muted text-muted-foreground" : "bg-card shadow-sm ring-1 ring-border",
+        )}
+      >
         <span className="font-bold">{label}</span>
-        <p className="text-lg">{body}</p>
+        <p className="text-lg break-words">{waiting ? "Hasn't answered yet. You'll see it here 💛" : body}</p>
       </div>
     </div>
   );
