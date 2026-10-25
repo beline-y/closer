@@ -281,7 +281,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
           <label className="flex flex-col gap-1.5">
             <span className="sr-only">Your note</span>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={280} placeholder="Type here…" className="rounded-2xl border bg-background p-4 text-lg" />
-            <span className="text-sm text-muted-foreground">Your family and care team can read this. If your grown-up enables daily support, our AI helper reads shared check-ins too. Photos stay out of AI reviews.</span>
+            <span className="text-sm text-muted-foreground">Your family and care team can read this.</span>
             <span className="text-right text-sm text-muted-foreground tabular-nums">{note.length}/280</span>
           </label>,
         )}
