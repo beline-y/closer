@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { PageHero } from "@/components/kit/page-hero";
 import { ACTIVITY_TYPES, type ActivityType } from "@/lib/activities";
 import { getActivities, getUnfinished } from "@/lib/data/activities";
 import { getMyPatient } from "@/lib/data/checkins";
 import { relativeDay, todayIn } from "@/lib/dates";
+import { HUES } from "@/lib/hues";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Play · Closer" };
 
@@ -16,10 +19,9 @@ const who = (m: { relationship?: string; name: string } | null) => (!m ? "your p
 export default function PatientPlayPage() {
   return (
     <>
-      <header className="flex flex-col gap-1">
-        <h1 className="text-4xl font-extrabold">Play 🎨</h1>
-        <p className="text-xl text-muted-foreground">Draw, make, play and imagine.</p>
-      </header>
+      <PageHero emoji="🎨" title="Play" hue="mint" listen="Play. Draw, make, play and imagine.">
+        Draw, make, play and imagine.
+      </PageHero>
       <Suspense fallback={<div className="min-h-96" />}>
         <Play />
       </Suspense>
@@ -38,14 +40,14 @@ async function Play() {
   return (
     <>
       {theme && (
-        <Link href={`/patient/activities/${theme.id}`} className="flex items-center gap-5 rounded-3xl bg-role-patient-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
-          <span aria-hidden className="text-7xl">
+        <Link href={`/patient/activities/${theme.id}`} className="hue-sun pressable flex items-center gap-5 rounded-3xl bg-hue-soft p-5 ring-2 ring-hue">
+          <span aria-hidden className="flex size-24 shrink-0 -rotate-3 items-center justify-center rounded-3xl bg-card text-6xl shadow-sm">
             {theme.emoji}
           </span>
           <span className="flex flex-col gap-1">
-            <span className="font-bold text-role-patient-ink">✨ Today&apos;s theme</span>
-            <span className="font-heading text-3xl font-extrabold">{theme.theme ?? theme.title}</span>
-            <span className="text-lg">Start drawing ▶</span>
+            <span className="font-bold text-hue-ink">✨ Today&apos;s theme</span>
+            <span className="font-heading text-2xl font-extrabold sm:text-3xl">{theme.theme ?? theme.title}</span>
+            <span className="self-start rounded-full bg-hue px-4 py-1 text-lg font-extrabold">Start drawing ▶</span>
           </span>
         </Link>
       )}
@@ -53,14 +55,14 @@ async function Play() {
       {unfinished.length > 0 && (
         <section aria-labelledby="continue-title" className="flex flex-col gap-3">
           <h2 id="continue-title" className="text-2xl font-extrabold">
-            Continue
+            Continue <span aria-hidden>⏯️</span>
           </h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {unfinished.map((u) => (
-              <li key={u.id}>
+              <li key={u.id} className={HUES[ACTIVITY_TYPES[u.activity.type].hue]}>
                 {u.status === "waiting_partner" ? (
-                  <div className="flex min-h-20 items-center gap-4 rounded-3xl bg-card p-4 ring-1 ring-border">
-                    <span aria-hidden className="text-4xl">
+                  <div className="flex min-h-20 items-center gap-4 rounded-3xl bg-card p-4 ring-2 ring-hue">
+                    <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-hue-soft text-4xl">
                       {u.activity.emoji}
                     </span>
                     <span className="flex flex-col">
@@ -69,15 +71,16 @@ async function Play() {
                     </span>
                   </div>
                 ) : (
-                  <Link href={`/patient/activities/${u.activity.id}?session=${u.id}`} className="flex min-h-20 items-center gap-4 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
-                    <span aria-hidden className="text-4xl">
+                  <Link href={`/patient/activities/${u.activity.id}?session=${u.id}`} className="pressable flex min-h-20 items-center gap-4 rounded-3xl bg-card p-4 ring-2 ring-hue">
+                    <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-hue-soft text-4xl">
                       {u.activity.emoji}
                     </span>
                     <span className="flex flex-col">
                       <span className="font-bold">{u.activity.title}</span>
                       <span className="text-muted-foreground">
-                        {u.draft ? "Your draft is saved" : "Started"} · {relativeDay(u.daysAgo).toLowerCase()} · Continue ▶
+                        {u.draft ? "Your draft is saved" : "Started"} · {relativeDay(u.daysAgo).toLowerCase()}
                       </span>
+                      <span className="font-extrabold text-hue-ink">Continue ▶</span>
                     </span>
                   </Link>
                 )}
@@ -91,19 +94,26 @@ async function Play() {
         const list = activities.filter((a) => a.type === type);
         if (!list.length) return null;
         return (
-          <section key={type} aria-labelledby={`type-${type}`} className="flex flex-col gap-2">
-            <h2 id={`type-${type}`} className="text-xl font-extrabold">
-              {ACTIVITY_TYPES[type].emoji} {ACTIVITY_TYPES[type].label}
+          <section key={type} aria-labelledby={`type-${type}`} className={cn("flex flex-col gap-3", HUES[ACTIVITY_TYPES[type].hue])}>
+            <h2 id={`type-${type}`} className="flex items-center gap-2 text-2xl font-extrabold">
+              <span aria-hidden className="flex size-11 items-center justify-center rounded-2xl bg-hue-soft text-2xl">
+                {ACTIVITY_TYPES[type].emoji}
+              </span>
+              {ACTIVITY_TYPES[type].label}
             </h2>
-            <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
+            {/* Scrolls sideways; the bottom padding leaves room for the pressable edge. */}
+            <ul className="-mx-4 flex gap-4 overflow-x-auto px-4 pt-1 pb-3">
               {list.map((a) => (
                 <li key={a.id} className="w-44 shrink-0">
-                  <Link href={`/patient/activities/${a.id}`} className="flex h-full flex-col gap-2 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
-                    <span aria-hidden className="flex size-14 items-center justify-center rounded-2xl bg-role-patient-soft text-3xl">
+                  <Link href={`/patient/activities/${a.id}`} className="pressable flex h-full flex-col gap-2 rounded-3xl bg-hue-soft p-4">
+                    <span aria-hidden className="flex size-16 items-center justify-center rounded-2xl bg-card text-4xl shadow-sm">
                       {a.emoji}
                     </span>
-                    <span className="font-bold">{a.title}</span>
-                    <span className="mt-auto text-sm text-muted-foreground">{a.minutes} min · Start ▶</span>
+                    <span className="text-lg leading-snug font-bold">{a.title}</span>
+                    <span className="mt-auto flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground">{a.minutes} min</span>
+                      <span className="rounded-full bg-card px-3 py-1 font-extrabold text-hue-ink">Start ▶</span>
+                    </span>
                   </Link>
                 </li>
               ))}

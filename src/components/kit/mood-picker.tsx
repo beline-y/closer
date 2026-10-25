@@ -17,15 +17,15 @@ export function MoodPicker({ value, onChange, compact }: { value: number | null;
             aria-checked={selected}
             onClick={() => onChange(m.value)}
             className={cn(
-              "flex min-h-(--tap) flex-col items-center justify-center gap-1 rounded-2xl border-2 bg-card px-1 py-2 transition active:scale-95",
-              selected ? "border-current shadow-md" : "border-transparent ring-1 ring-border hover:-translate-y-0.5",
+              "flex min-h-(--tap) flex-col items-center justify-center gap-1 rounded-2xl border-2 px-1 py-2 transition active:scale-95",
+              selected ? cn("border-current shadow-md", m.tint) : "border-transparent bg-card ring-1 ring-border hover:-translate-y-0.5",
               m.text,
             )}
           >
             <span aria-hidden className={cn("leading-none", compact ? "text-3xl" : "text-4xl sm:text-5xl", selected && "animate-pop")}>
               {m.emoji}
             </span>
-            <span className="text-center text-xs font-bold text-foreground sm:text-sm">{m.label}</span>
+            <span className="text-center text-sm leading-tight font-bold text-foreground sm:text-base">{m.label}</span>
             <span aria-hidden className={cn("h-1.5 w-8 rounded-full", m.bg)} />
           </button>
         );

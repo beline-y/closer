@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { finishActivity, saveDraft, startActivity } from "@/app/activity-actions";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
+import { ReadAloud } from "@/components/kit/read-aloud";
 import { type Activity, ACTIVITY_TYPES, type ShareChoice } from "@/lib/activities";
 import type { CastMember } from "@/lib/cast";
+import { HUES, type Hue } from "@/lib/hues";
 import { preparePhoto } from "@/lib/images";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -75,14 +77,15 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
         <h1 className="text-4xl font-extrabold">Well done! 🎉</h1>
+        {/* Same colors as the tabs: family is Connect, Memories, and Me. */}
         <ResultPreview result={result} activity={activity} />
         <p className="text-xl font-bold">Who can see it?</p>
         <div className="grid gap-3">
           {(
             [
-              { value: "family", emoji: "💛", label: "Share with my family", hint: "It shows in their feed" },
-              { value: "memories", emoji: "📸", label: "Add to Memories", hint: "In the album you share with your family" },
-              { value: "private", emoji: "🔒", label: "Keep it for myself", hint: "Only you can see it" },
+              { value: "family", emoji: "💛", label: "Share with my family", hint: "It shows in their feed", hue: "coral" },
+              { value: "memories", emoji: "📸", label: "Add to Memories", hint: "In the album you share with your family", hue: "sky" },
+              { value: "private", emoji: "🔒", label: "Keep it for myself", hint: "Only you can see it", hue: "lilac" },
             ] as const
           ).map((c) => (
             <button
@@ -90,14 +93,14 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
               type="button"
               disabled={saving}
               onClick={() => finish(result, c.value)}
-              className="flex min-h-20 items-center gap-4 rounded-3xl bg-card p-4 text-left shadow-sm ring-1 ring-border transition hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60"
+              className={cn("pressable flex min-h-20 items-center gap-4 rounded-3xl bg-hue-soft p-4 text-left disabled:opacity-60", HUES[c.hue])}
             >
-              <span aria-hidden className="text-4xl">
+              <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-4xl shadow-sm">
                 {c.emoji}
               </span>
               <span className="flex flex-col">
                 <span className="text-xl font-extrabold">{c.label}</span>
-                <span className="text-muted-foreground">{c.hint}</span>
+                <span className="font-bold text-hue-ink">{c.hint}</span>
               </span>
             </button>
           ))}
@@ -124,20 +127,21 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
 
   // Intro
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
+    <div className={cn("mx-auto flex w-full max-w-xl flex-col gap-5", HUES[type.hue])}>
       <Link href="/patient/play" className="min-h-11 self-start content-center rounded-full px-3 font-bold text-muted-foreground hover:bg-muted">
         ← Play
       </Link>
-      <div className="flex flex-col items-center gap-3 rounded-3xl bg-role-patient-soft p-6 text-center">
-        <span aria-hidden className="animate-pop text-8xl">
+      <div className="flex flex-col items-center gap-3 rounded-[2rem] bg-hue-soft p-6 text-center">
+        <span aria-hidden className="flex size-32 animate-pop items-center justify-center rounded-[2rem] bg-card text-8xl shadow-sm">
           {activity.emoji}
         </span>
-        <p className="font-bold text-role-patient-ink">
+        <p className="font-bold text-hue-ink">
           {type.emoji} {type.label} · about {activity.minutes} min
         </p>
         <h1 className="text-4xl font-extrabold">{activity.title}</h1>
         {activity.theme && activity.theme !== activity.title && <p className="text-xl">“{activity.theme}”</p>}
-        {activity.instructions && <p className="text-lg text-muted-foreground">{activity.instructions}</p>}
+        {activity.instructions && <p className="text-lg">{activity.instructions}</p>}
+        <ReadAloud text={[activity.title, activity.theme !== activity.title && activity.theme, activity.instructions].filter(Boolean).join(". ")} />
       </div>
 
       {activity.type === "challenge" && (
@@ -176,7 +180,7 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
             });
           }
         }}
-        className="min-h-16 rounded-2xl bg-role-patient text-2xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
+        className="hue-sun pressable min-h-16 rounded-2xl bg-hue text-2xl font-extrabold disabled:opacity-50"
       >
         {resume ? "Continue ▶" : "Start ▶"}
       </button>
@@ -225,7 +229,7 @@ function Saved({ activity, choice, partner }: { activity: Activity; choice: Shar
       </h1>
       <p className="text-lg text-muted-foreground">It counts in your activity of the day: {ACTIVITY_TYPES[activity.type].emoji} {ACTIVITY_TYPES[activity.type].label}</p>
       <div className="flex flex-wrap justify-center gap-3">
-        <Link href="/patient/play" className="flex min-h-14 items-center rounded-2xl bg-role-patient px-6 text-xl font-extrabold">
+        <Link href="/patient/play" className="hue-sun pressable flex min-h-14 items-center rounded-2xl bg-hue px-6 text-xl font-extrabold">
           Play more
         </Link>
         {choice === "private" && (
@@ -263,10 +267,13 @@ function MakeAndSnap({ activity, onPhoto, error }: { activity: Activity; onPhoto
     }
   };
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
-      <h1 className="text-3xl font-extrabold">
-        {activity.emoji} {activity.title}
-      </h1>
+    <div className={cn("mx-auto flex w-full max-w-xl flex-col gap-5", HUES[ACTIVITY_TYPES.make_snap.hue])}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-extrabold">
+          {activity.emoji} {activity.title}
+        </h1>
+        <ReadAloud text={activity.steps.map((s, i) => `Step ${i + 1}. ${s}`).join(" ")} label="Listen to the steps" />
+      </div>
       <ol className="flex flex-col gap-2">
         {activity.steps.map((s, i) => (
           <li key={i}>
@@ -286,10 +293,10 @@ function MakeAndSnap({ activity, onPhoto, error }: { activity: Activity; onPhoto
       </ol>
       <p className="text-xl font-bold">Show your creation 📸</p>
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" disabled={busy} onClick={() => camera.current?.click()} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-role-patient text-lg font-extrabold disabled:opacity-60">
+        <button type="button" disabled={busy} onClick={() => camera.current?.click()} className="hue-sun pressable flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-hue text-lg font-extrabold disabled:opacity-60">
           <Camera className="size-8" aria-hidden /> Take a photo
         </button>
-        <button type="button" disabled={busy} onClick={() => gallery.current?.click()} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-muted text-lg font-extrabold disabled:opacity-60">
+        <button type="button" disabled={busy} onClick={() => gallery.current?.click()} className="pressable flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-hue-soft text-lg font-extrabold disabled:opacity-60">
           <ImageIcon className="size-8" aria-hidden /> From my photos
         </button>
       </div>
@@ -302,8 +309,12 @@ function MakeAndSnap({ activity, onPhoto, error }: { activity: Activity; onPhoto
 }
 
 // ---------------------------------------------------------------------------
-// Quiz: one question at a time, kind feedback, a fun fact, a score with stars
+// Quiz: one question at a time, kind feedback, a fun fact, a score with stars.
+// Each answer has a color and a letter, so it can be told apart without the color.
 // ---------------------------------------------------------------------------
+const ANSWER_HUES: Hue[] = ["sky", "coral", "mint", "sun", "lilac"];
+const LETTERS = "ABCDE";
+
 function Quiz({ activity, onDone }: { activity: Activity; onDone: (score: number, total: number) => void }) {
   const questions = activity.quiz ?? [];
   const [index, setIndex] = useState(0);
@@ -313,14 +324,17 @@ function Quiz({ activity, onDone }: { activity: Activity; onDone: (score: number
   if (!q) return null;
   const right = picked === q.answer;
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
+    <div className={cn("mx-auto flex w-full max-w-xl flex-col gap-5", HUES[ACTIVITY_TYPES.quiz.hue])}>
       <p aria-label={`Question ${index + 1} of ${questions.length}`} className="flex justify-center gap-2">
         {questions.map((_, i) => (
           <span key={i} aria-hidden className={cn("h-3 rounded-full transition-all", i === index ? "w-8 bg-role-patient-ink" : i < index ? "w-3 bg-role-patient" : "w-3 bg-muted")} />
         ))}
       </p>
-      <h1 className="text-3xl font-extrabold">{q.q}</h1>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="flex flex-col gap-3">
+        <h1 className="text-3xl font-extrabold">{q.q}</h1>
+        <ReadAloud key={index} text={`${q.q} ${q.options.map((o, i) => `${LETTERS[i]}: ${o}.`).join(" ")}`} className="self-start" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         {q.options.map((o, i) => (
           <button
             key={o}
@@ -331,16 +345,20 @@ function Quiz({ activity, onDone }: { activity: Activity; onDone: (score: number
               if (i === q.answer) setScore((s) => s + 1);
             }}
             className={cn(
-              "min-h-16 rounded-2xl px-4 text-xl font-bold shadow-sm ring-1 ring-border transition active:scale-[0.98]",
-              picked === null ? "bg-card hover:-translate-y-0.5" : i === q.answer ? "bg-success text-white" : picked === i ? "bg-role-family-soft" : "bg-card opacity-60",
+              "pressable flex min-h-18 items-center gap-3 rounded-2xl p-3 text-left text-xl font-bold",
+              HUES[ANSWER_HUES[i % ANSWER_HUES.length]],
+              picked === null ? "bg-hue-soft" : i === q.answer ? "bg-success text-white" : picked === i ? "bg-hue-soft" : "bg-hue-soft opacity-50",
             )}
           >
+            <span aria-hidden className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold", picked !== null && i === q.answer ? "bg-white text-success" : "bg-card text-hue-ink")}>
+              {picked !== null && i === q.answer ? <Check className="size-6" /> : LETTERS[i]}
+            </span>
             {o}
           </button>
         ))}
       </div>
       {picked !== null && (
-        <div role="status" className="flex animate-rise flex-col gap-3 rounded-3xl bg-role-patient-soft p-5">
+        <div role="status" className="flex animate-rise flex-col gap-3 rounded-3xl bg-hue-soft p-5">
           <p className="text-2xl font-extrabold">{right ? "Yes! 🎉" : `Almost! It's ${q.options[q.answer]} 💛`}</p>
           {q.fact && <p className="text-lg">💡 {q.fact}</p>}
           <button
@@ -351,7 +369,7 @@ function Quiz({ activity, onDone }: { activity: Activity; onDone: (score: number
                 setPicked(null);
               } else onDone(score, questions.length);
             }}
-            className="min-h-14 rounded-2xl bg-role-patient text-xl font-extrabold"
+            className="hue-sun pressable min-h-14 rounded-2xl bg-hue text-xl font-extrabold"
           >
             {index + 1 < questions.length ? "Next question" : "See my score"}
           </button>
@@ -403,11 +421,14 @@ function StoryWriter({ activity, sessionId, initialText, onDone }: { activity: A
 
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className={cn("mx-auto flex w-full max-w-2xl flex-col gap-5", HUES[ACTIVITY_TYPES.story.hue])}>
       <h1 className="text-3xl font-extrabold">
         {activity.emoji} {activity.theme ?? activity.title}
       </h1>
-      <p className="text-lg text-muted-foreground">{activity.instructions}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="flex-1 text-lg text-muted-foreground">{activity.instructions}</p>
+        {activity.instructions && <ReadAloud text={activity.instructions} />}
+      </div>
       <label htmlFor="story" className="sr-only">
         Your story
       </label>
@@ -419,8 +440,9 @@ function StoryWriter({ activity, sessionId, initialText, onDone }: { activity: A
             {listening ? "Stop" : "Say it"}
           </button>
         )}
+        {words > 0 && <ReadAloud text={text} label="Hear my story" />}
         <span className="text-muted-foreground tabular-nums">{words} words</span>
-        <button type="button" disabled={words < 3} onClick={() => onDone(text)} className="ml-auto min-h-14 rounded-2xl bg-role-patient px-6 text-xl font-extrabold disabled:opacity-50">
+        <button type="button" disabled={words < 3} onClick={() => onDone(text)} className="hue-sun pressable ml-auto min-h-14 rounded-2xl bg-hue px-6 text-xl font-extrabold disabled:opacity-50">
           My story is done
         </button>
       </div>

@@ -3,6 +3,7 @@ import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { WellbeingPanel } from "@/components/wellbeing/dashboard";
+import { PageHero } from "@/components/kit/page-hero";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { CheckInCard } from "@/components/checkin-card";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -26,14 +27,13 @@ export default function PatientTodayPage() {
 
   return (
     <>
-      <header className="flex flex-col gap-1">
-        <h1 className="text-4xl font-extrabold sm:text-5xl">Hi Leo! 👋</h1>
-        <p className="text-xl text-muted-foreground">Your people are thinking of you.</p>
-      </header>
+      <PageHero emoji="👋" title="Hi Leo!" hue="sun" listen="Hi Leo! Your people are thinking of you.">
+        Your people are thinking of you.
+      </PageHero>
 
       <section aria-labelledby="thinking-title" className="flex flex-col gap-3">
-        <h2 id="thinking-title" className="text-xl font-extrabold">
-          Thinking of you today
+        <h2 id="thinking-title" className="text-2xl font-extrabold">
+          Thinking of you today <span aria-hidden>💛</span>
         </h2>
         <Suspense fallback={<div className="h-24" />}>
           <ThinkingOfYou />
@@ -45,7 +45,7 @@ export default function PatientTodayPage() {
           <TodayCheckIn />
         </Suspense>
 
-        <Suspense fallback={<div className="min-h-40 rounded-3xl bg-role-volunteer-soft" />}>
+        <Suspense fallback={<div className="hue-lilac min-h-40 rounded-3xl bg-hue-soft" />}>
           <TodayQuestionCard />
         </Suspense>
 
@@ -60,13 +60,13 @@ export default function PatientTodayPage() {
 
       {newMemories.length > 0 && (
         <section aria-labelledby="memories-title" className="flex flex-col gap-3">
-          <h2 id="memories-title" className="text-xl font-extrabold">
-            New memories
+          <h2 id="memories-title" className="text-2xl font-extrabold">
+            New memories <span aria-hidden>📸</span>
           </h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {newMemories.map((m) => (
-              <li key={m.id}>
-                <Link href="/patient/memories" className="flex items-center gap-4 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
+              <li key={m.id} className="hue-sky">
+                <Link href="/patient/memories" className="pressable flex items-center gap-4 rounded-3xl bg-card p-3 ring-1 ring-hue">
                   <span aria-hidden className={`flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-4xl ${m.gradient}`}>
                     {m.emoji}
                   </span>
@@ -99,37 +99,29 @@ async function TodayCheckIn() {
   const doneToday = latest?.daysAgo === 0;
 
   return (
-    <section aria-labelledby="checkin-title" className="relative flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border">
+    <section aria-labelledby="checkin-title" className="hue-sun flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-2 ring-hue">
       <LiveRefresh
         channel={`patient-today-${patient.id}`}
         watch={[{ table: "mood_checkins", filter: `patient_id=eq.${patient.id}` }, { table: "checkin_reactions" }]}
       />
-      <div className="flex items-start justify-between gap-3 pr-12">
-        <h2 id="checkin-title" className="text-2xl font-extrabold">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 id="checkin-title" className="mr-auto text-2xl font-extrabold">
           {doneToday ? "Mood of the day" : "How do you feel?"}
         </h2>
         {streak.totalDays > 0 && (
-          <span className="rounded-full bg-role-patient-soft px-3 py-1 font-bold whitespace-nowrap text-role-patient-ink">
+          <span className="rounded-full bg-hue-soft px-3 py-1 font-bold whitespace-nowrap text-hue-ink">
             <span aria-hidden>🔥</span> {streak.totalDays} {streak.totalDays === 1 ? "day" : "days"}
           </span>
         )}
+        {doneToday && (
+          <Link href="/patient/checkin" className="flex min-h-12 items-center gap-1.5 rounded-full bg-muted px-4 font-bold transition hover:bg-hue-soft">
+            <Pencil className="size-5" aria-hidden /> Change
+          </Link>
+        )}
       </div>
-      {doneToday && (
-        <Link
-          href="/patient/checkin"
-          aria-label="Edit my mood"
-          title="Edit my mood"
-          className="absolute top-4 right-4 flex size-12 items-center justify-center rounded-full bg-muted transition hover:bg-role-patient-soft"
-        >
-          <Pencil className="size-5" aria-hidden />
-        </Link>
-      )}
       {!doneToday && (
-        <Link
-          href="/patient/checkin"
-          className="flex min-h-20 items-center justify-center gap-3 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition hover:-translate-y-0.5 active:scale-[0.98]"
-        >
-          <span aria-hidden className="text-4xl">
+        <Link href="/patient/checkin" className="pressable flex min-h-20 items-center justify-center gap-3 rounded-2xl bg-hue text-2xl font-extrabold">
+          <span aria-hidden className="text-5xl">
             😊
           </span>
           Check in
@@ -187,16 +179,16 @@ async function SuggestedActivity() {
   const dayNumber = Math.floor(Date.parse(todayIn(patient.timezone)) / 86_400_000);
   const pick = activities.filter((a) => a.type !== "challenge")[dayNumber % activities.filter((a) => a.type !== "challenge").length];
   return (
-    <Link href={`/patient/activities/${pick.id}`} aria-labelledby="activity-title" className="flex items-center gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
-      <span aria-hidden className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-role-patient-soft text-4xl">
+    <Link href={`/patient/activities/${pick.id}`} aria-labelledby="activity-title" className="hue-mint pressable flex items-center gap-4 rounded-3xl bg-hue-soft p-5">
+      <span aria-hidden className="flex size-20 shrink-0 rotate-3 items-center justify-center rounded-3xl bg-card text-5xl shadow-sm">
         {pick.emoji}
       </span>
-      <span className="flex flex-col">
-        <span className="text-sm font-bold text-muted-foreground">Try this</span>
-        <span id="activity-title" className="font-heading text-xl font-extrabold">
+      <span className="flex flex-col gap-0.5">
+        <span className="font-bold text-hue-ink">🎨 Try this</span>
+        <span id="activity-title" className="font-heading text-2xl font-extrabold">
           {pick.title}
         </span>
-        <span className="text-muted-foreground">About {pick.minutes} minutes · Start ▶</span>
+        <span className="text-lg">About {pick.minutes} minutes · Start ▶</span>
       </span>
     </Link>
   );
@@ -209,16 +201,16 @@ async function CardsWaiting() {
   return (
     <Link
       href="/patient/connect"
-      className="flex items-center gap-4 rounded-3xl bg-role-family-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5"
+      className="hue-coral pressable flex items-center gap-4 rounded-3xl bg-hue-soft p-5"
     >
-      <span aria-hidden className="animate-wiggle text-5xl">
-        💌
+      <span aria-hidden className="flex size-20 shrink-0 -rotate-3 items-center justify-center rounded-3xl bg-card text-5xl shadow-sm">
+        <span className="animate-wiggle">💌</span>
       </span>
-      <span className="flex flex-col">
+      <span className="flex flex-col gap-0.5">
         <span className="font-heading text-2xl font-extrabold">
           {sealed} {sealed === 1 ? "card" : "cards"} for you
         </span>
-        <span className="text-lg text-muted-foreground">Open them when you want</span>
+        <span className="text-lg font-bold text-hue-ink">Open them when you want ▶</span>
       </span>
     </Link>
   );
@@ -232,10 +224,15 @@ async function TodayQuestionCard() {
   if (!q) return null;
   const who = q.answeredBy.map((m) => (m.relationship === "Mom" || m.relationship === "Dad" ? m.relationship : m.name));
   return (
-    <Link href="/patient/question" className="flex flex-col gap-3 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
-      <span className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</span>
+    <Link href="/patient/question" className="hue-lilac pressable flex flex-col gap-3 rounded-3xl bg-hue-soft p-5">
+      <span className="flex items-center gap-2 font-bold text-hue-ink">
+        <span aria-hidden className="flex size-10 items-center justify-center rounded-2xl bg-card text-2xl shadow-sm">
+          ❓
+        </span>
+        Today&apos;s question
+      </span>
       <span className="font-heading text-2xl font-extrabold">{q.text}</span>
-      <span className="text-lg">
+      <span className="text-lg font-bold">
         {q.myAnswer ? "✅ You answered. See everyone's answers ▶" : who.length ? `🔒 ${who.join(" and ")} answered! Answer to see it.` : "Be the first to answer ▶"}
       </span>
     </Link>
