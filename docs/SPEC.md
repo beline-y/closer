@@ -42,6 +42,7 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - **Streak celebrates, never punishes.** Computed from `mood_checkins` only. Headline = total days connected. One rest day per 7 days keeps the run going. After a break: "Welcome back!", never "you lost your streak". Badges at 3, 7, 14 and 30 days, also shown in the family feed.
 - **Reactions:** one per person per check-in (❤️ heart, 🤗 hug, 💪 strong, 😂 laugh), changeable. Family and friends only.
 - **Activities are done in the app** (draw, make and snap, quiz, story, challenge with family) and end with a result. The patient chooses: share with family, add to Memories, or keep for themselves. A challenge is revealed side by side only when both are done. The care team only gets completion counts.
+- **Question ideas: curated first, Mistral as fallback.** The family gets curated questions it hasn't seen. When none is left, and only with the guardian's AI consent (`wellbeing_permissions`), Mistral writes new ones from an age range and masked interests only (never names, check-ins, notes, journal, answers or health). They are stored in the pool and reused. Without consent, key or Mistral: the oldest curated questions come back.
 - **Memories** are shared by the patient's circle only. The care team and volunteers never see them.
 - **Cloud-only workflow:** no Docker, no local Supabase. One shared Supabase cloud project (US) is the dev database for every branch preview and for `main`. Migrations go through `supabase db push`, one person at a time. Features are tested on Vercel preview URLs. Production will get its own Supabase project later.
 
@@ -157,7 +158,8 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `nudges` | patient_id, kind (miss_you, call_me, bored, proud, hug) | Created only by `send_nudge(kind, recipients)`: active patient only, per-type cooldown from `patient_settings`, recipients limited to the patient's family and friends (default: all). Patient and recipients read. No care team, no volunteers. Realtime. |
 | `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji (❤️ 📞 🤗 ⭐), reply_text ≤ 140, replied_at | Recipient reads and replies on their own row only. The patient reads every reply (never "no reply"). Realtime. |
 | `comfort_cards` | author_id, body ≤ 1000, color, opened_at | Author reads their own. Patient reads only opened cards. `sealed_cards()` and `open_comfort_card()` handle sealed ones. No care team access. |
-| `question_bank` | text, min_age, max_age, tags | Anyone signed in reads. |
+| `question_bank` | text, source (curated / mistral), patient_id (generated ones only), min_age, max_age, tags | 60 curated questions shared by everyone (volunteers excepted); Mistral-generated ones belong to one patient's family. Written only through `next_question_ideas()` / `add_generated_questions()`. |
+| `question_suggestions` | patient_id, question_id, suggested_to, suggested_at | What a family already saw: never repeated until the pool runs out, then the oldest curated come back. Circle reads. |
 | `daily_questions` | patient_id, local_date, text, source | Patient and family read. |
 | `question_answers` | question_id, user_id, body ≤ 500 | Read your own; others' only after you've answered. No care team access. |
 | `notifications` | user_id, kind, ref_id, read_at, emailed_at | Owner only. Delivered through Realtime. |

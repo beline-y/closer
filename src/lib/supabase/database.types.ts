@@ -943,6 +943,90 @@ export type Database = {
         }
         Relationships: []
       }
+      question_bank: {
+        Row: {
+          created_at: string
+          id: string
+          max_age: number
+          min_age: number
+          patient_id: string | null
+          source: string
+          tags: string[]
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_age?: number
+          min_age?: number
+          patient_id?: string | null
+          source: string
+          tags?: string[]
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_age?: number
+          min_age?: number
+          patient_id?: string | null
+          source?: string
+          tags?: string[]
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_suggestions: {
+        Row: {
+          patient_id: string
+          question_id: string
+          suggested_at: string
+          suggested_to: string | null
+        }
+        Insert: {
+          patient_id: string
+          question_id: string
+          suggested_at?: string
+          suggested_to?: string | null
+        }
+        Update: {
+          patient_id?: string
+          question_id?: string
+          suggested_at?: string
+          suggested_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_suggestions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_suggestions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_suggestions_suggested_to_fkey"
+            columns: ["suggested_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wellbeing_permissions: {
         Row: {
           consent_version: string
@@ -1027,6 +1111,10 @@ export type Database = {
           local_date: string
         }[]
       }
+      add_generated_questions: {
+        Args: { p_patient_id: string; p_questions: string[] }
+        Returns: number
+      }
       can_process_wellbeing: {
         Args: { p_consent_at: string; p_patient_id: string }
         Returns: boolean
@@ -1058,6 +1146,18 @@ export type Database = {
           session_id: string
           theme: string
           title: string
+        }[]
+      }
+      next_question_ideas: {
+        Args: { p_count?: number; p_patient_id: string; p_reuse?: boolean }
+        Returns: {
+          age_range: string
+          ai_allowed: boolean
+          interests: string[]
+          question_id: string
+          reused: boolean
+          source: string
+          text: string
         }[]
       }
       send_nudge: {
