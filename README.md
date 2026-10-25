@@ -1,5 +1,7 @@
 # Closer 💛
 
+Volunteer message screening: [setup, rollout and verification](docs/VOLUNTEER_SCREENING.md).
+
 Test branche Louis
 
 Closer connects hospitalized children and isolated patients with their family, friends, care team and inspiring volunteers, to make hospital stays less lonely.
