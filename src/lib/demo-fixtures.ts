@@ -127,17 +127,8 @@ export const MEMORIES: Memory[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Patient: activities and private journal
+// Patient: private journal
 // ---------------------------------------------------------------------------
-export const SUGGESTED_ACTIVITY = { emoji: "🐙", title: "Draw your favorite sea creature", minutes: 15 };
-
-export const ACTIVITIES = [
-  { emoji: "🐙", title: "Draw your favorite sea creature", minutes: 15 },
-  { emoji: "🧩", title: "Puzzle of the day", minutes: 10 },
-  { emoji: "🎵", title: "Make a playlist for Dad", minutes: 10 },
-  { emoji: "📖", title: "Read a story with Mom on video", minutes: 20 },
-];
-
 export const JOURNAL_ENTRIES = [
   { daysAgo: 0, emoji: "🐋", body: "Today I drew a whale shark. They are the biggest fish in the world.", sharedWithCare: false },
   { daysAgo: 2, emoji: "🌧️", body: "I was a bit scared before the test but Sarah held my hand.", sharedWithCare: true },

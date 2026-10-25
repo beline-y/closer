@@ -16,6 +16,7 @@ import {
   Sun,
   User,
   Users,
+  UtensilsCrossed,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-// Max 5 tabs per role. The first item is the role's home.
+// Max 5 tabs for patient, family and volunteer (bottom bar). The first item is the role's home.
 export const NAV: Record<RoleKey, NavItem[]> = {
   patient: [
     { href: "/patient", label: "Today", icon: Sun },
@@ -50,6 +51,7 @@ export const NAV: Record<RoleKey, NavItem[]> = {
     { href: "/care", label: "Patients", icon: Users },
     { href: "/care/alerts", label: "Alerts", icon: AlertTriangle },
     { href: "/care/volunteers", label: "Volunteers", icon: HandHeart },
+    { href: "/care/menus", label: "Menus", icon: UtensilsCrossed },
     { href: "/care/events", label: "Events", icon: CalendarDays },
     { href: "/care/settings", label: "Settings", icon: Settings },
   ],

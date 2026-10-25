@@ -1,31 +1,30 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { ACTIVITIES, type CheckInInput, MEAL_AMOUNTS, MEALS, REACTIONS } from "@/lib/checkin";
-import { getMyPatient } from "@/lib/data/checkins";
+import { ACTIVITIES, type CheckInInput, MEAL_AMOUNTS, REACTIONS } from "@/lib/checkin";
+import { getMyPatient, getStreak } from "@/lib/data/checkins";
 import { todayIn } from "@/lib/dates";
+import type { Streak } from "@/lib/streak";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+export type SaveCheckinResult = { ok: true; streak: Streak } | { ok: false; error: string };
 
 const text = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) || null : null);
 const pick = <T extends string>(values: unknown, allowed: readonly T[]): T[] =>
   Array.isArray(values) ? [...new Set(values.filter((v): v is T => allowed.includes(v as T)))] : [];
 
-// Creates or edits today's check-in. The database sets the day and refuses other days (RLS).
-export async function saveCheckin(input: CheckInInput): Promise<ActionResult> {
+// Creates or edits today's check-in and its dish ratings. The database sets the day and
+// refuses other days and dishes from another day or unit (RLS).
+export async function saveCheckin(input: CheckInInput): Promise<SaveCheckinResult> {
   const patient = await getMyPatient();
   if (!patient) return { ok: false, error: "Only the patient can check in." };
 
   const mood = Number(input.mood);
   if (!Number.isInteger(mood) || mood < 1 || mood > 5) return { ok: false, error: "Pick a mood first." };
 
-  const amount = MEAL_AMOUNTS.some((a) => a.value === input.mealAmount) ? input.mealAmount : null;
   const fields = {
     mood,
-    meals: pick(input.meals, MEALS.map((m) => m.value)),
-    meal_amount: amount,
-    meal_note: text(input.mealNote, 120),
     activities: pick(input.activities, ACTIVITIES.map((a) => a.value)),
     activity_note: text(input.activityNote, 120),
     note: text(input.note, 280),
@@ -42,6 +41,23 @@ export async function saveCheckin(input: CheckInInput): Promise<ActionResult> {
     ? await supabase.from("mood_checkins").update(fields).eq("id", existing.id).select("id").single()
     : await supabase.from("mood_checkins").insert({ patient_id: patient.id, ...fields }).select("id").single();
   if (error || !checkin) return { ok: false, error: "Couldn't save. Try again?" };
+
+  // Ratings: replace today's set with what the patient sent (only rated dishes are kept).
+  const amounts = MEAL_AMOUNTS.map((a) => a.value);
+  const ratings = (Array.isArray(input.ratings) ? input.ratings : [])
+    .map((r) => ({
+      checkin_id: checkin.id,
+      patient_id: patient.id,
+      menu_item_id: String(r.menuItemId),
+      liking: Number.isInteger(r.liking) && r.liking! >= 1 && r.liking! <= 5 ? r.liking : null,
+      amount: amounts.includes(r.amount as (typeof amounts)[number]) ? r.amount : null,
+    }))
+    .filter((r) => r.liking !== null || r.amount !== null);
+  await supabase.from("meal_ratings").delete().eq("checkin_id", checkin.id);
+  if (ratings.length) {
+    const { error: ratingError } = await supabase.from("meal_ratings").insert(ratings);
+    if (ratingError) return { ok: false, error: "The meal ratings couldn't be saved." };
+  }
 
   if (input.photoPath !== undefined) {
     const { data: previous } = await supabase.from("checkin_photos").select("path").eq("checkin_id", checkin.id).maybeSingle();
@@ -60,29 +76,27 @@ export async function saveCheckin(input: CheckInInput): Promise<ActionResult> {
     }
   }
 
+  const streak = await getStreak(patient.id, patient.timezone);
   refresh();
-  return { ok: true };
+  return { ok: true, streak };
 }
 
-// Family and friends react to a check-in; tapping again removes the reaction.
-export async function toggleCheckinReaction(checkinId: string, emoji: string): Promise<ActionResult> {
-  if (!REACTIONS.includes(emoji as (typeof REACTIONS)[number])) return { ok: false, error: "Unknown reaction." };
+// One reaction per person per check-in: tap another to change it, the same one to remove it.
+export async function setCheckinReaction(checkinId: string, emoji: string): Promise<ActionResult> {
+  if (!REACTIONS.some((r) => r.emoji === emoji)) return { ok: false, error: "Unknown reaction." };
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
   if (!userId) return { ok: false, error: "Not signed in." };
 
-  const { data: existing, error: readError } = await supabase
-    .from("checkin_reactions")
-    .select("emoji")
-    .match({ checkin_id: checkinId, user_id: userId })
-    .maybeSingle();
+  const match = { checkin_id: checkinId, user_id: userId };
+  const { data: existing, error: readError } = await supabase.from("checkin_reactions").select("emoji").match(match).maybeSingle();
   if (readError) return { ok: false, error: "Couldn't load your reaction." };
-  const { error } = existing?.emoji === emoji
-    ? await supabase.from("checkin_reactions").delete().match({ checkin_id: checkinId, user_id: userId, emoji })
-    : existing
-      ? await supabase.from("checkin_reactions").update({ emoji }).match({ checkin_id: checkinId, user_id: userId })
-      : await supabase.from("checkin_reactions").insert({ checkin_id: checkinId, user_id: userId, emoji });
+  const { error } = !existing
+    ? await supabase.from("checkin_reactions").insert({ ...match, emoji })
+    : existing.emoji === emoji
+      ? await supabase.from("checkin_reactions").delete().match(match)
+      : await supabase.from("checkin_reactions").update({ emoji }).match(match);
   if (error) return { ok: false, error: "Couldn't react." };
 
   refresh();

@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { replyToNudge } from "@/app/nudge-actions";
 import { FeedItem } from "@/components/kit/feed-item";
+import { ResultCard } from "@/components/activities/result-card";
 import { CheckInCard } from "@/components/checkin-card";
 import { ReactionBar } from "@/components/reaction-bar";
 import { CAST } from "@/lib/cast";
+import type { ActivityResult } from "@/lib/data/activities";
 import type { CheckInView } from "@/lib/data/checkins";
+import type { Milestone } from "@/lib/streak";
 import type { MyNudge } from "@/lib/data/nudges";
 import { relativeDay } from "@/lib/dates";
 import { COMFORT_CARDS, MEMORIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
@@ -16,7 +19,16 @@ import { cn } from "@/lib/utils";
 
 // Emma's home. Check-ins and nudges are real and live (see the page). Unanswered nudges
 // stay pinned on top. The volunteer request, memories and cards are still placeholder data.
-export function FamilyFeed({ checkins, nudges, me }: { checkins: CheckInView[]; nudges: MyNudge[]; me: string }) {
+type PendingChallenge = { session_id: string; title: string; emoji: string; theme: string | null };
+
+export function FamilyFeed({ checkins, nudges, results, challenges, milestones, me }: {
+  checkins: CheckInView[];
+  nudges: MyNudge[];
+  results: ActivityResult[];
+  challenges: PendingChallenge[];
+  milestones: { daysAgo: number; milestone: Milestone }[];
+  me: string;
+}) {
   const pending = nudges.filter((n) => !n.reply);
   const answered = nudges.filter((n) => n.reply).slice(0, 3);
   const [request, setRequest] = useState<"pending" | "approved" | "declined">("pending");
@@ -28,6 +40,15 @@ export function FamilyFeed({ checkins, nudges, me }: { checkins: CheckInView[]; 
     <div className="flex flex-col gap-4">
       {pending.map((n) => (
         <PinnedNudge key={n.id} nudge={n} />
+      ))}
+
+      {challenges.map((c) => (
+        <FeedItem key={c.session_id} person={CAST.leo} pinned when="Waiting for you" line={<><strong>Leo</strong> challenged you: {c.title} {c.emoji}</>}>
+          <p className="text-muted-foreground">🔒 Leo&apos;s drawing is hidden until you draw yours. Then you both see them side by side.</p>
+          <Link href={`/family/challenge/${c.session_id}`} className="flex min-h-12 items-center self-start rounded-full bg-role-family-ink px-5 font-bold text-white">
+            Draw mine ▶
+          </Link>
+        </FeedItem>
       ))}
 
       {request === "pending" ? (
@@ -55,21 +76,44 @@ export function FamilyFeed({ checkins, nudges, me }: { checkins: CheckInView[]; 
         Dad answered today&apos;s question. Answer to see it: “{TODAY_QUESTION.text}”
       </Link>
 
-      {checkins.length === 0 && (
+      {checkins.length === 0 && results.length === 0 && (
         <p className="rounded-2xl bg-muted px-4 py-3 text-muted-foreground">Leo hasn&apos;t checked in this week yet. You&apos;ll see it here as soon as he does 💛</p>
       )}
-      {checkins.map((c) => (
-        <FeedItem
-          key={c.id}
-          person={CAST.leo}
-          when={`${relativeDay(c.daysAgo)}, ${c.time}`}
-          line={<><strong>Leo</strong> checked in</>}
-        >
-          <CheckInCard checkin={c}>
-            <ReactionBar checkinId={c.id} reactions={c.reactions} me={me} />
-          </CheckInCard>
-        </FeedItem>
-      ))}
+      {/* Leo's week, newest day first: milestones, then results, then the check-in */}
+      {[...new Set([...checkins.map((c) => c.daysAgo), ...results.map((r) => r.daysAgo), ...milestones.map((m) => m.daysAgo)])]
+        .sort((a, b) => a - b)
+        .map((day) => (
+          <div key={day} className="flex flex-col gap-4">
+            {milestones
+              .filter((m) => m.daysAgo === day)
+              .map((m) => (
+                <FeedItem key={m.milestone.days} person={CAST.leo} when={relativeDay(day)} line={<><strong>Leo</strong> has been connected for {m.milestone.days} days</>}>
+                  <p className="flex items-center gap-3 rounded-2xl bg-role-patient-soft px-4 py-3 text-lg font-extrabold text-role-patient-ink">
+                    <span aria-hidden className="text-4xl">
+                      {m.milestone.emoji}
+                    </span>
+                    New badge: {m.milestone.name}
+                  </p>
+                </FeedItem>
+              ))}
+            {results
+              .filter((r) => r.daysAgo === day)
+              .map((r) => (
+                <FeedItem key={r.id} person={CAST.leo} when={`${relativeDay(r.daysAgo)}, ${r.time}`} line={<><strong>Leo</strong> {r.activity.type === "challenge" ? "and you revealed your challenge" : r.inMemories && r.visibility !== "family" ? "added to Memories" : "shared"}</>}>
+                  <ResultCard result={r} viewer="family" me={me} />
+                </FeedItem>
+              ))}
+            {checkins
+              .filter((c) => c.daysAgo === day)
+              .map((c) => (
+                <FeedItem key={c.id} person={CAST.leo} when={`${relativeDay(c.daysAgo)}, ${c.time}`} line={<><strong>Leo</strong> shared the mood of the day</>}>
+                  <CheckInCard checkin={c}>
+                    <ReactionBar checkinId={c.id} reactions={c.reactions} me={me} />
+                  </CheckInCard>
+                </FeedItem>
+              ))}
+          </div>
+        ))}
 
       {answered.map((n) => (
         <FeedItem key={n.id} person={CAST.leo} when={`${relativeDay(n.daysAgo)}, ${n.time}`} line={<><strong>Leo</strong> {nudgeKind(n.kind).message} {nudgeKind(n.kind).emoji}</>}>

@@ -4,7 +4,10 @@ import { WellbeingPanel } from "@/components/wellbeing/dashboard";
 import { FamilyFeed } from "@/components/family/family-feed";
 import { QuickActions } from "@/components/family/quick-actions";
 import { LiveRefresh } from "@/components/live-refresh";
-import { getCheckins } from "@/lib/data/checkins";
+import { getMyPendingChallenges, getResults } from "@/lib/data/activities";
+import { getCheckinDates, getCheckins } from "@/lib/data/checkins";
+import { daysBetween, todayIn } from "@/lib/dates";
+import { milestoneDays } from "@/lib/streak";
 import { getVisiblePatients } from "@/lib/data/circle";
 import { getMyNudges } from "@/lib/data/nudges";
 import { createClient } from "@/lib/supabase/server";
@@ -37,9 +40,19 @@ async function Feed() {
   const [{ data: claims }, patients] = await Promise.all([supabase.auth.getClaims(), getVisiblePatients()]);
   const leo = patients[0];
   const me = claims?.claims.sub ?? "";
-  const [checkins, nudges] = leo
-    ? await Promise.all([getCheckins(leo.id, leo.timezone, { days: 7, withPhotos: true, withReactions: true }), getMyNudges(me, leo.timezone)])
-    : [[], []];
+  const [checkins, nudges, results, challenges, dates] = leo
+    ? await Promise.all([
+        getCheckins(leo.id, leo.timezone, { days: 7, withPhotos: true, withReactions: true }),
+        getMyNudges(me, leo.timezone),
+        getResults(leo.id, leo.timezone, { days: 7, sharedOnly: true }),
+        getMyPendingChallenges(),
+        getCheckinDates(leo.id),
+      ])
+    : [[], [], [], [], []];
+  const today = leo ? todayIn(leo.timezone) : "";
+  const milestones = milestoneDays(dates)
+    .map((m) => ({ daysAgo: daysBetween(today, m.date), milestone: m.milestone }))
+    .filter((m) => m.daysAgo < 7);
   return (
     <>
       {leo && (
@@ -50,10 +63,14 @@ async function Feed() {
             { table: "checkin_photos", filter: `patient_id=eq.${leo.id}` },
             { table: "checkin_reactions" },
             { table: "nudge_recipients", filter: `user_id=eq.${me}` },
+            { table: "activity_sessions", filter: `patient_id=eq.${leo.id}` },
+            { table: "activity_reactions" },
+            { table: "activity_comments" },
+            { table: "challenge_entries" },
           ]}
         />
       )}
-      <FamilyFeed checkins={checkins} nudges={nudges} me={me} />
+      <FamilyFeed checkins={checkins} nudges={nudges} results={results} challenges={challenges} milestones={milestones} me={me} />
     </>
   );
 }

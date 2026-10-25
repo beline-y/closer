@@ -1,8 +1,9 @@
 import "server-only";
 import { castByUserId, type CastMember } from "@/lib/cast";
-import type { ActivityKind, MealAmount, MealKind } from "@/lib/checkin";
+import type { ActivityKind, MealAmount, MenuDish, RatedDish } from "@/lib/checkin";
 import { daysBetween, timeIn, todayIn } from "@/lib/dates";
 import type { MoodPoint, MoodValue } from "@/lib/mood";
+import { computeStreak, type Streak } from "@/lib/streak";
 import { createClient } from "@/lib/supabase/server";
 
 // Every read goes through RLS: the care team gets no photo, volunteers get nothing.
@@ -15,9 +16,8 @@ export type CheckInView = {
   daysAgo: number;
   time: string;
   mood: number;
-  meals: MealKind[];
-  mealAmount: MealAmount | null;
-  mealNote: string | null;
+  /** Dishes of the day the patient rated (menu set by the care team) */
+  dishes: RatedDish[];
   activities: ActivityKind[];
   activityNote: string | null;
   note: string | null;
@@ -26,16 +26,13 @@ export type CheckInView = {
   reactions: { emoji: string; by: CastMember[]; byUserIds: string[] }[];
 };
 
-const COLUMNS = "id, patient_id, local_date, mood, meals, meal_amount, meal_note, activities, activity_note, note, created_at";
+const COLUMNS = "id, patient_id, local_date, mood, activities, activity_note, note, created_at";
 
 type Row = {
   id: string;
   patient_id: string;
   local_date: string;
   mood: number;
-  meals: MealKind[];
-  meal_amount: MealAmount | null;
-  meal_note: string | null;
   activities: ActivityKind[];
   activity_note: string | null;
   note: string | null;
@@ -73,9 +70,12 @@ export async function getCheckins(
   const rows = (data ?? []) as Row[];
   const ids = rows.map((r) => r.id);
 
-  const [photos, reactions] = await Promise.all([
+  const [photos, reactions, ratings] = await Promise.all([
     withPhotos && ids.length ? supabase.from("checkin_photos").select("checkin_id, path").in("checkin_id", ids) : null,
     withReactions && ids.length ? supabase.from("checkin_reactions").select("checkin_id, user_id, emoji").in("checkin_id", ids).order("created_at") : null,
+    ids.length
+      ? supabase.from("meal_ratings").select("checkin_id, liking, amount, menu_items(meal, dish_name, icon, position)").in("checkin_id", ids)
+      : null,
   ]);
 
   const paths = photos?.data ?? [];
@@ -95,9 +95,10 @@ export async function getCheckins(
       daysAgo: daysBetween(today, r.local_date),
       time: timeIn(r.created_at, timezone),
       mood: r.mood,
-      meals: r.meals,
-      mealAmount: r.meal_amount,
-      mealNote: r.meal_note,
+      dishes: (ratings?.data ?? [])
+        .filter((x) => x.checkin_id === r.id && x.menu_items)
+        .sort((a, b) => MEAL_ORDER.indexOf(a.menu_items!.meal) - MEAL_ORDER.indexOf(b.menu_items!.meal) || a.menu_items!.position - b.menu_items!.position)
+        .map((x) => ({ meal: x.menu_items!.meal, dish: x.menu_items!.dish_name, icon: x.menu_items!.icon, liking: x.liking, amount: x.amount as MealAmount | null })),
       activities: r.activities,
       activityNote: r.activity_note,
       note: r.note,
@@ -110,6 +111,36 @@ export async function getCheckins(
       })),
     };
   });
+}
+
+const MEAL_ORDER = ["breakfast", "lunch", "dinner", "snack"];
+
+/** Today's dishes for the patient's unit, set by the care team, with the patient's ratings if any. */
+export async function getTodayMenu(patientId: string, timezone: string, checkinId?: string) {
+  const supabase = await createClient();
+  const { data: patient } = await supabase.from("patients").select("unit_id").eq("id", patientId).maybeSingle();
+  if (!patient?.unit_id) return { dishes: [] as MenuDish[], ratings: [] as { menuItemId: string; liking: number | null; amount: MealAmount | null }[] };
+  const [{ data: menu }, ratings] = await Promise.all([
+    supabase.from("menu_items").select("id, meal, dish_name, icon, position").eq("unit_id", patient.unit_id).eq("menu_date", todayIn(timezone)),
+    checkinId ? supabase.from("meal_ratings").select("menu_item_id, liking, amount").eq("checkin_id", checkinId) : null,
+  ]);
+  return {
+    dishes: (menu ?? [])
+      .map((m) => ({ id: m.id, meal: m.meal, dish: m.dish_name, icon: m.icon, position: m.position }))
+      .sort((a, b) => MEAL_ORDER.indexOf(a.meal) - MEAL_ORDER.indexOf(b.meal) || a.position - b.position),
+    ratings: (ratings?.data ?? []).map((r) => ({ menuItemId: r.menu_item_id, liking: r.liking, amount: r.amount })),
+  };
+}
+
+/** Every check-in day of a patient, for the streak (patient and circle may read them). */
+export async function getCheckinDates(patientId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("mood_checkins").select("local_date").eq("patient_id", patientId).order("local_date");
+  return (data ?? []).map((r) => r.local_date);
+}
+
+export async function getStreak(patientId: string, timezone: string): Promise<Streak> {
+  return computeStreak(await getCheckinDates(patientId), todayIn(timezone));
 }
 
 /** Mood per day for charts: oldest first, null when there was no check-in. */
