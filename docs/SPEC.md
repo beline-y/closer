@@ -42,6 +42,7 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - **Streak celebrates, never punishes.** Computed from `mood_checkins` only. Headline = total days connected. One rest day per 7 days keeps the run going. After a break: "Welcome back!", never "you lost your streak". Badges at 3, 7, 14 and 30 days, also shown in the family feed.
 - **Reactions:** one per person per check-in (❤️ heart, 🤗 hug, 💪 strong, 😂 laugh), changeable. Family and friends only.
 - **Activities are done in the app** (draw, make and snap, quiz, story, challenge with family) and end with a result. The patient chooses: share with family, add to Memories, or keep for themselves. A challenge is revealed side by side only when both are done. The care team only gets completion counts.
+- **Question ideas: curated first, Mistral as fallback.** The family gets curated questions it hasn't seen. When none is left, and only with the guardian's AI consent (`wellbeing_permissions`), Mistral writes new ones from an age range and masked interests only (never names, check-ins, notes, journal, answers or health). They are stored in the pool and reused. Without consent, key or Mistral: the oldest curated questions come back.
 - **Memories** are shared by the patient's circle only. The care team and volunteers never see them.
 - **Cloud-only workflow:** no Docker, no local Supabase. One shared Supabase cloud project (US) is the dev database for every branch preview and for `main`. Migrations go through `supabase db push`, one person at a time. Features are tested on Vercel preview URLs. Production will get its own Supabase project later.
 
@@ -96,14 +97,15 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 
 **Shared:** landing with the demo role picker, demo banner with "Switch role" on every page, login, patient login (number pad), join with code, guardian consent, account (export, delete).
 
-**Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet; tabs Today · Connect · Question · Memories · Me):
-- Today: greeting, "who's thinking of you" avatars, mood check-in, today's question, one suggested activity, new memories ("Emma shared a memory").
+**Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet, same order; tabs Today · Connect · Play · Memories · Me):
+- Today: greeting, mood of the day (check-in, food score, reactions, streak), today's question (the card opens the full question screen, which has no tab of its own), who's thinking of you, one suggested activity.
 - Check-in: five emoji, then optional photo, today's menu dishes to rate (yuck to yum, how much), activities and note, then a celebration with the streak ("Connected for 12 days!", badges at 3, 7, 14, 30).
-- Connect: five nudge buttons (I miss you, Call me, I'm bored, I'm proud of myself, I need a hug) with a cooldown ring, then a recipient picker, then "Sent! ❤️"; sealed comfort cards to open (envelope stack, open animation, archive).
-- Question: answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
+- Connect: five nudge buttons with a cooldown ring, then a recipient picker, then "Sent! ❤️"; replies from family; sealed comfort cards to open (envelope stack, open animation, archive); the creations Leo shared, with the family's reactions, comments and revealed challenges.
+- Question (from Today): answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
+- Play: today's theme at the top, "Continue" for unfinished activities (drafts saved, challenges waiting for family), the library by type (Draw, Make and snap, Quiz, Story time, Challenge with family). Results aren't kept here: after finishing, Leo chooses share with family, add to Memories, or keep for myself.
+- Activity: full-screen drawing (finger and stylus, colors, sizes, eraser, undo, clear), make and snap (steps then photo), quiz (5 questions, score), story (write or dictate, autosaved), challenge with family (both draw, reveal side by side).
 - Memories: the same album as the family.
-- Me: things to do (activity library), my creations (with reactions and comments), journal.
-- Activity: full-screen drawing (finger and stylus, colors, sizes, eraser, undo, clear), make and snap (steps then photo), quiz (5 questions, score), story (write or dictate), challenge with family (both draw, reveal side by side). Then: share with family, add to Memories, or keep for myself.
+- Me (private): "🔒 Only you can see this, unless you share it." Journal (private by default, share one entry), "Kept for myself" (results kept private, with "Share with my family" / "Add to Memories"), "My moods" as a friendly calendar (no charts), badges and streak. Enforced by RLS: drafts and kept results are readable by the patient only; the care team only gets completion counts.
 
 **Family** (phone first, works on desktop; tabs Feed · Question · Cards · Memories, patient switcher in the header):
 - Feed: check-ins, nudges pinned on top until answered, opened cards, question reveals, new memories, with reactions. Presence lines ("Leo opened your card", "Leo is waiting for your answer"). The guardian also sees volunteer contact requests to approve.
@@ -155,8 +157,9 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `meal_ratings` | checkin_id, menu_item_id, patient_id, liking 1–5, amount | Patient rates today's dishes of their unit only. Patient, circle and care team read. Realtime. |
 | `nudges` | patient_id, kind (miss_you, call_me, bored, proud, hug) | Created only by `send_nudge(kind, recipients)`: active patient only, per-type cooldown from `patient_settings`, recipients limited to the patient's family and friends (default: all). Patient and recipients read. No care team, no volunteers. Realtime. |
 | `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji (❤️ 📞 🤗 ⭐), reply_text ≤ 140, replied_at | Recipient reads and replies on their own row only. The patient reads every reply (never "no reply"). Realtime. |
-| `comfort_cards` | author_id, body ≤ 1000, color, opened_at | Author reads their own. Patient reads only opened cards. `sealed_cards()` and `open_comfort_card()` handle sealed ones. No care team access. |
-| `question_bank` | text, min_age, max_age, tags | Anyone signed in reads. |
+| `comfort_cards` | patient_id, author_id, body ≤ 1000, color (sun, coral, sky, lilac), opened_at | Family and friends write for their patient; the author reads their own and can edit or take back while sealed. The patient sees sealed cards through `sealed_cards()` (who and color, never the text) and opens each once with `open_comfort_card()` (first date kept); opened cards are the archive. No care team, no volunteers. Realtime: the author sees "Leo opened your card" live. |
+| `question_bank` | text, source (curated / mistral), patient_id (generated ones only), min_age, max_age, tags | 60 curated questions shared by everyone (volunteers excepted); Mistral-generated ones belong to one patient's family. Written only through `next_question_ideas()` / `add_generated_questions()`. |
+| `question_suggestions` | patient_id, question_id, suggested_to, suggested_at | What a family already saw: never repeated until the pool runs out, then the oldest curated come back. Circle reads. |
 | `daily_questions` | patient_id, local_date, text, source | Patient and family read. |
 | `question_answers` | question_id, user_id, body ≤ 500 | Read your own; others' only after you've answered. No care team access. |
 | `notifications` | user_id, kind, ref_id, read_at, emailed_at | Owner only. Delivered through Realtime. |

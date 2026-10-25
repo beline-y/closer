@@ -13,7 +13,8 @@ import type { CheckInView } from "@/lib/data/checkins";
 import type { Milestone } from "@/lib/streak";
 import type { MyNudge } from "@/lib/data/nudges";
 import { relativeDay } from "@/lib/dates";
-import { COMFORT_CARDS, MEMORIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { MEMORIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import type { Card } from "@/lib/data/cards";
 import { nudgeKind, QUICK_REPLIES } from "@/lib/nudges";
 import { cn } from "@/lib/utils";
 
@@ -21,18 +22,19 @@ import { cn } from "@/lib/utils";
 // stay pinned on top. The volunteer request, memories and cards are still placeholder data.
 type PendingChallenge = { session_id: string; title: string; emoji: string; theme: string | null };
 
-export function FamilyFeed({ checkins, nudges, results, challenges, milestones, me }: {
+export function FamilyFeed({ checkins, nudges, results, challenges, milestones, openedCards, me }: {
   checkins: CheckInView[];
   nudges: MyNudge[];
   results: ActivityResult[];
   challenges: PendingChallenge[];
   milestones: { daysAgo: number; milestone: Milestone }[];
+  /** My cards Leo opened this week (live) */
+  openedCards: Card[];
   me: string;
 }) {
   const pending = nudges.filter((n) => !n.reply);
   const answered = nudges.filter((n) => n.reply).slice(0, 3);
   const [request, setRequest] = useState<"pending" | "approved" | "declined">("pending");
-  const opened = COMFORT_CARDS.find((c) => c.from === "emma" && !c.sealed);
   const memory = MEMORIES.find((m) => m.by !== "emma");
   const maya = VOLUNTEER_STORIES.maya;
 
@@ -80,7 +82,7 @@ export function FamilyFeed({ checkins, nudges, results, challenges, milestones, 
         <p className="rounded-2xl bg-muted px-4 py-3 text-muted-foreground">Leo hasn&apos;t checked in this week yet. You&apos;ll see it here as soon as he does 💛</p>
       )}
       {/* Leo's week, newest day first: milestones, then results, then the check-in */}
-      {[...new Set([...checkins.map((c) => c.daysAgo), ...results.map((r) => r.daysAgo), ...milestones.map((m) => m.daysAgo)])]
+      {[...new Set([...checkins.map((c) => c.daysAgo), ...results.map((r) => r.daysAgo), ...milestones.map((m) => m.daysAgo), ...openedCards.map((c) => c.openedDaysAgo ?? 0)])]
         .sort((a, b) => a - b)
         .map((day) => (
           <div key={day} className="flex flex-col gap-4">
@@ -94,6 +96,13 @@ export function FamilyFeed({ checkins, nudges, results, challenges, milestones, 
                     </span>
                     New badge: {m.milestone.name}
                   </p>
+                </FeedItem>
+              ))}
+            {openedCards
+              .filter((c) => (c.openedDaysAgo ?? 0) === day)
+              .map((c) => (
+                <FeedItem key={c.id} person={CAST.leo} when={relativeDay(day)} line={<><strong>Leo</strong> opened your card 💌</>}>
+                  <p className="line-clamp-2 text-muted-foreground">“{c.body}”</p>
                 </FeedItem>
               ))}
             {results
@@ -134,11 +143,6 @@ export function FamilyFeed({ checkins, nudges, results, challenges, milestones, 
         </FeedItem>
       )}
 
-      {opened && (
-        <FeedItem person={CAST.leo} when={relativeDay(opened.openedDaysAgo ?? 0)} line={<><strong>Leo</strong> opened your card 💌</>}>
-          <p className="line-clamp-2 text-muted-foreground">“{opened.body}”</p>
-        </FeedItem>
-      )}
     </div>
   );
 }

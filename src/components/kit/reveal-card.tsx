@@ -13,32 +13,41 @@ export const CARD_COLORS = {
 } as const;
 
 // A sealed envelope that opens once, with a little flap animation.
+// A sealed card has no text yet: onOpen fetches it (the database records the opening).
 export function RevealCard({
   from,
-  body,
+  body: initialBody,
   color,
   sealed: initiallySealed,
   onOpen,
 }: {
   from: CastMember;
-  body: string;
+  body?: string;
   color: keyof typeof CARD_COLORS;
   sealed: boolean;
-  onOpen?: () => void;
+  onOpen?: () => Promise<string | null>;
 }) {
   const [sealed, setSealed] = useState(initiallySealed);
   const [opening, setOpening] = useState(false);
+  const [body, setBody] = useState(initialBody ?? "");
+  const [failed, setFailed] = useState(false);
 
   if (sealed) {
     return (
       <button
         type="button"
-        onClick={() => {
+        disabled={opening}
+        onClick={async () => {
           setOpening(true);
-          setTimeout(() => {
-            setSealed(false);
-            onOpen?.();
-          }, 450);
+          setFailed(false);
+          const [text] = await Promise.all([onOpen ? onOpen() : Promise.resolve(body), new Promise((r) => setTimeout(r, 450))]);
+          if (text === null) {
+            setOpening(false);
+            setFailed(true);
+            return;
+          }
+          setBody(text);
+          setSealed(false);
         }}
         aria-label={`Open the card from ${from.name}`}
         className={cn(
@@ -62,7 +71,7 @@ export function RevealCard({
           <PersonaAvatar person={from} size="sm" decorative />
           From {from.name}
         </span>
-        <span className="relative text-sm text-foreground/70">Tap to open</span>
+        <span className="relative text-sm text-foreground/70">{failed ? "Oops, try again" : "Tap to open"}</span>
       </button>
     );
   }
