@@ -366,6 +366,51 @@ export type Database = {
           },
         ]
       }
+      comfort_cards: {
+        Row: {
+          author_id: string
+          body: string
+          color: Database["public"]["Enums"]["card_color"]
+          created_at: string
+          id: string
+          opened_at: string | null
+          patient_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          color?: Database["public"]["Enums"]["card_color"]
+          created_at?: string
+          id?: string
+          opened_at?: string | null
+          patient_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          color?: Database["public"]["Enums"]["card_color"]
+          created_at?: string
+          id?: string
+          opened_at?: string | null
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comfort_cards_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comfort_cards_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_wellbeing_reviews: {
         Row: {
           acknowledged_at: string | null
@@ -943,6 +988,165 @@ export type Database = {
         }
         Relationships: []
       }
+      question_bank: {
+        Row: {
+          created_at: string
+          id: string
+          max_age: number
+          min_age: number
+          patient_id: string | null
+          source: string
+          tags: string[]
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_age?: number
+          min_age?: number
+          patient_id?: string | null
+          source: string
+          tags?: string[]
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_age?: number
+          min_age?: number
+          patient_id?: string | null
+          source?: string
+          tags?: string[]
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_bank_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_suggestions: {
+        Row: {
+          patient_id: string
+          question_id: string
+          suggested_at: string
+          suggested_to: string | null
+        }
+        Insert: {
+          patient_id: string
+          question_id: string
+          suggested_at?: string
+          suggested_to?: string | null
+        }
+        Update: {
+          patient_id?: string
+          question_id?: string
+          suggested_at?: string
+          suggested_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_suggestions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_suggestions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_suggestions_suggested_to_fkey"
+            columns: ["suggested_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_submissions: {
+        Row: {
+          body: string
+          categories: string[]
+          context_key: string
+          context_label: string
+          created_at: string
+          evidence: string[]
+          explanation: string
+          id: string
+          kind: string
+          model: string | null
+          prompt_version: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screening_state: string
+          status: string
+          volunteer_id: string
+          volunteer_name: string
+        }
+        Insert: {
+          body: string
+          categories?: string[]
+          context_key: string
+          context_label: string
+          created_at?: string
+          evidence?: string[]
+          explanation: string
+          id: string
+          kind: string
+          model?: string | null
+          prompt_version?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screening_state: string
+          status?: string
+          volunteer_id: string
+          volunteer_name: string
+        }
+        Update: {
+          body?: string
+          categories?: string[]
+          context_key?: string
+          context_label?: string
+          created_at?: string
+          evidence?: string[]
+          explanation?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          prompt_version?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screening_state?: string
+          status?: string
+          volunteer_id?: string
+          volunteer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_submissions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_submissions_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wellbeing_permissions: {
         Row: {
           consent_version: string
@@ -1027,6 +1231,10 @@ export type Database = {
           local_date: string
         }[]
       }
+      add_generated_questions: {
+        Args: { p_patient_id: string; p_questions: string[] }
+        Returns: number
+      }
       can_process_wellbeing: {
         Args: { p_consent_at: string; p_patient_id: string }
         Returns: boolean
@@ -1060,6 +1268,41 @@ export type Database = {
           title: string
         }[]
       }
+      next_question_ideas: {
+        Args: { p_count?: number; p_patient_id: string; p_reuse?: boolean }
+        Returns: {
+          age_range: string
+          ai_allowed: boolean
+          interests: string[]
+          question_id: string
+          reused: boolean
+          source: string
+          text: string
+        }[]
+      }
+      open_comfort_card: {
+        Args: { p_card_id: string }
+        Returns: {
+          author_id: string
+          body: string
+          color: Database["public"]["Enums"]["card_color"]
+          id: string
+          opened_at: string
+        }[]
+      }
+      review_volunteer_submission: {
+        Args: { p_decision: string; p_id: string }
+        Returns: boolean
+      }
+      sealed_cards: {
+        Args: never
+        Returns: {
+          author_id: string
+          color: Database["public"]["Enums"]["card_color"]
+          created_at: string
+          id: string
+        }[]
+      }
       send_nudge: {
         Args: {
           p_kind: Database["public"]["Enums"]["nudge_kind"]
@@ -1086,6 +1329,7 @@ export type Database = {
       activity_status: "started" | "waiting_partner" | "completed"
       activity_type: "draw" | "make_snap" | "quiz" | "story" | "challenge"
       activity_visibility: "private" | "family"
+      card_color: "sun" | "coral" | "sky" | "lilac"
       link_role: "care_team" | "family" | "friend" | "volunteer"
       link_status: "pending" | "active" | "revoked"
       meal_amount: "all" | "half" | "a_little"
@@ -1233,6 +1477,7 @@ export const Constants = {
       activity_status: ["started", "waiting_partner", "completed"],
       activity_type: ["draw", "make_snap", "quiz", "story", "challenge"],
       activity_visibility: ["private", "family"],
+      card_color: ["sun", "coral", "sky", "lilac"],
       link_role: ["care_team", "family", "friend", "volunteer"],
       link_status: ["pending", "active", "revoked"],
       meal_amount: ["all", "half", "a_little"],

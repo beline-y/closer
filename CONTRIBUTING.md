@@ -59,16 +59,20 @@ Examples:
 - `fix(auth): redirect patients to /patient after PIN login`
 - `docs: explain migration workflow`
 
-## Database migrations (shared dev database)
+## Database migrations
 
-We all use **one** Supabase dev project, so:
+We all use **one** Supabase dev project, and production deploys from `main`. A migration
+pushed to that database changes it for everyone, right away.
 
-1. **Only one person pushes migrations at a time.** Post in the team chat first: "🗄️ Pushing migration `add_mood_checkins` now", then "✅ done".
-2. Create a migration with `npm run db:new -- <name>`. Never edit one that has already been pushed.
-3. **Every new table needs `enable row level security` plus explicit policies** in the same migration.
-4. Run `npx supabase db push --dry-run`, then `npm run db:push`, then `npm run db:types`.
-5. Commit the migration and the regenerated types in the same PR.
-6. If two PRs both add migrations, the second one to merge must re-check that its timestamp still comes after the first. Run `npm run db:new` again if needed and move your SQL into the new file.
+1. **Always `git pull origin main` before creating or pushing a migration.** `npx supabase migration list` must show the same versions under Local and Remote.
+2. **A migration pushed to the shared database must reach `main` quickly**, in a small PR with only the migration file and the regenerated `src/lib/supabase/database.types.ts`. The feature code can follow in its own PR.
+3. **Announce every `db:push` in the team chat with the file name**: "🗄️ Pushing `20261024205123_nudges.sql`", then "✅ done". One person at a time.
+4. **Never use `supabase migration repair` without telling the team first.** It rewrites the shared migration history.
+5. **If `db push` refuses because of an unknown remote migration**, a teammate pushed one you don't have: get their file **through `main`** (ask them to merge their migration PR, then pull). Never delete, rewrite or hand-copy their file.
+6. Create a migration with `npm run db:new -- <name>`. Never edit one that has already been pushed: write a new one.
+7. **Every new table needs `enable row level security` plus explicit policies** in the same migration, and pgTAP tests in `supabase/tests/` (`npm run db:test`).
+8. Run `npx supabase db push --dry-run`, then `npm run db:push`, then `npm run db:types`.
+9. Never drop or rename a column that `main` still uses: production would break. Add the new shape first, ship the code, then remove the old one in a later migration.
 
 ## Reviews
 

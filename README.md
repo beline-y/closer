@@ -1,10 +1,14 @@
 # Closer 💛
 
+Volunteer message screening: [setup, rollout and verification](docs/VOLUNTEER_SCREENING.md).
+
 Test branche Louis
 
 Closer connects hospitalized children and isolated patients with their family, friends, care team and inspiring volunteers, to make hospital stays less lonely.
 Patients share their mood and send one-tap nudges, family members answer with comfort cards and shared questions, and the care team follows wellbeing over time.
 **This is a demo: all data is fictional.** Product spec: [docs/SPEC.md](docs/SPEC.md).
+
+> **Demo project, fictional data only. Never commit secrets.** This repository is public.
 
 **Stack:** Next.js (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Supabase (Auth, Postgres + RLS, Storage, Realtime) · Vercel
 
@@ -51,7 +55,8 @@ Optional quick UI check:
 npm run dev     # http://localhost:3000
 ```
 
-The landing page footer shows **🟢 Supabase connected** when your keys are right.
+Use `npm run check:integrations` to verify the connection. The role picker keeps
+backend connection details out of the interface and includes an **AI demo guide**.
 
 ## How we test: Vercel previews
 
@@ -148,6 +153,15 @@ docs/SPEC.md               product spec
 2. Add the two Supabase values as **Codespaces secrets**: github.com → Settings → Codespaces → Secrets. Use the same names as in `.env.example`, and give the secrets access to this repo. They become environment variables, so no `.env.local` is needed. Or create `.env.local` inside the codespace.
 3. Dependencies install automatically. Run `npm run dev` and open the forwarded port 3000.
 
+## Team
+
+🗄️ Rules for the shared database (details in [CONTRIBUTING.md](CONTRIBUTING.md#database-migrations)):
+
+1. Always `git pull origin main` before creating or pushing a migration.
+2. A migration pushed to the database goes to `main` fast, in a small PR (migration + types only).
+3. Announce every `db:push` in the team chat with the file name.
+4. No `supabase migration repair` without telling the team. If `db push` refuses an unknown migration, get the file through `main`: never delete, rewrite or hand-copy it.
+
 ## Security rules
 
 - Never commit `.env.local` or any key. Only `.env.example` (placeholders) is tracked.
@@ -169,3 +183,6 @@ shared-database workflow before these features can be used. Nothing is deployed 
 
 [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) maps the verified GitHub, Supabase and Vercel connections,
 the live-versus-fixture feature boundaries, and the checks needed before deployment.
+
+For Mistral question ideas, the editable card draft flow, and the role-specific notification
+demo buttons, see [docs/AI_DEMO.md](docs/AI_DEMO.md).

@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { DemoRolePicker } from "@/components/demo-role-picker";
-import { SupabaseStatus } from "@/components/supabase-status";
+import { DemoAIGuide } from "@/components/demo-ai-guide";
 import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/utils";
@@ -29,6 +28,7 @@ export default function Home() {
             <p className="text-muted-foreground">One story, four points of view. Tap a card to step in.</p>
           </div>
           <DemoRolePicker />
+          <DemoAIGuide />
         </section>
       ) : (
         <div className="flex justify-center">
@@ -39,9 +39,6 @@ export default function Home() {
       )}
 
       <footer className="flex flex-col items-center gap-3 text-center text-sm text-muted-foreground">
-        <Suspense fallback={null}>
-          <SupabaseStatus />
-        </Suspense>
         <p>Demo project. All data is fictional.</p>
       </footer>
     </main>

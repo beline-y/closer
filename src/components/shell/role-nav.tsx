@@ -12,10 +12,12 @@ import {
   Mail,
   MessageCircleQuestion,
   Newspaper,
+  Puzzle,
   Settings,
   Sun,
   User,
   Users,
+  UtensilsCrossed,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,12 +27,12 @@ import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-// Max 5 tabs per role. The first item is the role's home.
+// Max 5 tabs for patient, family and volunteer (bottom bar). The first item is the role's home.
 export const NAV: Record<RoleKey, NavItem[]> = {
   patient: [
     { href: "/patient", label: "Today", icon: Sun },
     { href: "/patient/connect", label: "Connect", icon: Heart },
-    { href: "/patient/question", label: "Question", icon: MessageCircleQuestion },
+    { href: "/patient/play", label: "Play", icon: Puzzle },
     { href: "/patient/memories", label: "Memories", icon: Images },
     { href: "/patient/me", label: "Me", icon: User },
   ],
@@ -50,6 +52,7 @@ export const NAV: Record<RoleKey, NavItem[]> = {
     { href: "/care", label: "Patients", icon: Users },
     { href: "/care/alerts", label: "Alerts", icon: AlertTriangle },
     { href: "/care/volunteers", label: "Volunteers", icon: HandHeart },
+    { href: "/care/menus", label: "Menus", icon: UtensilsCrossed },
     { href: "/care/events", label: "Events", icon: CalendarDays },
     { href: "/care/settings", label: "Settings", icon: Settings },
   ],
@@ -64,10 +67,30 @@ const ACTIVE: Record<RoleKey, string> = {
 
 type WithPath<P> = P & { pathname: string | null };
 
+/** True when pathname is href itself or a page below it, by whole segments
+ * ("/patient/me" matches "/patient/me/x", never "/patient/memories"). */
+export function isWithin(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+// Screens without their own tab light up the tab they belong to.
+const BELONGS_TO: Record<string, string> = {
+  "/patient/question": "/patient",
+  "/patient/checkin": "/patient",
+  "/patient/activities": "/patient/play",
+  "/care/patients": "/care",
+  "/family/challenge": "/family",
+};
+
+// One rule for the bottom bar, the side rail and the top tabs: exactly one tab is active.
 function activeMatcher(role: RoleKey, pathname: string | null) {
   const home = NAV[role][0].href;
-  return (href: string) =>
-    pathname !== null && (href === home ? pathname === home || (role === "care" && pathname.startsWith("/care/patients")) : pathname.startsWith(href));
+  const owner = pathname && Object.entries(BELONGS_TO).find(([prefix]) => isWithin(pathname, prefix))?.[1];
+  return (href: string) => {
+    if (pathname === null) return false;
+    if (owner) return href === owner;
+    return href === home ? pathname === home : isWithin(pathname, href);
+  };
 }
 
 // usePathname() needs a Suspense boundary on dynamic routes. The fallback is the same

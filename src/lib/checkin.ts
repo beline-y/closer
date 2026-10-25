@@ -18,6 +18,15 @@ export const MEAL_AMOUNTS: { value: MealAmount; emoji: string; label: string }[]
   { value: "a_little", emoji: "🤏", label: "A little" },
 ];
 
+/** How much the patient liked a dish, yuck to yum. */
+export const LIKINGS: { value: number; emoji: string; label: string }[] = [
+  { value: 1, emoji: "🤢", label: "Yuck" },
+  { value: 2, emoji: "😕", label: "Not really" },
+  { value: 3, emoji: "😐", label: "Okay" },
+  { value: 4, emoji: "😋", label: "Yummy" },
+  { value: 5, emoji: "🤩", label: "Yum yum!" },
+];
+
 export const ACTIVITIES: { value: ActivityKind; emoji: string; label: string }[] = [
   { value: "played", emoji: "🎲", label: "Played" },
   { value: "movie", emoji: "🎬", label: "Watched a movie" },
@@ -29,28 +38,44 @@ export const ACTIVITIES: { value: ActivityKind; emoji: string; label: string }[]
   { value: "walk", emoji: "🚶", label: "Went for a walk" },
 ];
 
-export const REACTIONS = ["❤️", "🤗", "💪", "😂"] as const;
-export type ReactionEmoji = (typeof REACTIONS)[number];
+/** One reaction per person per check-in: heart, hug, strong, laugh. */
+export const REACTIONS = [
+  { emoji: "❤️", label: "a heart", verb: "sent a heart" },
+  { emoji: "🤗", label: "a hug", verb: "sent a hug" },
+  { emoji: "💪", label: "strength", verb: "says you're strong" },
+  { emoji: "😂", label: "a laugh", verb: "laughed" },
+] as const;
+export type ReactionEmoji = (typeof REACTIONS)[number]["emoji"];
+
+export type MenuDish = { id: string; meal: MealKind; dish: string; icon: string; position: number };
+
+export type DishRating = { menuItemId: string; liking: number | null; amount: MealAmount | null };
 
 /** What the patient sends. photoPath: undefined = unchanged, null = removed. */
 export type CheckInInput = {
   mood: number;
-  meals: MealKind[];
-  mealAmount: MealAmount | null;
-  mealNote: string;
+  ratings: DishRating[];
   activities: ActivityKind[];
   activityNote: string;
   note: string;
   photoPath?: string | null;
 };
 
-export function mealSummary(meals: MealKind[], amount: MealAmount | null, note: string | null): string {
-  const parts = [
-    meals.length ? meals.map((m) => MEALS.find((x) => x.value === m)?.label.toLowerCase()).join(", ") : null,
-    amount ? `ate ${MEAL_AMOUNTS.find((a) => a.value === amount)?.label.toLowerCase()}` : null,
-    note,
-  ].filter(Boolean);
-  return parts.join(" · ");
+export type RatedDish = { meal: MealKind; dish: string; icon: string; liking: number | null; amount: MealAmount | null };
+
+/** Food satisfaction of the day: the average of the dish ratings as one emoji + label. */
+export const FOOD_SCORES: Record<number, { emoji: string; label: string }> = {
+  1: { emoji: "🤢", label: "Didn't like it" },
+  2: { emoji: "😕", label: "Not really" },
+  3: { emoji: "😐", label: "It was okay" },
+  4: { emoji: "😋", label: "Liked it" },
+  5: { emoji: "🤩", label: "Loved it" },
+};
+
+export function foodScore(dishes: RatedDish[]): { emoji: string; label: string } | null {
+  const likings = dishes.map((d) => d.liking).filter((l): l is number => l !== null);
+  if (likings.length === 0) return null;
+  return FOOD_SCORES[Math.round(likings.reduce((a, b) => a + b, 0) / likings.length)];
 }
 
 /** "🎨 Drew · 👨‍👩‍👦 Had a visit · Noah called" (each activity with its own icon). */

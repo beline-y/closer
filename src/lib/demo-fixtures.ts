@@ -48,8 +48,6 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 };
 
 // ---------------------------------------------------------------------------
-// Comfort cards
-// ---------------------------------------------------------------------------
 export type ComfortCard = {
   id: string;
   from: CastId;
@@ -77,15 +75,6 @@ export const TODAY_QUESTION = {
     james: "Singing on stage at my cousin's wedding. My knees were shaking!",
   } as Partial<Record<CastId, string>>,
 };
-
-export const QUESTION_IDEAS = [
-  "If you could have any animal as a pet, what would it be?",
-  "What's the funniest thing that happened to you this week?",
-  "If you could visit any place in the world, where would you go?",
-  "What superpower would you choose, and why?",
-  "What's a food you'd eat every day if you could?",
-  "Who is your favorite character in a book or a movie?",
-];
 
 // ---------------------------------------------------------------------------
 // Memories (patient + circle only)
@@ -136,17 +125,8 @@ export const MEMORIES: Memory[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Patient: activities and private journal
+// Patient: private journal
 // ---------------------------------------------------------------------------
-export const SUGGESTED_ACTIVITY = { emoji: "🐙", title: "Draw your favorite sea creature", minutes: 15 };
-
-export const ACTIVITIES = [
-  { emoji: "🐙", title: "Draw your favorite sea creature", minutes: 15 },
-  { emoji: "🧩", title: "Puzzle of the day", minutes: 10 },
-  { emoji: "🎵", title: "Make a playlist for Dad", minutes: 10 },
-  { emoji: "📖", title: "Read a story with Mom on video", minutes: 20 },
-];
-
 export const JOURNAL_ENTRIES = [
   { daysAgo: 0, emoji: "🐋", body: "Today I drew a whale shark. They are the biggest fish in the world.", sharedWithCare: false },
   { daysAgo: 2, emoji: "🌧️", body: "I was a bit scared before the test but Sarah held my hand.", sharedWithCare: true },
@@ -210,7 +190,7 @@ export const VOLUNTEER_ANSWERS: Record<string, { volunteer: "maya" | "daniel"; b
 
 /** Care-approved, masked patient answers. No patient id, ever. */
 export const SHARED_ANSWERS = [
-  { id: "sa-1", question: "What is the bravest thing you ever did?", body: "When I had my first test here I was scared but I squeezed [name]'s hand and counted to ten.", daysAgo: 1 },
+  { id: "sa-1", question: "What is the bravest thing you ever did?", body: "When I had my first test here I was scared, but I held a loved one's hand and counted to ten.", daysAgo: 1 },
   { id: "sa-2", question: "What did you want to be when you were a kid?", body: "I want to be a scientist who swims with whale sharks.", daysAgo: 4 },
 ];
 
@@ -261,6 +241,6 @@ export const VOLUNTEER_REQUESTS: Record<"maya" | "daniel", { id: string; status:
 
 /** Patient answers waiting for care review, already masked by the privacy filter */
 export const ANSWERS_TO_REVIEW = [
-  { id: "ar-1", patientId: PATIENT_IDS.leo, question: "What is the bravest thing you ever did?", masked: "I let the nurse [name] take blood and I didn't cry. Then [name] brought me to [place] for ice cream.", daysAgo: 0 },
+  { id: "ar-1", patientId: PATIENT_IDS.leo, question: "What is the bravest thing you ever did?", masked: "I let a nurse take blood and I didn't cry. Then someone from my family took me out for ice cream.", daysAgo: 0 },
 ];
 

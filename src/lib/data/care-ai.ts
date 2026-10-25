@@ -1,4 +1,5 @@
 import "server-only";
+import type { MealAmount, RatedDish } from "@/lib/checkin";
 import type { CheckInView } from "@/lib/data/checkins";
 import type { VisiblePatient } from "@/lib/data/circle";
 import type { DrawingsView } from "@/lib/drawings";
@@ -55,6 +56,16 @@ async function profiles(ids: string[]): Promise<Map<string, { interests: string[
   return new Map((patients ?? []).map((p) => [p.id, { interests: p.interests ?? [], hasFamily: linked.has(p.id) }]));
 }
 
+const SHARE: Record<MealAmount, number> = { all: 1, half: 0.5, a_little: 0.2 };
+
+/** How much the child ate across the day's rated dishes, in the app's three amounts (null if none given). */
+function amountEaten(dishes: RatedDish[]): MealAmount | null {
+  const shares = dishes.flatMap((d) => (d.amount ? [SHARE[d.amount]] : []));
+  if (shares.length === 0) return null;
+  const mean = shares.reduce((a, b) => a + b, 0) / shares.length;
+  return mean >= 0.75 ? "all" : mean >= 0.35 ? "half" : "a_little";
+}
+
 function dayBefore(today: string, days: number): string {
   return new Date(Date.parse(today) - days * 86_400_000).toISOString().slice(0, 10);
 }
@@ -68,12 +79,12 @@ function syncPayload(patient: VisiblePatient, today: string, checkins: CheckInVi
       interests: profile?.interests ?? [],
       has_family: profile?.hasFamily ?? true,
     },
-    // Mood, meal, activities and note only: photos and reactions never leave Supabase.
+    // Mood, how much was eaten, activities and note only: photos and reactions never leave Supabase.
     checkins: checkins.map((c) => ({
       local_date: dayBefore(today, c.daysAgo),
       mood: c.mood,
-      meals: c.meals,
-      meal_amount: c.mealAmount,
+      meals: [...new Set(c.dishes.map((d) => d.meal))],
+      meal_amount: amountEaten(c.dishes),
       activities: c.activities,
       note: c.note,
     })),

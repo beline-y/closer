@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { WellbeingPanel } from "@/components/wellbeing/dashboard";
@@ -7,17 +8,19 @@ import { CheckInCard } from "@/components/checkin-card";
 import { LiveRefresh } from "@/components/live-refresh";
 import { ReactionList } from "@/components/reaction-bar";
 import { CAST } from "@/lib/cast";
-import { getCheckins, getMyPatient } from "@/lib/data/checkins";
+import { getCheckins, getMyPatient, getStreak } from "@/lib/data/checkins";
 import { getRepliesForPatient, getThinkingOfYouToday } from "@/lib/data/nudges";
 import { NudgeReplies } from "@/components/nudge-replies";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { relativeDay } from "@/lib/dates";
-import { COMFORT_CARDS, MEMORIES, SUGGESTED_ACTIVITY, TODAY_QUESTION } from "@/lib/demo-fixtures";
+import { MEMORIES, TODAY_QUESTION } from "@/lib/demo-fixtures";
+import { getSealedCards } from "@/lib/data/cards";
+import { getActivities } from "@/lib/data/activities";
+import { todayIn } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Today · Closer" };
 
 export default function PatientTodayPage() {
-  const sealed = COMFORT_CARDS.filter((c) => c.sealed).length;
   const newMemories = MEMORIES.filter((m) => m.sharedDaysAgo <= 1);
 
   return (
@@ -50,35 +53,13 @@ export default function PatientTodayPage() {
           <span className="text-lg">🔒 Dad answered! Answer to see his.</span>
         </Link>
 
-        {sealed > 0 && (
-          <Link
-            href="/patient/connect"
-            className="flex items-center gap-4 rounded-3xl bg-role-family-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5"
-          >
-            <span aria-hidden className="animate-wiggle text-5xl">
-              💌
-            </span>
-            <span className="flex flex-col">
-              <span className="font-heading text-2xl font-extrabold">
-                {sealed} {sealed === 1 ? "card" : "cards"} for you
-              </span>
-              <span className="text-lg text-muted-foreground">Open them when you want</span>
-            </span>
-          </Link>
-        )}
+        <Suspense fallback={null}>
+          <CardsWaiting />
+        </Suspense>
 
-        <section aria-labelledby="activity-title" className="flex items-center gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border">
-          <span aria-hidden className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-role-patient-soft text-4xl">
-            {SUGGESTED_ACTIVITY.emoji}
-          </span>
-          <div className="flex flex-col">
-            <h2 id="activity-title" className="text-sm font-bold text-muted-foreground">
-              Try this
-            </h2>
-            <p className="font-heading text-xl font-extrabold">{SUGGESTED_ACTIVITY.title}</p>
-            <p className="text-muted-foreground">About {SUGGESTED_ACTIVITY.minutes} minutes</p>
-          </div>
-        </section>
+        <Suspense fallback={<div className="min-h-32 rounded-3xl bg-card ring-1 ring-border" />}>
+          <SuggestedActivity />
+        </Suspense>
       </div>
 
       {newMemories.length > 0 && (
@@ -115,18 +96,38 @@ export default function PatientTodayPage() {
 async function TodayCheckIn() {
   const patient = await getMyPatient();
   if (!patient) return null;
-  const [latest] = await getCheckins(patient.id, patient.timezone, { days: 14, withPhotos: true, withReactions: true });
+  const [[latest], streak] = await Promise.all([
+    getCheckins(patient.id, patient.timezone, { days: 14, withPhotos: true, withReactions: true }),
+    getStreak(patient.id, patient.timezone),
+  ]);
   const doneToday = latest?.daysAgo === 0;
 
   return (
-    <section aria-labelledby="checkin-title" className="flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border">
+    <section aria-labelledby="checkin-title" className="relative flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border">
       <LiveRefresh
         channel={`patient-today-${patient.id}`}
         watch={[{ table: "mood_checkins", filter: `patient_id=eq.${patient.id}` }, { table: "checkin_reactions" }]}
       />
-      <h2 id="checkin-title" className="text-2xl font-extrabold">
-        {doneToday ? "Already done today 🎉" : "How do you feel?"}
-      </h2>
+      <div className="flex items-start justify-between gap-3 pr-12">
+        <h2 id="checkin-title" className="text-2xl font-extrabold">
+          {doneToday ? "Mood of the day" : "How do you feel?"}
+        </h2>
+        {streak.totalDays > 0 && (
+          <span className="rounded-full bg-role-patient-soft px-3 py-1 font-bold whitespace-nowrap text-role-patient-ink">
+            <span aria-hidden>🔥</span> {streak.totalDays} {streak.totalDays === 1 ? "day" : "days"}
+          </span>
+        )}
+      </div>
+      {doneToday && (
+        <Link
+          href="/patient/checkin"
+          aria-label="Edit my mood"
+          title="Edit my mood"
+          className="absolute top-4 right-4 flex size-12 items-center justify-center rounded-full bg-muted transition hover:bg-role-patient-soft"
+        >
+          <Pencil className="size-5" aria-hidden />
+        </Link>
+      )}
       {!doneToday && (
         <Link
           href="/patient/checkin"
@@ -145,11 +146,6 @@ async function TodayCheckIn() {
             <ReactionList reactions={latest.reactions} />
           </CheckInCard>
         </>
-      )}
-      {doneToday && (
-        <Link href="/patient/checkin" className="flex min-h-14 items-center justify-center rounded-2xl bg-muted text-lg font-bold">
-          ✏️ Edit
-        </Link>
       )}
     </section>
   );
@@ -185,5 +181,49 @@ async function ThinkingOfYou() {
       )}
       {replies.filter((r) => r.daysAgo === 0).length > 0 && <NudgeReplies replies={replies.filter((r) => r.daysAgo === 0).slice(0, 3)} />}
     </>
+  );
+}
+
+// One activity a day from the library (rotates daily), opens straight into it.
+async function SuggestedActivity() {
+  const [patient, activities] = await Promise.all([getMyPatient(), getActivities()]);
+  if (!patient || activities.length === 0) return null;
+  const dayNumber = Math.floor(Date.parse(todayIn(patient.timezone)) / 86_400_000);
+  const pick = activities.filter((a) => a.type !== "challenge")[dayNumber % activities.filter((a) => a.type !== "challenge").length];
+  return (
+    <Link href={`/patient/activities/${pick.id}`} aria-labelledby="activity-title" className="flex items-center gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
+      <span aria-hidden className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-role-patient-soft text-4xl">
+        {pick.emoji}
+      </span>
+      <span className="flex flex-col">
+        <span className="text-sm font-bold text-muted-foreground">Try this</span>
+        <span id="activity-title" className="font-heading text-xl font-extrabold">
+          {pick.title}
+        </span>
+        <span className="text-muted-foreground">About {pick.minutes} minutes · Start ▶</span>
+      </span>
+    </Link>
+  );
+}
+
+// "2 cards for you": sealed cards from the family (count only, never the text).
+async function CardsWaiting() {
+  const sealed = (await getSealedCards()).length;
+  if (sealed === 0) return null;
+  return (
+    <Link
+      href="/patient/connect"
+      className="flex items-center gap-4 rounded-3xl bg-role-family-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5"
+    >
+      <span aria-hidden className="animate-wiggle text-5xl">
+        💌
+      </span>
+      <span className="flex flex-col">
+        <span className="font-heading text-2xl font-extrabold">
+          {sealed} {sealed === 1 ? "card" : "cards"} for you
+        </span>
+        <span className="text-lg text-muted-foreground">Open them when you want</span>
+      </span>
+    </Link>
   );
 }

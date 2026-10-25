@@ -90,7 +90,8 @@ flowchart LR
 | Check-in photo and reactions | Live private Storage + protected tables |
 | Family feed and role routing | Live queries and Realtime |
 | Daily reviews, consent, personalized inbox | New migration + Mistral + protected daily route |
-| Cards, questions, memories, volunteer workflows, some care metrics/threshold alerts | Existing typed demo fixtures until their feature migrations are built |
+| Cards, questions, memories, most volunteer workflows, some care metrics/threshold alerts | Existing typed demo fixtures until their feature migrations are built |
+| Volunteer application messages and answer screening | Supabase review queue + Mistral semantic screening; see [rollout and limits](VOLUNTEER_SCREENING.md) |
 
 ## Verification commands
 
