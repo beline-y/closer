@@ -59,6 +59,6 @@ function redirectTo(path: string, request: NextRequest, from: NextResponse) {
 export const config = {
   matcher: [
     // Everything except Next internals and static files.
-    "/((?!_next/static|_next/image|icon.svg|manifest.webmanifest|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|manifest.webmanifest|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
