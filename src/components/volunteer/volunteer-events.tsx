@@ -16,7 +16,7 @@ export function VolunteerEvents({ me, submissions = [] }: { me: "maya" | "daniel
 
   return (
     <div className="flex flex-col gap-6">
-    <p className="text-sm text-muted-foreground">Apply with a short message. Applications are screened and reviewed by the care team before a place is confirmed. Existing sample bookings are for this visit only.</p>
+    <p className="text-sm text-muted-foreground">The care team reviews your application before confirming a place.</p>
     <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {EVENTS.map((e) => {
         const isGoing = going.includes(e.id);
