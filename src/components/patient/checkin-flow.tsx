@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { saveCheckin } from "@/app/checkin-actions";
 import { MoodPicker } from "@/components/kit/mood-picker";
-import { ACTIVITIES, type ActivityKind, type CheckInInput, MEAL_AMOUNTS, type MealAmount, type MealKind, MEALS } from "@/lib/checkin";
+import { ACTIVITIES, type ActivityKind, type CheckInInput, type DishRating, LIKINGS, MEAL_AMOUNTS, MEALS, type MenuDish } from "@/lib/checkin";
+import type { Streak } from "@/lib/streak";
+import { MILESTONES } from "@/lib/streak";
 import { preparePhoto } from "@/lib/images";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -17,27 +19,26 @@ type Step = (typeof STEPS)[number];
 const TITLES: Record<Step, string> = {
   mood: "How do you feel?",
   photo: "A photo of your day?",
-  meal: "What did you eat?",
+  meal: "How was your food?",
   activity: "What did you do?",
   note: "Something to tell your family?",
 };
 
 // Phone: one question per screen with progress dots and Skip. Tablet and up: one screen.
 // Only the mood is required. The photo is resized and stripped of EXIF before upload.
-export function CheckInFlow({ patientId, initial }: { patientId: string; initial: CheckInDraft | null }) {
+export function CheckInFlow({ patientId, initial, menu, doneActivities }: { patientId: string; initial: CheckInDraft | null; menu: MenuDish[]; doneActivities: ActivityKind[] }) {
   const [step, setStep] = useState(0);
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
-  const [meals, setMeals] = useState<MealKind[]>(initial?.meals ?? []);
-  const [mealAmount, setMealAmount] = useState<MealAmount | null>(initial?.mealAmount ?? null);
-  const [mealNote, setMealNote] = useState(initial?.mealNote ?? "");
-  const [activities, setActivities] = useState<ActivityKind[]>(initial?.activities ?? []);
+  const [ratings, setRatings] = useState<DishRating[]>(initial?.ratings ?? []);
+  // Activities finished in the app today count automatically.
+  const [activities, setActivities] = useState<ActivityKind[]>([...new Set([...(initial?.activities ?? []), ...doneActivities])]);
   const [activityNote, setActivityNote] = useState(initial?.activityNote ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(initial?.photoUrl ?? null);
   const [photoPath, setPhotoPath] = useState<string | null | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<Streak | null>(null);
   const [saving, startSaving] = useTransition();
   const cameraInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
@@ -46,7 +47,7 @@ export function CheckInFlow({ patientId, initial }: { patientId: string; initial
   // so coming back to "Edit" shows the form, not the last celebration.
   useLayoutEffect(
     () => () => {
-      setDone(false);
+      setDone(null);
       setStep(0);
       setError(null);
     },
@@ -89,13 +90,19 @@ export function CheckInFlow({ patientId, initial }: { patientId: string; initial
     }
     setError(null);
     startSaving(async () => {
-      const result = await saveCheckin({ mood, meals, mealAmount, mealNote, activities, activityNote, note, photoPath });
-      if (result.ok) setDone(true);
+      const result = await saveCheckin({ mood, ratings, activities, activityNote, note, photoPath });
+      if (result.ok) setDone(result.streak);
       else setError(result.error);
     });
   }
 
-  if (done) return <Celebration />;
+  if (done) return <Celebration streak={done} />;
+
+  const rate = (menuItemId: string, patch: Partial<DishRating>) =>
+    setRatings((all) => {
+      const current = all.find((r) => r.menuItemId === menuItemId) ?? { menuItemId, liking: null, amount: null };
+      return [...all.filter((r) => r.menuItemId !== menuItemId), { ...current, ...patch }];
+    });
 
   const section = (s: Step, i: number, children: React.ReactNode) => (
     <section
@@ -184,29 +191,67 @@ export function CheckInFlow({ patientId, initial }: { patientId: string; initial
         {section(
           "meal",
           2,
-          <div className="flex flex-col gap-4">
-            <div role="group" aria-label="Meals" className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-              {MEALS.map((m) => (
-                <button key={m.value} type="button" aria-pressed={meals.includes(m.value)} onClick={() => setMeals(toggle(meals, m.value))} className={cn(chip(meals.includes(m.value)), "flex-col justify-center py-2")}>
-                  <span aria-hidden className="text-4xl">
-                    {m.emoji}
-                  </span>
-                  {m.label}
-                </button>
+          menu.length === 0 ? (
+            <p className="text-lg text-muted-foreground">No menu today. Tell your family what you ate in your note 🙂</p>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {MEALS.filter((m) => menu.some((d) => d.meal === m.value)).map((meal) => (
+                <div key={meal.value} className="flex flex-col gap-3">
+                  <h3 className="text-lg font-extrabold">{meal.label}</h3>
+                  {menu
+                    .filter((d) => d.meal === meal.value)
+                    .map((dish) => {
+                      const r = ratings.find((x) => x.menuItemId === dish.id);
+                      return (
+                        <div key={dish.id} className="flex flex-col gap-3 rounded-2xl bg-muted/60 p-3">
+                          <p className="flex items-center gap-3 text-lg font-bold">
+                            <span aria-hidden className="text-4xl">
+                              {dish.icon}
+                            </span>
+                            {dish.dish}
+                          </p>
+                          <div role="radiogroup" aria-label={`Did you like the ${dish.dish}?`} className="grid grid-cols-5 gap-1.5">
+                            {LIKINGS.map((l) => (
+                              <button
+                                key={l.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={r?.liking === l.value}
+                                aria-label={l.label}
+                                onClick={() => rate(dish.id, { liking: r?.liking === l.value ? null : l.value })}
+                                className={cn(
+                                  "flex min-h-14 flex-col items-center justify-center rounded-xl text-3xl transition active:scale-90",
+                                  r?.liking === l.value ? "bg-card shadow ring-2 ring-role-patient-ink" : "bg-card/60",
+                                )}
+                              >
+                                <span aria-hidden className={cn(r?.liking === l.value && "animate-pop")}>
+                                  {l.emoji}
+                                </span>
+                                <span className="text-[0.7rem] font-bold">{l.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div role="radiogroup" aria-label={`How much ${dish.dish} did you eat?`} className="flex flex-wrap gap-1.5">
+                            {MEAL_AMOUNTS.map((a) => (
+                              <button
+                                key={a.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={r?.amount === a.value}
+                                onClick={() => rate(dish.id, { amount: r?.amount === a.value ? null : a.value })}
+                                className={cn(chip(r?.amount === a.value), "min-h-11 px-3 text-base")}
+                              >
+                                <span aria-hidden>{a.emoji}</span> {a.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               ))}
             </div>
-            <div role="group" aria-label="How much I ate" className="flex flex-wrap gap-2">
-              {MEAL_AMOUNTS.map((a) => (
-                <button key={a.value} type="button" aria-pressed={mealAmount === a.value} onClick={() => setMealAmount(mealAmount === a.value ? null : a.value)} className={chip(mealAmount === a.value)}>
-                  <span aria-hidden>{a.emoji}</span> {a.label}
-                </button>
-              ))}
-            </div>
-            <label className="flex flex-col gap-1.5">
-              <span className="font-bold">What was it?</span>
-              <input value={mealNote} onChange={(e) => setMealNote(e.target.value)} maxLength={120} placeholder="Pasta with cheese…" className="min-h-14 rounded-2xl border bg-background px-4 text-lg" />
-            </label>
-          </div>,
+          ),
         )}
 
         {section(
@@ -283,21 +328,50 @@ export function CheckInFlow({ patientId, initial }: { patientId: string; initial
   );
 }
 
-function Celebration() {
+// Celebrates, never punishes: total days connected, a flame that grows, milestone badges,
+// and "Welcome back!" after a break.
+function Celebration({ streak }: { streak: Streak }) {
   const confetti = ["🎉", "💛", "⭐", "🌈", "🎈", "💛", "✨", "🎉"];
+  const milestone = streak.milestoneToday;
+  const flameSize = Math.min(9, 4 + streak.totalDays / 5); // rem, grows with the days
   return (
-    <div className="relative flex min-h-[60dvh] flex-col items-center justify-center gap-5 overflow-hidden text-center">
+    <div className="relative flex min-h-[60dvh] flex-col items-center justify-center gap-4 overflow-hidden text-center">
       {confetti.map((c, i) => (
         <span key={i} aria-hidden className="absolute animate-rise text-4xl" style={{ left: `${8 + i * 12}%`, top: `${10 + ((i * 37) % 60)}%`, animationDelay: `${i * 80}ms` }}>
           {c}
         </span>
       ))}
-      <span aria-hidden className="animate-heart text-9xl">
-        🥳
+      <span aria-hidden className="animate-heart leading-none" style={{ fontSize: `${flameSize}rem` }}>
+        {milestone ? milestone.emoji : "🔥"}
       </span>
-      <h1 role="status" className="text-4xl font-extrabold">
-        Your family will see it!
-      </h1>
+      <div role="status" className="flex flex-col gap-2">
+        <h1 className="text-4xl font-extrabold">{streak.welcomeBack ? "Welcome back! 💛" : `Connected for ${streak.totalDays} ${streak.totalDays === 1 ? "day" : "days"}!`}</h1>
+        {streak.welcomeBack && <p className="text-xl">That&apos;s {streak.totalDays} days connected in all. We missed you!</p>}
+        {milestone && (
+          <p className="mx-auto animate-pop rounded-full bg-role-patient-soft px-5 py-2 text-xl font-extrabold text-role-patient-ink">
+            New badge: {milestone.emoji} {milestone.name}
+          </p>
+        )}
+        <p className="text-lg text-muted-foreground">
+          Your family will see it!
+          {!streak.welcomeBack && streak.streakDays > 1 && ` ${streak.streakDays} days in a row${streak.restDays ? " (rest days count too)" : ""}.`}
+        </p>
+        {streak.next && !milestone && (
+          <p className="text-muted-foreground">
+            {streak.next.daysToGo === 1 ? "Tomorrow" : `In ${streak.next.daysToGo} days`}: {streak.next.milestone.emoji} {streak.next.milestone.name}
+          </p>
+        )}
+      </div>
+      <ul aria-label="Badges" className="flex gap-2">
+        {MILESTONES.map((m) => (
+          <li key={m.days} title={m.name} className={cn("flex size-12 items-center justify-center rounded-full text-2xl", streak.totalDays >= m.days ? "bg-role-patient-soft" : "bg-muted opacity-40 grayscale")}>
+            <span aria-hidden>{m.emoji}</span>
+            <span className="sr-only">
+              {m.name} ({m.days} days){streak.totalDays >= m.days ? ", earned" : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
       <Link href="/patient" className="flex min-h-14 items-center rounded-2xl bg-role-patient px-8 text-xl font-extrabold shadow-sm">
         Back to Today
       </Link>

@@ -12,7 +12,9 @@ import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { getCheckins, moodSeries } from "@/lib/data/checkins";
 import { getVisiblePatient } from "@/lib/data/circle";
 import { getThresholds } from "@/lib/data/nudges";
-import { activitySummary, mealSummary } from "@/lib/checkin";
+import { activitySummary, LIKINGS, MEAL_AMOUNTS } from "@/lib/checkin";
+import { getActivityCounts } from "@/lib/data/activities";
+import { StatTile } from "@/components/kit/stat-tile";
 import { relativeDay } from "@/lib/dates";
 import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS, DEFAULT_THRESHOLDS } from "@/lib/demo-fixtures";
 
@@ -39,7 +41,21 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
 
   const alerts = CARE_ALERTS.filter((a) => a.patientId === id);
   // No photos, no reactions: the care team reads mood, activity, meal and note only.
-  const [checkins, thresholds] = await Promise.all([getCheckins(id, patient.timezone, { days: 30 }), getThresholds(id)]);
+  const [checkins, thresholds, activityCounts] = await Promise.all([
+    getCheckins(id, patient.timezone, { days: 30 }),
+    getThresholds(id),
+    getActivityCounts(id, 7),
+  ]);
+  // Appetite: how much was eaten over the last 3 check-ins vs the 4 before (all = 1, half = 0.5, a little = 0.2).
+  const eaten = (cs: typeof checkins) => {
+    const share = { all: 1, half: 0.5, a_little: 0.2 } as const;
+    const values = cs.flatMap((c) => c.dishes.flatMap((d) => (d.amount ? [share[d.amount]] : [])));
+    return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  };
+  const recent = eaten(checkins.slice(0, 3));
+  const before = eaten(checkins.slice(3, 7));
+  const appetiteDrop = recent !== null && before !== null && recent < before - 0.2;
+  const activitiesWeek = activityCounts.reduce((n, d) => n + d.completed, 0);
   const metrics = CARE_METRICS[id];
   const age = patient.birthYear ? new Date().getFullYear() - patient.birthYear : null;
 
@@ -58,6 +74,18 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <AlertBadge count={alerts.length} />
       </header>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Check-ins, last 7 days" value={checkins.filter((c) => c.daysAgo < 7).length} />
+        <StatTile label="Activities done, last 7 days" value={activitiesWeek} hint="Count only, no content" />
+        <StatTile
+          label="Appetite, last 3 check-ins"
+          value={recent === null ? "–" : `${Math.round(recent * 100)}%`}
+          tone={appetiteDrop ? "alert" : undefined}
+          hint={appetiteDrop ? `⚠ Down from ${Math.round((before ?? 0) * 100)}%` : "Share of the plate eaten"}
+        />
+        <StatTile label="Latest mood" value={checkins[0] ? <MoodDot value={checkins[0].mood} className="text-xl" /> : "–"} />
+      </div>
 
       {alerts.length > 0 && (
         <ul className="flex flex-col gap-2">
@@ -96,7 +124,18 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
                   </span>
                   <MoodDot value={c.mood} className="w-32 shrink-0 font-bold" />
                   <span className="text-sm">
-                    {[activitySummary(c.activities, c.activityNote), mealSummary(c.meals, c.mealAmount, c.mealNote)].filter(Boolean).join(" · ")}
+                    {activitySummary(c.activities, c.activityNote)}
+                    {c.dishes.length > 0 && (
+                      <span className="mt-1 flex flex-wrap gap-1.5">
+                        {c.dishes.map((d) => (
+                          <span key={`${d.meal}-${d.dish}`} className="rounded-full bg-muted px-2 py-0.5">
+                            <span aria-hidden>{d.icon}</span> {d.dish}: {LIKINGS.find((l) => l.value === d.liking)?.emoji ?? ""}{" "}
+                            {LIKINGS.find((l) => l.value === d.liking)?.label ?? ""}
+                            {d.amount && ` · ate ${MEAL_AMOUNTS.find((a) => a.value === d.amount)?.label.toLowerCase()}`}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                     {c.note && <span className="block text-muted-foreground">“{c.note}”</span>}
                   </span>
                 </li>
