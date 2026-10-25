@@ -66,7 +66,9 @@ export async function getQuestionIdeas(): Promise<{ ok: true; ideas: QuestionIde
         if (!ideas.some((i) => i.text === r.text)) ideas.push({ text: r.text, source: r.source as QuestionIdea["source"], reused: r.reused });
       }
     }
-    return { ok: true, ideas };
+    // Keep the privacy mask before provider/storage boundaries; use natural
+    // anonymous wording in the suggestions and editable drafts people see.
+    return { ok: true, ideas: ideas.map((idea) => ({ ...idea, text: idea.text.replace(/\[name\]/gi, "someone") })) };
   } catch {
     return { ok: false, error: "Question ideas couldn't load. Try again, or write a question of your own." };
   }

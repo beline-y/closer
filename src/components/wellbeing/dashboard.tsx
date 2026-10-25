@@ -34,7 +34,6 @@ export async function WellbeingPanel({ role }: { role: "patient" | "family" | "c
     <h2 className="mb-2 text-xl font-extrabold">{isChild ? "Little moments together" : "Daily wellbeing & connection"}</h2>
     <p className="text-muted-foreground">{data.state === "error" ? "Daily support could not load. Please try again shortly."
       : "Daily support is being set up. You can keep sharing your day and connecting with your people."}</p>
-    {role === "care" && <p className="mt-2 text-sm text-muted-foreground">Check the Supabase connection and apply the pending wellbeing migration through the shared-database workflow.</p>}
   </aside>;
   return <section className="flex flex-col gap-5" aria-label={isChild ? "Little moments together" : "Daily wellbeing and connection"}>
     <LiveNotifications userId={data.userId} />
