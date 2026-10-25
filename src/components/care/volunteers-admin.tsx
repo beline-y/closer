@@ -6,8 +6,10 @@ import { castByPatientId } from "@/lib/cast";
 import { relativeDay } from "@/lib/dates";
 import { ANSWERS_TO_REVIEW, CONTACT_REQUEST_LABELS, CONTACT_REQUESTS, type ContactRequestStatus, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
+import { ApplicantMessages } from "@/components/care/applicant-messages";
+import { needsAttention, type VolunteerSubmission } from "@/lib/volunteer-submissions";
 
-const TABS = ["Volunteers", "Answers to review", "Contact requests"] as const;
+const TABS = ["Volunteers", "Applicant messages", "Answers to review", "Contact requests"] as const;
 
 // Highlights what the privacy filter masked, so the reviewer sees it at a glance.
 function Masked({ text }: { text: string }) {
@@ -26,8 +28,9 @@ function Masked({ text }: { text: string }) {
   );
 }
 
-// Volunteer approvals, shareable answers and contact requests. Saved for this visit only.
-export function VolunteersAdmin() {
+// Applicant messages persist through Supabase. The other tabs retain their
+// existing visit-only examples for approvals, patient answers and contacts.
+export function VolunteersAdmin({ submissions = [], loadError }: { submissions?: VolunteerSubmission[]; loadError?: string }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Volunteers");
   const [status, setStatus] = useState<Record<string, "approved" | "suspended">>({ maya: "approved", daniel: "approved" });
   const [reviewed, setReviewed] = useState<Record<string, "shared" | "private">>({});
@@ -40,7 +43,7 @@ export function VolunteersAdmin() {
     <div className="flex flex-col gap-5">
       <div role="tablist" aria-label="Volunteers" className="flex gap-1 overflow-x-auto border-b">
         {TABS.map((t) => {
-          const count = t === "Answers to review" ? toReview : t === "Contact requests" ? pending : 0;
+          const count = t === "Applicant messages" ? submissions.filter((s) => s.status === "pending" && needsAttention(s)).length : t === "Answers to review" ? toReview : t === "Contact requests" ? pending : 0;
           return (
             <button
               key={t}
@@ -56,6 +59,9 @@ export function VolunteersAdmin() {
           );
         })}
       </div>
+
+      {loadError && tab !== "Applicant messages" && <p role="alert" className="text-sm font-bold text-alert">{loadError}</p>}
+      {tab === "Applicant messages" && <section role="tabpanel"><ApplicantMessages submissions={submissions} loadError={loadError} /></section>}
 
       {tab === "Volunteers" && (
         <ul role="tabpanel" className="grid gap-3 md:grid-cols-2">
