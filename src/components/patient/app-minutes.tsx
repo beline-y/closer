@@ -9,7 +9,8 @@ export function AppMinutes() {
   useEffect(() => {
     const supabase = createClient();
     const ping = () => {
-      if (document.visibilityState === "visible") void supabase.rpc("log_app_minute");
+      // The query only runs once awaited (then).
+      if (document.visibilityState === "visible") supabase.rpc("log_app_minute").then(({ error }) => error && console.warn("log_app_minute", error.code));
     };
     ping();
     const timer = setInterval(ping, 60_000);
