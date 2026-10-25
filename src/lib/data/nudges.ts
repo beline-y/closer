@@ -1,7 +1,7 @@
 import "server-only";
 import { castByUserId, type CastMember } from "@/lib/cast";
 import { daysBetween, timeIn, todayIn } from "@/lib/dates";
-import type { NudgeKind, Thresholds } from "@/lib/nudges";
+import type { NudgeKind, ReplyKey, Thresholds } from "@/lib/nudges";
 import { createClient } from "@/lib/supabase/server";
 
 // RLS: the patient sees their nudges and every reply; a family member sees only the
@@ -11,7 +11,7 @@ export type NudgeReply = {
   nudgeId: string;
   kind: NudgeKind;
   from: CastMember;
-  emoji: string | null;
+  replyKey: ReplyKey | null;
   text: string | null;
   daysAgo: number;
   time: string;
@@ -23,7 +23,7 @@ export type MyNudge = {
   daysAgo: number;
   time: string;
   sentAt: string;
-  reply: { emoji: string | null; text: string | null } | null;
+  reply: { kind: ReplyKey | null; text: string | null } | null;
 };
 
 /** Last send time per nudge type + the patient's cooldown, for the buttons. */
@@ -48,7 +48,7 @@ export async function getRepliesForPatient(patientId: string, timezone: string, 
   const supabase = await createClient();
   const { data } = await supabase
     .from("nudge_recipients")
-    .select("nudge_id, user_id, reply_emoji, reply_text, replied_at, nudges!inner(kind, patient_id)")
+    .select("nudge_id, user_id, reply_kind, reply_text, replied_at, nudges!inner(kind, patient_id)")
     .eq("nudges.patient_id", patientId)
     .not("replied_at", "is", null)
     .gte("replied_at", new Date(Date.now() - days * 86_400_000).toISOString())
@@ -62,7 +62,7 @@ export async function getRepliesForPatient(patientId: string, timezone: string, 
       nudgeId: r.nudge_id,
       kind: r.nudges.kind,
       from,
-      emoji: r.reply_emoji,
+      replyKey: r.reply_kind as ReplyKey | null,
       text: r.reply_text,
       daysAgo: daysBetween(today, localDate),
       time: timeIn(r.replied_at, timezone),
@@ -75,7 +75,7 @@ export async function getMyNudges(userId: string, timezone: string, days = 7): P
   const supabase = await createClient();
   const { data } = await supabase
     .from("nudge_recipients")
-    .select("nudge_id, reply_emoji, reply_text, replied_at, nudges!inner(kind, created_at)")
+    .select("nudge_id, reply_kind, reply_text, replied_at, nudges!inner(kind, created_at)")
     .eq("user_id", userId)
     .gte("nudges.created_at", new Date(Date.now() - days * 86_400_000).toISOString());
   const today = todayIn(timezone);
@@ -86,26 +86,9 @@ export async function getMyNudges(userId: string, timezone: string, days = 7): P
       sentAt: r.nudges.created_at,
       daysAgo: daysBetween(today, new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date(r.nudges.created_at))),
       time: timeIn(r.nudges.created_at, timezone),
-      reply: r.replied_at ? { emoji: r.reply_emoji, text: r.reply_text } : null,
+      reply: r.replied_at ? { kind: r.reply_kind as ReplyKey | null, text: r.reply_text } : null,
     }))
     .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
-}
-
-/** Who replied to a nudge or reacted to a check-in today (the "thinking of you" row). */
-export async function getThinkingOfYouToday(patientId: string, timezone: string): Promise<string[]> {
-  const supabase = await createClient();
-  const today = todayIn(timezone);
-  const since = new Date(Date.now() - 36 * 60 * 60_000).toISOString();
-  const [replies, reactions] = await Promise.all([
-    supabase.from("nudge_recipients").select("user_id, replied_at, nudges!inner(patient_id)").eq("nudges.patient_id", patientId).gte("replied_at", since),
-    supabase.from("checkin_reactions").select("user_id, created_at, mood_checkins!inner(patient_id)").eq("mood_checkins.patient_id", patientId).gte("created_at", since),
-  ]);
-  const isToday = (iso: string | null) => !!iso && new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date(iso)) === today;
-  const ids = [
-    ...(replies.data ?? []).filter((r) => isToday(r.replied_at)).map((r) => r.user_id),
-    ...(reactions.data ?? []).filter((r) => isToday(r.created_at)).map((r) => r.user_id),
-  ];
-  return [...new Set(ids)];
 }
 
 export async function getThresholds(patientId: string): Promise<Thresholds | null> {

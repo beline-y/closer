@@ -5,8 +5,9 @@ import { useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { CAST } from "@/lib/cast";
 import { EVENTS, type HospitalEvent } from "@/lib/demo-fixtures";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
-const EMPTY: HospitalEvent = { id: "", title: "", emoji: "🎉", location: "", when: "", description: "", capacity: 6, signups: [] };
+const EMPTY: HospitalEvent = { id: "", title: "", icon: "party", location: "", when: "", description: "", capacity: 6, signups: [] };
 
 // Create and edit hospital events, see who signed up. Saved for this visit only.
 export function EventsAdmin() {
@@ -32,8 +33,8 @@ export function EventsAdmin() {
             {events.map((e) => (
               <tr key={e.id} className="border-b last:border-0">
                 <td className="px-3 py-3">
-                  <span className="font-bold">
-                    <span aria-hidden>{e.emoji}</span> {e.title}
+                  <span className="flex items-center gap-1.5 font-bold">
+                    <CloserIcon name={e.icon} className="text-role-care-ink" /> {e.title}
                   </span>
                   <span className="block text-sm text-muted-foreground">{e.location}</span>
                 </td>
@@ -43,7 +44,7 @@ export function EventsAdmin() {
                     {e.signups.length}/{e.capacity}
                   </span>
                   {e.signups.length > 0 && (
-                    <span className="block text-sm text-muted-foreground">{e.signups.map((id) => `${CAST[id].avatar} ${CAST[id].name}`).join(", ")}</span>
+                    <span className="block text-sm text-muted-foreground">{e.signups.map((id) => CAST[id].name).join(", ")}</span>
                   )}
                 </td>
                 <td className="px-3 py-3 text-right">
@@ -74,12 +75,12 @@ export function EventsAdmin() {
 
 function EventForm({ initial, onSave }: { initial: HospitalEvent; onSave: (e: HospitalEvent) => void }) {
   const [ev, setEv] = useState(initial);
-  const input = (key: "title" | "location" | "when" | "emoji", label: string, placeholder?: string) => (
+  const input = (key: "title" | "location" | "when", label: string, placeholder?: string) => (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={`ev-${key}`} className="text-sm font-bold">
         {label}
       </label>
-      <input id={`ev-${key}`} required={key !== "emoji"} value={ev[key]} placeholder={placeholder} onChange={(e) => setEv({ ...ev, [key]: e.target.value })} className="min-h-11 rounded-lg border bg-background px-3" />
+      <input id={`ev-${key}`} required value={ev[key]} placeholder={placeholder} onChange={(e) => setEv({ ...ev, [key]: e.target.value })} className="min-h-11 rounded-lg border bg-background px-3" />
     </div>
   );
   return (
@@ -91,10 +92,7 @@ function EventForm({ initial, onSave }: { initial: HospitalEvent; onSave: (e: Ho
       className="flex flex-col gap-4"
     >
       {input("title", "Title", "Board game afternoon")}
-      <div className="grid gap-4 sm:grid-cols-[1fr_6rem]">
-        {input("location", "Where", "Pediatrics playroom")}
-        {input("emoji", "Emoji")}
-      </div>
+      {input("location", "Where", "Pediatrics playroom")}
       {input("when", "When", "Saturday, 2:00 PM")}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="ev-capacity" className="text-sm font-bold">

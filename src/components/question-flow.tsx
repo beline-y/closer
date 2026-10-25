@@ -10,8 +10,7 @@ import { CAST, type CastMember } from "@/lib/cast";
 import type { TodayQuestion } from "@/lib/data/daily-question";
 import { VOLUNTEER_ANSWERS, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
-
-const EMOJI_CHIPS = ["🦁", "🌊", "🎢", "💛", "😂"];
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // Question of the day with the lock: the database shows you the others' answers only once
 // you answered (and live when they answer after you). On Leo's side, answering also
@@ -31,11 +30,13 @@ export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isL
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border sm:p-6">
-        <p className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</p>
+        <p className="flex items-center gap-1.5 text-sm font-bold text-role-volunteer-ink">
+          <CloserIcon name="idea" /> Today&apos;s question
+        </p>
         <h2 className="text-3xl font-extrabold sm:text-4xl">{question.text}</h2>
         {!answer && question.answeredBy.length > 0 && (
-          <p className="text-lg">
-            🔒 {question.answeredBy.map(nameFor).join(" and ")} answered! Answer to see {question.answeredBy.length === 1 ? "the answer" : "their answers"}.
+          <p className="flex flex-wrap items-center gap-x-1.5 text-lg">
+            <CloserIcon name="lock" /> {question.answeredBy.map(nameFor).join(" and ")} answered! Answer to see {question.answeredBy.length === 1 ? "the answer" : "their answers"}.
           </p>
         )}
       </section>
@@ -43,7 +44,7 @@ export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isL
       {answer ? (
         <section aria-labelledby="answers-title" className="flex flex-col gap-4">
           <h2 id="answers-title" className="text-2xl font-extrabold">
-            Answers 🎉
+            Answers
           </h2>
           {/* One column, same gap everywhere, every bubble full width and top-aligned. */}
           <ul className="flex flex-col gap-3">
@@ -62,8 +63,9 @@ export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isL
             ))}
           </ul>
           {isLeo && (
-            <p className="text-sm text-muted-foreground">
-              {question.myAnswer?.shared ? "🔒 Sarah will check your answer first. Volunteers never see your name." : "🔒 Only your family can read your answer."}
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <CloserIcon name="lock" />
+              {question.myAnswer?.shared ? "Sarah will check your answer first. Volunteers never see your name." : "Only your family can read your answer."}
             </p>
           )}
         </section>
@@ -83,19 +85,6 @@ export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isL
           <label htmlFor="answer" className="text-xl font-extrabold">
             Your answer
           </label>
-          <div className="flex flex-wrap gap-2" aria-label="Add an emoji">
-            {EMOJI_CHIPS.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => setDraft((d) => `${d}${d && !d.endsWith(" ") ? " " : ""}${e}`)}
-                className="flex size-14 items-center justify-center rounded-2xl bg-muted text-3xl transition hover:-translate-y-0.5 active:scale-95"
-                aria-label={`Add ${e}`}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
           <textarea
             id="answer"
             value={draft}
@@ -135,7 +124,7 @@ function AnswerBubble({ who, label, body, waiting }: { who: CastMember; label: s
         )}
       >
         <span className="font-bold">{label}</span>
-        <p className="text-lg break-words">{waiting ? "Hasn't answered yet. You'll see it here 💛" : body}</p>
+        <p className="text-lg break-words">{waiting ? "Hasn't answered yet. You'll see it here." : body}</p>
       </div>
     </div>
   );
@@ -155,25 +144,25 @@ function VolunteerUnlock({ questionText }: { questionText: string }) {
   return (
     <section aria-labelledby="volunteer-title" className="flex animate-pop flex-col gap-3">
       <h2 id="volunteer-title" className="text-2xl font-extrabold">
-        🔓 You unlocked a story!
+        You unlocked a story!
       </h2>
       <VolunteerCard story={story} answer={current.body}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <button type="button" onClick={() => { setDone(null); setQuestion(""); setDialog("ask"); }} className="min-h-14 rounded-2xl bg-role-volunteer-soft px-4 text-lg font-extrabold text-role-volunteer-ink">
-            💬 Ask {story.firstName} a question
+          <button type="button" onClick={() => { setDone(null); setQuestion(""); setDialog("ask"); }} className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-role-volunteer-soft px-4 text-lg font-extrabold text-role-volunteer-ink">
+            <CloserIcon name="message" /> Ask {story.firstName} a question
           </button>
-          <button type="button" onClick={() => { setDone(null); setDialog("talk"); }} className="min-h-14 rounded-2xl bg-role-volunteer-ink px-4 text-lg font-extrabold text-white">
-            👋 I&apos;d like to talk with {story.firstName}
+          <button type="button" onClick={() => { setDone(null); setDialog("talk"); }} className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-role-volunteer-ink px-4 text-lg font-extrabold text-white">
+            <CloserIcon name="hug" /> I&apos;d like to talk with {story.firstName}
           </button>
         </div>
       </VolunteerCard>
       {answers.length > 1 && (
         <button type="button" onClick={() => setIndex((i) => i + 1)} className="min-h-12 self-start rounded-full px-4 font-bold text-role-volunteer-ink hover:bg-role-volunteer-soft">
-          Meet another volunteer →
+          Meet another volunteer
         </button>
       )}
 
-      <Modal open={dialog === "ask"} onClose={() => setDialog(null)} title={done ? "Sent! ❤️" : `Ask ${story.firstName}`}>
+      <Modal open={dialog === "ask"} onClose={() => setDialog(null)} title={done ? "Sent!" : `Ask ${story.firstName}`}>
         {done ? (
           <p className="text-lg">Sarah checks every question first. Then {story.firstName} gets it, without your name.</p>
         ) : (
@@ -196,7 +185,7 @@ function VolunteerUnlock({ questionText }: { questionText: string }) {
         )}
       </Modal>
 
-      <Modal open={dialog === "talk"} onClose={() => setDialog(null)} title={done ? "Asked! 💛" : `Talk with ${story.firstName}?`}>
+      <Modal open={dialog === "talk"} onClose={() => setDialog(null)} title={done ? "Asked!" : `Talk with ${story.firstName}?`}>
         {done ? (
           <p className="text-lg">Sarah and Mom will look at it first. If they say yes, {story.firstName} can come and visit with a grown-up from the hospital.</p>
         ) : (

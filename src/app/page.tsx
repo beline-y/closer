@@ -4,15 +4,14 @@ import { DemoAIGuide } from "@/components/demo-ai-guide";
 import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 export default function Home() {
   const demo = isDemoMode();
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-4 py-12 sm:px-6 sm:py-16">
       <header className="flex flex-col items-center gap-3 text-center">
-        <span className="text-5xl" aria-hidden>
-          💛
-        </span>
+        <CloserIcon name="heart" className="size-12 fill-current text-role-family" />
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl">Closer</h1>
         <p className="max-w-md text-lg text-muted-foreground">
           Stay close to the people you love, even from a hospital bed.

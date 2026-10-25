@@ -23,6 +23,7 @@ import { StatTile } from "@/components/kit/stat-tile";
 import { dateTimeIn, relativeDay, timeIn, todayIn } from "@/lib/dates";
 import { roundFromSaved } from "@/lib/nurse-round";
 import { ALERT_LABELS, CARE_ALERTS, DEFAULT_THRESHOLDS } from "@/lib/demo-fixtures";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 export const metadata: Metadata = { title: "Patient · Closer" };
 
@@ -85,7 +86,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
         <ul className="flex flex-col gap-2">
           {alerts.map((a) => (
             <li key={a.id} className="rounded-lg border border-alert/30 bg-alert-soft px-4 py-2">
-              <span className="font-bold text-alert">⚠ {ALERT_LABELS[a.kind]}</span> <span className="text-muted-foreground">· {a.detail}</span>
+              <span className="inline-flex items-center gap-1.5 font-bold text-alert"><CloserIcon name="alert" /> {ALERT_LABELS[a.kind]}</span> <span className="text-muted-foreground">· {a.detail}</span>
             </li>
           ))}
         </ul>
@@ -110,7 +111,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
             Check-ins
           </h2>
           {checkins.length === 0 ? (
-            <EmptyState emoji="🌱" title="No check-ins yet">
+            <EmptyState icon="sprout" title="No check-ins yet">
               They&apos;ll appear here as soon as {patient.nickname} shares a mood.
             </EmptyState>
           ) : (

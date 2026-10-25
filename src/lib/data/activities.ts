@@ -1,6 +1,7 @@
 import "server-only";
 import { ACTIVITY_TYPES, type Activity, type ActivityType } from "@/lib/activities";
 import { castByUserId, type CastMember } from "@/lib/cast";
+import type { ReactionKey } from "@/lib/checkin";
 import { daysBetween, timeIn, todayIn } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,7 +12,7 @@ const RESULT_URL_TTL = 60 * 60;
 
 export type ActivityResult = {
   id: string;
-  activity: Pick<Activity, "id" | "type" | "title" | "emoji" | "theme">;
+  activity: Pick<Activity, "id" | "type" | "title" | "theme">;
   status: "started" | "waiting_partner" | "completed";
   daysAgo: number;
   time: string;
@@ -23,7 +24,7 @@ export type ActivityResult = {
   inMemories: boolean;
   partner: CastMember | null;
   partnerEntry: { imageUrl: string | null; text: string | null } | null;
-  reactions: { emoji: string; by: CastMember; userId: string }[];
+  reactions: { kind: ReactionKey; by: CastMember; userId: string }[];
   comments: { id: string; by: CastMember; body: string }[];
 };
 
@@ -40,18 +41,18 @@ type Row = {
   partner_id: string | null;
   completed_at: string | null;
   created_at: string;
-  activities: { id: string; type: ActivityType; title: string; emoji: string; theme: string | null } | null;
+  activities: { id: string; type: ActivityType; title: string; theme: string | null } | null;
 };
 
 export async function getActivities(): Promise<Activity[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("activities").select("id, type, title, emoji, instructions, theme, steps, quiz, minutes").order("type").order("title");
+  const { data } = await supabase.from("activities").select("id, type, title, instructions, theme, steps, quiz, minutes").order("type").order("title");
   return (data ?? []).map((a) => ({ ...a, quiz: (a.quiz as Activity["quiz"]) ?? null }));
 }
 
 export async function getActivity(id: string): Promise<Activity | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("activities").select("id, type, title, emoji, instructions, theme, steps, quiz, minutes").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("activities").select("id, type, title, instructions, theme, steps, quiz, minutes").eq("id", id).maybeSingle();
   return data ? { ...data, quiz: (data.quiz as Activity["quiz"]) ?? null } : null;
 }
 
@@ -62,7 +63,7 @@ export async function getResults(patientId: string, timezone: string, { days = 1
   const since = new Date(Date.parse(today) - (days - 1) * 86_400_000).toISOString().slice(0, 10);
   let query = supabase
     .from("activity_sessions")
-    .select("id, local_date, status, result_path, result_text, score, score_total, visibility, in_memories, partner_id, completed_at, created_at, activities(id, type, title, emoji, theme)")
+    .select("id, local_date, status, result_path, result_text, score, score_total, visibility, in_memories, partner_id, completed_at, created_at, activities(id, type, title, theme)")
     .eq("patient_id", patientId)
     .gte("local_date", since)
     .neq("status", "started")
@@ -76,7 +77,7 @@ export async function getResults(patientId: string, timezone: string, { days = 1
 
   const [entries, reactions, comments] = await Promise.all([
     supabase.from("challenge_entries").select("session_id, result_path, result_text").in("session_id", ids),
-    supabase.from("activity_reactions").select("session_id, user_id, emoji").in("session_id", ids),
+    supabase.from("activity_reactions").select("session_id, user_id, kind").in("session_id", ids),
     supabase.from("activity_comments").select("id, session_id, user_id, body, created_at").in("session_id", ids).order("created_at"),
   ]);
   const paths = [...rows.map((r) => r.result_path), ...(entries.data ?? []).map((e) => e.result_path)].filter((p): p is string => !!p);
@@ -87,7 +88,7 @@ export async function getResults(patientId: string, timezone: string, { days = 1
     const entry = (entries.data ?? []).find((e) => e.session_id === r.id);
     return {
       id: r.id,
-      activity: r.activities ?? { id: "", type: "draw", title: "Activity", emoji: "✨", theme: null },
+      activity: r.activities ?? { id: "", type: "draw", title: "Activity", theme: null },
       status: r.status,
       daysAgo: daysBetween(today, r.local_date),
       time: timeIn(r.completed_at ?? r.created_at, timezone),
@@ -103,7 +104,7 @@ export async function getResults(patientId: string, timezone: string, { days = 1
         .filter((x) => x.session_id === r.id)
         .flatMap((x) => {
           const by = castByUserId(x.user_id);
-          return by ? [{ emoji: x.emoji, by, userId: x.user_id }] : [];
+          return by && x.kind ? [{ kind: x.kind as ReactionKey, by, userId: x.user_id }] : [];
         }),
       comments: (comments.data ?? [])
         .filter((x) => x.session_id === r.id)
@@ -122,7 +123,7 @@ export async function getUnfinished(patientId: string, timezone: string) {
   const since = new Date(Date.parse(today) - 6 * 86_400_000).toISOString().slice(0, 10);
   const { data } = await supabase
     .from("activity_sessions")
-    .select("id, status, result_text, local_date, partner_id, activities(id, type, title, emoji)")
+    .select("id, status, result_text, local_date, partner_id, activities(id, type, title)")
     .eq("patient_id", patientId)
     .in("status", ["started", "waiting_partner"])
     .gte("local_date", since)

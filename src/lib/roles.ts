@@ -8,7 +8,6 @@ export type AccountType = Database["public"]["Enums"]["account_type"];
 export type Persona = {
   name: string;
   detail: string;
-  avatar: string;
   line: string;
 };
 
@@ -38,7 +37,6 @@ export const ROLES: RoleInfo[] = [
     persona: {
       name: "Leo",
       detail: "9 years old",
-      avatar: "🦖",
       line: "Shares a mood, sends one-tap nudges, opens comfort cards.",
     },
     accentBg: "bg-role-patient",
@@ -55,7 +53,6 @@ export const ROLES: RoleInfo[] = [
     persona: {
       name: "Emma",
       detail: "Leo's mom",
-      avatar: "🌻",
       line: "Answers nudges, writes comfort cards, shares memories with Leo.",
     },
     accentBg: "bg-role-family",
@@ -72,7 +69,6 @@ export const ROLES: RoleInfo[] = [
     persona: {
       name: "Sarah",
       detail: "Pediatric nurse",
-      avatar: "🩺",
       line: "Follows wellbeing, reviews alerts, approves volunteer contacts.",
     },
     accentBg: "bg-role-care",
@@ -89,7 +85,6 @@ export const ROLES: RoleInfo[] = [
     persona: {
       name: "Maya",
       detail: "Volunteer, marine biologist",
-      avatar: "🐬",
       line: "Answers kids' questions and shares an inspiring story. Never sees who asked.",
     },
     accentBg: "bg-role-volunteer",

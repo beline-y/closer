@@ -47,7 +47,7 @@ select is((select count(*) from nudge_recipients where user_id <> '22222222-2222
 select ok((select count(*) from nudges where kind = 'hug' and created_at > now() - interval '1 minute') = 1, 'Emma sees the new hug');
 select is((select count(*) from nudges where kind = 'bored' and created_at > now() - interval '1 minute')::int, 0,
   'Emma does not see the nudge sent to Noah only');
-update nudge_recipients set reply_emoji = '❤️', reply_text = 'Coming!', replied_at = now(), seen_at = now()
+update nudge_recipients set reply_kind = 'heart', reply_text = 'Coming!', replied_at = now(), seen_at = now()
   where user_id = '22222222-2222-4222-8222-222222222222' and replied_at is null;
 select ok((select count(*) from nudge_recipients where user_id = '22222222-2222-4222-8222-222222222222' and reply_text = 'Coming!') > 0,
   'Emma replies');

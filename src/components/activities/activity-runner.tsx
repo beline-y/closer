@@ -4,6 +4,7 @@ import { Camera, Check, ImageIcon, Loader2, Mic, MicOff } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { finishActivity, saveDraft, startActivity } from "@/app/activity-actions";
+import { CloserIcon } from "@/components/icons/closer-icon";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { type Activity, ACTIVITY_TYPES, type ShareChoice } from "@/lib/activities";
 import type { CastMember } from "@/lib/cast";
@@ -74,15 +75,17 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
   if (stage === "share" && result) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
-        <h1 className="text-4xl font-extrabold">Well done! 🎉</h1>
+        <h1 className="flex items-center gap-2 text-4xl font-extrabold">
+          Well done! <CloserIcon name="party" className="text-mood-5" />
+        </h1>
         <ResultPreview result={result} activity={activity} />
         <p className="text-xl font-bold">Who can see it?</p>
         <div className="grid gap-3">
           {(
             [
-              { value: "family", emoji: "💛", label: "Share with my family", hint: "It shows in their feed" },
-              { value: "memories", emoji: "📸", label: "Add to Memories", hint: "In the album you share with your family" },
-              { value: "private", emoji: "🔒", label: "Keep it for myself", hint: "Only you can see it" },
+              { value: "family", icon: "heart", label: "Share with my family", hint: "It shows in their feed" },
+              { value: "memories", icon: "memory", label: "Add to Memories", hint: "In the album you share with your family" },
+              { value: "private", icon: "lock", label: "Keep it for myself", hint: "Only you can see it" },
             ] as const
           ).map((c) => (
             <button
@@ -92,8 +95,8 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
               onClick={() => finish(result, c.value)}
               className="flex min-h-20 items-center gap-4 rounded-3xl bg-card p-4 text-left shadow-sm ring-1 ring-border transition hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60"
             >
-              <span aria-hidden className="text-4xl">
-                {c.emoji}
+              <span aria-hidden className="flex size-12 shrink-0 items-center justify-center rounded-full bg-role-patient-soft text-role-patient-ink">
+                <CloserIcon name={c.icon} className="size-6" />
               </span>
               <span className="flex flex-col">
                 <span className="text-xl font-extrabold">{c.label}</span>
@@ -126,14 +129,14 @@ export function ActivityRunner({ activity, patientId, circle, resume }: { activi
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
       <Link href="/patient/play" className="min-h-11 self-start content-center rounded-full px-3 font-bold text-muted-foreground hover:bg-muted">
-        ← Play
+        Back to Play
       </Link>
       <div className="flex flex-col items-center gap-3 rounded-3xl bg-role-patient-soft p-6 text-center">
-        <span aria-hidden className="animate-pop text-8xl">
-          {activity.emoji}
+        <span aria-hidden className="flex size-24 animate-pop items-center justify-center rounded-full bg-card text-role-patient-ink">
+          <CloserIcon name={type.icon} className="size-12" strokeWidth={1.75} />
         </span>
         <p className="font-bold text-role-patient-ink">
-          {type.emoji} {type.label} · about {activity.minutes} min
+          {type.label} · about {activity.minutes} min
         </p>
         <h1 className="text-4xl font-extrabold">{activity.title}</h1>
         {activity.theme && activity.theme !== activity.title && <p className="text-xl">“{activity.theme}”</p>}
@@ -194,8 +197,12 @@ function ResultPreview({ result, activity }: { result: Result; activity: Activit
         <img src={result.previewUrl} alt={activity.title} className="max-h-96 w-full object-contain" />
       )}
       {result.score !== undefined && (
-        <p className="p-6 text-center text-4xl font-extrabold">
-          {"⭐".repeat(result.score)}
+        <p className="flex flex-col items-center p-6 text-center text-4xl font-extrabold">
+          <span aria-hidden className="flex text-mood-4">
+            {Array.from({ length: result.score }, (_, i) => (
+              <CloserIcon key={i} name="star" className="size-9 fill-current" />
+            ))}
+          </span>
           <span className="block text-2xl">
             {result.score} / {result.scoreTotal}
           </span>
@@ -209,28 +216,28 @@ function ResultPreview({ result, activity }: { result: Result; activity: Activit
 function Saved({ activity, choice, partner }: { activity: Activity; choice: ShareChoice | "challenge" | null; partner: CastMember | null }) {
   const message =
     choice === "challenge"
-      ? `Sent! 🔒 Waiting for ${partnerName(partner)}. You'll see both drawings when ${partnerName(partner)} is done.`
+      ? `Sent! Waiting for ${partnerName(partner)}. You'll see both drawings when ${partnerName(partner)} is done.`
       : choice === "family"
-        ? "Shared! Your family will see it in their feed 💛"
+        ? "Shared! Your family will see it in their feed."
         : choice === "memories"
-          ? "Added to Memories 📸"
-          : "Saved, just for you 🔒";
+          ? "Added to Memories."
+          : "Saved, just for you.";
   return (
     <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-5 text-center">
-      <span aria-hidden className="animate-heart text-9xl">
-        {choice === "challenge" ? "🤝" : "🌟"}
+      <span aria-hidden className="animate-heart text-role-patient-ink">
+        <CloserIcon name={choice === "challenge" ? "challenge" : "star"} className="size-28" strokeWidth={1.5} />
       </span>
       <h1 role="status" className="max-w-xl text-3xl font-extrabold">
         {message}
       </h1>
-      <p className="text-lg text-muted-foreground">It counts in your activity of the day: {ACTIVITY_TYPES[activity.type].emoji} {ACTIVITY_TYPES[activity.type].label}</p>
+      <p className="text-lg text-muted-foreground">It counts in your activity of the day: {ACTIVITY_TYPES[activity.type].label}</p>
       <div className="flex flex-wrap justify-center gap-3">
         <Link href="/patient/play" className="flex min-h-14 items-center rounded-2xl bg-role-patient px-6 text-xl font-extrabold">
           Play more
         </Link>
         {choice === "private" && (
-          <Link href="/patient/me" className="flex min-h-14 items-center rounded-2xl bg-muted px-6 text-xl font-bold">
-            🔒 In Me
+          <Link href="/patient/me" className="flex min-h-14 items-center gap-2 rounded-2xl bg-muted px-6 text-xl font-bold">
+            <CloserIcon name="lock" /> In Me
           </Link>
         )}
         <Link href="/patient" className="flex min-h-14 items-center rounded-2xl bg-muted px-6 text-xl font-bold">
@@ -264,8 +271,8 @@ function MakeAndSnap({ activity, onPhoto, error }: { activity: Activity; onPhoto
   };
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
-      <h1 className="text-3xl font-extrabold">
-        {activity.emoji} {activity.title}
+      <h1 className="flex items-center gap-2 text-3xl font-extrabold">
+        <CloserIcon name={ACTIVITY_TYPES[activity.type].icon} className="text-role-patient-ink" /> {activity.title}
       </h1>
       <ol className="flex flex-col gap-2">
         {activity.steps.map((s, i) => (
@@ -284,7 +291,7 @@ function MakeAndSnap({ activity, onPhoto, error }: { activity: Activity; onPhoto
           </li>
         ))}
       </ol>
-      <p className="text-xl font-bold">Show your creation 📸</p>
+      <p className="text-xl font-bold">Show your creation</p>
       <div className="grid grid-cols-2 gap-3">
         <button type="button" disabled={busy} onClick={() => camera.current?.click()} className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl bg-role-patient text-lg font-extrabold disabled:opacity-60">
           <Camera className="size-8" aria-hidden /> Take a photo
@@ -341,8 +348,12 @@ function Quiz({ activity, onDone }: { activity: Activity; onDone: (score: number
       </div>
       {picked !== null && (
         <div role="status" className="flex animate-rise flex-col gap-3 rounded-3xl bg-role-patient-soft p-5">
-          <p className="text-2xl font-extrabold">{right ? "Yes! 🎉" : `Almost! It's ${q.options[q.answer]} 💛`}</p>
-          {q.fact && <p className="text-lg">💡 {q.fact}</p>}
+          <p className="text-2xl font-extrabold">{right ? "Yes!" : `Almost! It's ${q.options[q.answer]}.`}</p>
+          {q.fact && (
+            <p className="flex items-start gap-2 text-lg">
+              <CloserIcon name="idea" className="mt-1 text-mood-4" /> {q.fact}
+            </p>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -404,8 +415,8 @@ function StoryWriter({ activity, sessionId, initialText, onDone }: { activity: A
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
-      <h1 className="text-3xl font-extrabold">
-        {activity.emoji} {activity.theme ?? activity.title}
+      <h1 className="flex items-center gap-2 text-3xl font-extrabold">
+        <CloserIcon name={ACTIVITY_TYPES[activity.type].icon} className="text-role-patient-ink" /> {activity.theme ?? activity.title}
       </h1>
       <p className="text-lg text-muted-foreground">{activity.instructions}</p>
       <label htmlFor="story" className="sr-only">

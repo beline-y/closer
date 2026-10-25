@@ -59,12 +59,12 @@ function RoleCard({ role }: { role: RoleInfo }) {
         <span
           aria-hidden
           className={cn(
-            "flex size-16 shrink-0 items-center justify-center rounded-full text-4xl ring-4 ring-offset-2 ring-offset-card",
+            "flex size-16 shrink-0 items-center justify-center rounded-full font-heading text-3xl font-extrabold ring-4 ring-offset-2 ring-offset-card",
             "bg-secondary transition-transform group-hover:scale-105",
             ringFor(role),
           )}
         >
-          {role.persona.avatar}
+          {role.persona.name.charAt(0)}
         </span>
         <div className="flex flex-col">
           <span className="font-heading text-2xl font-extrabold">{role.persona.name}</span>
@@ -72,7 +72,7 @@ function RoleCard({ role }: { role: RoleInfo }) {
         </div>
       </div>
       <p className="text-base">{role.persona.line}</p>
-      <span className={cn("mt-auto font-bold", role.accentText)}>Enter as {role.persona.name} →</span>
+      <span className={cn("mt-auto font-bold", role.accentText)}>Enter as {role.persona.name}</span>
     </button>
   );
 }

@@ -13,6 +13,7 @@ import type { MoodPoint } from "@/lib/mood";
 import type { AiOverview } from "@/lib/nurse-round";
 import { relativeDay } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 export type PatientRow = {
   id: string;
@@ -151,7 +152,15 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                 </td>
                 <td className="px-3 py-2 tabular-nums">{r.minutesToday} min</td>
                 <td className="px-3 py-2">
-                  {r.familyContactToday ? <span className="font-bold text-success">✓ Yes</span> : <span className="font-bold text-alert">✕ No</span>}
+                  {r.familyContactToday ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-success">
+                      <CloserIcon name="check" /> Yes
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-bold text-alert">
+                      <CloserIcon name="close" /> No
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-2">
                   <AlertBadge count={r.alerts} />
@@ -161,7 +170,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
             {shown.length === 0 && (
               <tr>
                 <td colSpan={hasAi ? 7 : 6} className="px-3 py-10 text-center text-muted-foreground">
-                  No patient matches. 🎉 Everyone looks fine.
+                  No patient matches. Everyone looks fine.
                 </td>
               </tr>
             )}

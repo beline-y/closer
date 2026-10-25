@@ -4,6 +4,7 @@ import { DistressBars } from "@/components/kit/charts";
 import { relativeDay } from "@/lib/dates";
 import { ACTION_LABELS, ALERT_SOURCES, type AiAction, type AiLevel, type AiReport, LEVELS, PRIORITY_LABELS } from "@/lib/nurse-round";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // The AI module's daily read of one child: Claude's summary, the signals behind it, the
 // decision and the last two weeks. Decision support for the care team, never a diagnosis.
@@ -12,7 +13,7 @@ export function LevelBadge({ level, className }: { level: AiLevel; className?: s
   const l = LEVELS[level];
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-bold whitespace-nowrap", l.className, className)}>
-      <span aria-hidden>{l.icon}</span>
+      <CloserIcon name={l.icon} />
       {l.label}
     </span>
   );

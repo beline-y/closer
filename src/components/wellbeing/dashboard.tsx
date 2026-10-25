@@ -46,11 +46,11 @@ export async function WellbeingPanel({ role }: { role: "patient" | "family" | "c
         {data.notifications.length ? data.notifications.map((n) => <article key={n.id} className={`${panelClass} ${n.kind === "wellbeing_alert" ? "border-l-4 border-l-role-care" : "border-l-4 border-l-primary"}`}>
           <div className="mb-3 flex flex-wrap justify-between gap-2"><h3 className="text-xl font-extrabold">{n.title}</h3><span className="text-sm text-muted-foreground">{data.patients.find((p) => p.id === n.patient_id)?.nickname} · {n.for_date}</span></div>
           <p className="mb-5 text-lg leading-relaxed">{n.body}</p>
-          {n.feedback ? <p className="text-sm text-muted-foreground">Response saved. Thank you 💛</p> : <ActionForm action={notificationFeedback} label="Save my response">
+          {n.feedback ? <p className="text-sm text-muted-foreground">Response saved. Thank you!</p> : <ActionForm action={notificationFeedback} label="Save my response">
             <input type="hidden" name="id" value={n.id} />
             <label className="sr-only" htmlFor={`feedback-${n.id}`}>Your response</label>
             <select className={inputClass} name="feedback" id={`feedback-${n.id}`} defaultValue="helpful">
-              <option value="helpful">{isChild ? "I like this 💛" : "Helpful"}</option><option value="not_now">Another time</option><option value="connected">We connected</option>
+              <option value="helpful">{isChild ? "I like this" : "Helpful"}</option><option value="not_now">Another time</option><option value="connected">We connected</option>
             </select>
           </ActionForm>}
         </article>) : <div className={`${panelClass} text-muted-foreground`}>{isChild ? "Your little invitations will arrive here. You can always say hello to someone you love."

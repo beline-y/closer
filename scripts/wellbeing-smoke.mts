@@ -12,13 +12,13 @@ const base: ReviewContext = { forDate: date, monitoringSince: shiftDate(date, -7
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 const cases = [
-  { name: "shared movie → separate parent/child prompts", expected: "routine", context: { ...base, checkins: [sharedCheckin({
+  { name: "shared movie to separate parent/child prompts", expected: "routine", context: { ...base, checkins: [sharedCheckin({
     id, local_date: date, mood: 4, activities: ["movie"], activity_note: "A funny film about dinosaurs", note: "I enjoyed the film and feel happy today.",
   })] } },
-  { name: "sustained low mood → human check-in", expected: "check_in", context: { ...base, checkins: [0, 1, 2].map((n) => ({
+  { name: "sustained low mood to human check-in", expected: "check_in", context: { ...base, checkins: [0, 1, 2].map((n) => ({
     id: `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa${n}`, local_date: shiftDate(date, -n), mood: 2, activity: null, note: "I feel lonely and I miss spending time with my family.",
   })) } },
-  { name: "explicit unsafe feelings → priority care review", expected: "priority", context: { ...base, checkins: [{
+  { name: "explicit unsafe feelings to priority care review", expected: "priority", context: { ...base, checkins: [{
     id, local_date: date, mood: 1, activity: null, note: "I want to hurt myself and need a grown-up to help me right now.",
   }] } },
 ];

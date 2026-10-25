@@ -4,13 +4,14 @@ import { BottomTabs, SideNav, TopTabs } from "@/components/shell/role-nav";
 import { CAST } from "@/lib/cast";
 import { getRole, type RoleKey } from "@/lib/roles";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 const ME = { patient: CAST.leo, family: CAST.emma, care: CAST.sarah, volunteer: CAST.maya } as const;
 
 function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-1.5 font-heading text-xl font-extrabold", className)}>
-      <span aria-hidden>💛</span> Closer
+      <CloserIcon name="heart" className="fill-current text-role-family" /> Closer
     </span>
   );
 }
@@ -54,7 +55,7 @@ export function RoleShell({ role, children }: { role: RoleKey; children: ReactNo
     return (
       <div data-tone="playful" className="flex flex-1 bg-[radial-gradient(circle_at_top_right,var(--role-patient-soft),transparent_45%)]">
         <aside className="sticky top-0 hidden h-dvh w-28 shrink-0 flex-col items-center gap-6 border-r bg-card/80 px-2 py-5 md:flex">
-          <span aria-hidden className="text-3xl">💛</span>
+          <CloserIcon name="heart" className="size-8 fill-current text-role-family" />
           <SideNav role="patient" className="w-full" />
           <PersonaAvatar person={me} size="lg" className="mt-auto" />
         </aside>

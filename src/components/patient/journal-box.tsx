@@ -19,13 +19,13 @@ export function JournalBox() {
       <label htmlFor="journal" className="text-lg font-bold">
         How was your day?
       </label>
-      <textarea id="journal" value={text} onChange={(e) => setText(e.target.value)} rows={3} className="rounded-2xl border bg-card p-3 text-lg" placeholder="Only you can read it 🔒" />
+      <textarea id="journal" value={text} onChange={(e) => setText(e.target.value)} rows={3} className="rounded-2xl border bg-card p-3 text-lg" placeholder="Only you can read it" />
       <button type="submit" disabled={!text.trim()} className="min-h-14 rounded-2xl bg-role-patient text-lg font-extrabold disabled:opacity-50">
         Save
       </button>
       {saved && (
         <p aria-live="polite" className="animate-rise text-lg">
-          Saved! 🔒 Only you can read it.
+          Saved! Only you can read it.
         </p>
       )}
     </form>

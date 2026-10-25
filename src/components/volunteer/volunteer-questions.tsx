@@ -7,6 +7,7 @@ import { type PoolQuestion, SHARED_ANSWERS, VOLUNTEER_POOL } from "@/lib/demo-fi
 import { cn } from "@/lib/utils";
 import { MyVolunteerMessages, VolunteerMessageForm } from "@/components/volunteer/message-form";
 import type { VolunteerSubmission } from "@/lib/volunteer-submissions";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // The anonymous question pool and shared examples remain fixtures. New volunteer
 // answers are persisted privately for screening and care review.
@@ -23,8 +24,8 @@ export function VolunteerQuestions({ me, submissions = [] }: { me: "maya" | "dan
       <li key={q.id} className="flex flex-col gap-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-border sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           {q.source === "patient" && (
-            <p className="text-sm font-bold text-role-volunteer-ink">
-              🧭 A young explorer asks{q.forVolunteer === me ? " you" : ""} · {relativeDay(q.daysAgo)}
+            <p className="flex items-center gap-1.5 text-sm font-bold text-role-volunteer-ink">
+              <CloserIcon name="rocket" /> A young explorer asks{q.forVolunteer === me ? " you" : ""} · {relativeDay(q.daysAgo)}
             </p>
           )}
           <p className="text-lg font-bold">{q.text}</p>
@@ -37,7 +38,7 @@ export function VolunteerQuestions({ me, submissions = [] }: { me: "maya" | "dan
           }}
           className={cn("min-h-12 shrink-0 rounded-full px-5 font-bold", done ? "bg-success-soft text-success" : "bg-role-volunteer-ink text-white")}
         >
-          {done ? "✓ Submitted to care team" : "Answer"}
+          {done ? "Submitted to care team" : "Answer"}
         </button>
       </li>
     );
@@ -55,7 +56,7 @@ export function VolunteerQuestions({ me, submissions = [] }: { me: "maya" | "dan
         </section>
         <section aria-labelledby="inspiring-title" className="flex flex-col gap-3">
           <h2 id="inspiring-title" className="text-xl font-extrabold">
-            Inspiring questions ✨
+            Inspiring questions
           </h2>
           <ul className="flex flex-col gap-3">{inspiring.map(item)}</ul>
         </section>

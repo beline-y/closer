@@ -11,7 +11,7 @@ export type NeedReason = "no_family" | "fragile" | "distress" | "no_recent_visit
 export type MatchOption = {
   volunteer_id: string;
   fit: Fit;
-  /** Bridges such as "the ocean → dolphins" */
+  /** Bridges such as "the ocean, then dolphins" */
   shared: string[];
   reason: string;
   /** A first question the child could ask */
@@ -78,8 +78,9 @@ export const NEED_REASONS: Record<Exclude<NeedReason, "fragile" | "distress">, {
   request_in_progress: { label: "Volunteer request in progress", tone: "muted" },
 };
 
-export const VISIT_OUTCOMES: { value: VisitOutcome; label: string; emoji: string }[] = [
-  { value: "great", label: "Went well", emoji: "😊" },
-  { value: "okay", label: "Okay", emoji: "😐" },
-  { value: "hard", label: "Hard", emoji: "😟" },
+/** face: the mood face (MoodFace value) shown with the label */
+export const VISIT_OUTCOMES: { value: VisitOutcome; label: string; face: number }[] = [
+  { value: "great", label: "Went well", face: 5 },
+  { value: "okay", label: "Okay", face: 3 },
+  { value: "hard", label: "Hard", face: 2 },
 ];

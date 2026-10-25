@@ -5,6 +5,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
 import { CONTACT_REQUEST_LABELS, type ContactRequestStatus, VOLUNTEER_REQUESTS } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // Approved requests only, with what the care team chose to share. No messaging.
 export function VolunteerRequests({ me }: { me: "maya" | "daniel" }) {
@@ -20,7 +21,7 @@ export function VolunteerRequests({ me }: { me: "maya" | "daniel" }) {
         </span>
       </p>
       {requests.length === 0 ? (
-        <EmptyState emoji="📭" title="No requests yet">
+        <EmptyState icon="message" title="No requests yet">
           When a young explorer would like to meet you and the care team approves it, you&apos;ll see it here.
         </EmptyState>
       ) : (
@@ -36,7 +37,7 @@ export function VolunteerRequests({ me }: { me: "maya" | "daniel" }) {
                 {r.status === "sent_to_volunteer" ? "New request" : CONTACT_REQUEST_LABELS[r.status]}
               </span>
               <p className="text-lg">“{r.sharedNote}”</p>
-              <p className="text-sm text-muted-foreground">📍 {r.plan}</p>
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground"><CloserIcon name="pin" /> {r.plan}</p>
               {r.status === "sent_to_volunteer" && (
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => setStatus(r.id, "accepted")} className="min-h-12 rounded-full bg-role-volunteer-ink px-5 font-bold text-white">

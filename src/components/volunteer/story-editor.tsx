@@ -50,25 +50,6 @@ export function StoryEditor({ me }: { me: "maya" | "daniel" }) {
           {field("job", "Job")}
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="avatar" className="font-bold">
-            Your avatar
-          </label>
-          <div id="avatar" role="radiogroup" aria-label="Avatar" className="flex flex-wrap gap-2">
-            {["🐬", "🐳", "🪸", "🌊", "🔬", "🐢"].map((a) => (
-              <button
-                key={a}
-                type="button"
-                role="radio"
-                aria-checked={story.avatar === a}
-                onClick={() => setStory((s) => ({ ...s, avatar: a }))}
-                className={`flex size-12 items-center justify-center rounded-full text-2xl ${story.avatar === a ? "bg-role-volunteer-soft ring-2 ring-role-volunteer-ink" : "bg-muted"}`}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-col gap-1.5">
           <label htmlFor="story" className="font-bold">
             Short story
           </label>
@@ -111,7 +92,7 @@ export function StoryEditor({ me }: { me: "maya" | "daniel" }) {
 
       <section aria-labelledby="preview-title" className="flex flex-col gap-3 lg:sticky lg:top-24 lg:self-start">
         <h2 id="preview-title" className="text-lg font-extrabold">
-          👀 What a young explorer sees
+          What a young explorer sees
         </h2>
         <VolunteerCard story={preview} />
       </section>

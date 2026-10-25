@@ -1,3 +1,4 @@
+import type { IconName } from "@/components/icons/closer-icon";
 import type { Database } from "@/lib/supabase/database.types";
 
 // Options of the daily check-in, shared by the patient flow, the family feed and the care team.
@@ -5,49 +6,51 @@ export type MealKind = Database["public"]["Enums"]["meal_kind"];
 export type MealAmount = Database["public"]["Enums"]["meal_amount"];
 export type ActivityKind = Database["public"]["Enums"]["activity_kind"];
 
-export const MEALS: { value: MealKind; emoji: string; label: string }[] = [
-  { value: "breakfast", emoji: "🥣", label: "Breakfast" },
-  { value: "lunch", emoji: "🍝", label: "Lunch" },
-  { value: "dinner", emoji: "🍲", label: "Dinner" },
-  { value: "snack", emoji: "🍎", label: "Snack" },
+export const MEALS: { value: MealKind; icon: IconName; label: string }[] = [
+  { value: "breakfast", icon: "breakfast", label: "Breakfast" },
+  { value: "lunch", icon: "lunch", label: "Lunch" },
+  { value: "dinner", icon: "dinner", label: "Dinner" },
+  { value: "snack", icon: "snack", label: "Snack" },
 ];
 
-export const MEAL_AMOUNTS: { value: MealAmount; emoji: string; label: string }[] = [
-  { value: "all", emoji: "😋", label: "All of it" },
-  { value: "half", emoji: "🙂", label: "Half" },
-  { value: "a_little", emoji: "🤏", label: "A little" },
+export const MEAL_AMOUNTS: { value: MealAmount; label: string }[] = [
+  { value: "all", label: "All of it" },
+  { value: "half", label: "Half" },
+  { value: "a_little", label: "A little" },
 ];
 
-/** How much the patient liked a dish, yuck to yum. */
-export const LIKINGS: { value: number; emoji: string; label: string }[] = [
-  { value: 1, emoji: "🤢", label: "Yuck" },
-  { value: 2, emoji: "😕", label: "Not really" },
-  { value: 3, emoji: "😐", label: "Okay" },
-  { value: 4, emoji: "😋", label: "Yummy" },
-  { value: 5, emoji: "🤩", label: "Yum yum!" },
+/** How much the patient liked a dish, yuck to loved it (drawn with the mood faces). */
+export const LIKINGS: { value: number; label: string }[] = [
+  { value: 1, label: "Yuck" },
+  { value: 2, label: "Not great" },
+  { value: 3, label: "OK" },
+  { value: 4, label: "Good" },
+  { value: 5, label: "Loved it" },
 ];
 
-export const ACTIVITIES: { value: ActivityKind; emoji: string; label: string }[] = [
-  { value: "played", emoji: "🎲", label: "Played" },
-  { value: "movie", emoji: "🎬", label: "Watched a movie" },
-  { value: "drew", emoji: "🎨", label: "Drew" },
-  { value: "school", emoji: "📚", label: "School work" },
-  { value: "visit", emoji: "👨‍👩‍👦", label: "Had a visit" },
-  { value: "treatment", emoji: "💉", label: "Exam or treatment" },
-  { value: "rested", emoji: "😴", label: "Rested" },
-  { value: "walk", emoji: "🚶", label: "Went for a walk" },
+export const ACTIVITIES: { value: ActivityKind; icon: IconName; label: string }[] = [
+  { value: "played", icon: "played", label: "Played" },
+  { value: "movie", icon: "movie", label: "Watched a movie" },
+  { value: "drew", icon: "drew", label: "Drew" },
+  { value: "school", icon: "school", label: "School work" },
+  { value: "visit", icon: "visit", label: "Had a visit" },
+  { value: "treatment", icon: "treatment", label: "Exam or treatment" },
+  { value: "rested", icon: "rested", label: "Rested" },
+  { value: "walk", icon: "walk", label: "Went for a walk" },
 ];
 
-/** One reaction per person per check-in: heart, hug, strong, laugh. */
+/** One reaction per person per check-in (and per shared activity): heart, hug, strong, laugh. */
 export const REACTIONS = [
-  { emoji: "❤️", label: "a heart", verb: "sent a heart" },
-  { emoji: "🤗", label: "a hug", verb: "sent a hug" },
-  { emoji: "💪", label: "strength", verb: "says you're strong" },
-  { emoji: "😂", label: "a laugh", verb: "laughed" },
+  { key: "heart", label: "a heart", verb: "sent a heart" },
+  { key: "hug", label: "a hug", verb: "sent a hug" },
+  { key: "strong", label: "strength", verb: "says you're strong" },
+  { key: "laugh", label: "a laugh", verb: "laughed" },
 ] as const;
-export type ReactionEmoji = (typeof REACTIONS)[number]["emoji"];
+export type ReactionKey = (typeof REACTIONS)[number]["key"];
 
-export type MenuDish = { id: string; meal: MealKind; dish: string; icon: string; position: number };
+export const isReactionKey = (k: unknown): k is ReactionKey => REACTIONS.some((r) => r.key === k);
+
+export type MenuDish = { id: string; meal: MealKind; dish: string; position: number };
 
 export type DishRating = { menuItemId: string; liking: number | null; amount: MealAmount | null };
 
@@ -61,28 +64,18 @@ export type CheckInInput = {
   photoPath?: string | null;
 };
 
-export type RatedDish = { meal: MealKind; dish: string; icon: string; liking: number | null; amount: MealAmount | null };
+export type RatedDish = { meal: MealKind; dish: string; liking: number | null; amount: MealAmount | null };
 
-/** Food satisfaction of the day: the average of the dish ratings as one emoji + label. */
-export const FOOD_SCORES: Record<number, { emoji: string; label: string }> = {
-  1: { emoji: "🤢", label: "Didn't like it" },
-  2: { emoji: "😕", label: "Not really" },
-  3: { emoji: "😐", label: "It was okay" },
-  4: { emoji: "😋", label: "Liked it" },
-  5: { emoji: "🤩", label: "Loved it" },
-};
-
-export function foodScore(dishes: RatedDish[]): { emoji: string; label: string } | null {
+/** Food satisfaction of the day: the average of the dish ratings, as a face (value) + label. */
+export function foodScore(dishes: RatedDish[]): { value: number; label: string } | null {
   const likings = dishes.map((d) => d.liking).filter((l): l is number => l !== null);
   if (likings.length === 0) return null;
-  return FOOD_SCORES[Math.round(likings.reduce((a, b) => a + b, 0) / likings.length)];
+  const value = Math.round(likings.reduce((a, b) => a + b, 0) / likings.length);
+  return { value, label: LIKINGS[value - 1].label };
 }
 
-/** "🎨 Drew · 👨‍👩‍👦 Had a visit · Noah called" (each activity with its own icon). */
+/** "Drew · Had a visit · Noah called" (labels only; ActivityChips draws the icons). */
 export function activitySummary(activities: ActivityKind[], note: string | null): string {
-  const labels = activities.map((a) => {
-    const x = ACTIVITIES.find((y) => y.value === a);
-    return x ? `${x.emoji} ${x.label}` : null;
-  });
+  const labels = activities.map((a) => ACTIVITIES.find((y) => y.value === a)?.label ?? null);
   return [...labels, note].filter(Boolean).join(" · ");
 }

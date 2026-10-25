@@ -22,7 +22,7 @@ async function Challenge({ params }: { params: Promise<{ id: string }> }) {
   if (!challenge) {
     // Done (or just finished): both drawings are revealed in the feed.
     return (
-      <EmptyState emoji="🤝" title="Revealed! You both finished">
+      <EmptyState icon="challenge" title="Revealed! You both finished">
         <Link href="/family" className="font-bold text-role-family-ink underline-offset-4 hover:underline">
           See both drawings side by side in the feed
         </Link>

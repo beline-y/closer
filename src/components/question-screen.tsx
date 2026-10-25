@@ -6,7 +6,7 @@ import { getTodayQuestion } from "@/lib/data/daily-question";
 // when the other side answers (Realtime on question_answers, same RLS as reads).
 export async function QuestionScreen({ patientId, isLeo }: { patientId: string; isLeo: boolean }) {
   const question = await getTodayQuestion(patientId);
-  if (!question) return <p className="text-lg text-muted-foreground">No question today. Come back tomorrow 💛</p>;
+  if (!question) return <p className="text-lg text-muted-foreground">No question today. Come back tomorrow.</p>;
   return (
     <>
       <LiveRefresh channel={`question-${question.id}`} watch={[{ table: "question_answers", filter: `daily_question_id=eq.${question.id}` }]} />

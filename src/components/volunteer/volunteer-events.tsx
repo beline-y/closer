@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Modal } from "@/components/kit/modal";
 import { MyVolunteerMessages, VolunteerMessageForm } from "@/components/volunteer/message-form";
 import type { VolunteerSubmission } from "@/lib/volunteer-submissions";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // The event catalog/bookings are fixtures; application messages persist for review.
 export function VolunteerEvents({ me, submissions = [] }: { me: "maya" | "daniel"; submissions?: VolunteerSubmission[] }) {
@@ -26,8 +27,8 @@ export function VolunteerEvents({ me, submissions = [] }: { me: "maya" | "daniel
         return (
           <li key={e.id} className={cn("flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border", isGoing && "ring-2 ring-role-volunteer")}>
             <div className="flex items-start gap-3">
-              <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-role-volunteer-soft text-3xl">
-                {e.emoji}
+              <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-role-volunteer-soft text-role-volunteer-ink">
+                <CloserIcon name={e.icon} className="size-7" />
               </span>
               <div className="flex flex-col">
                 <h2 className="text-xl font-extrabold">{e.title}</h2>
@@ -52,7 +53,7 @@ export function VolunteerEvents({ me, submissions = [] }: { me: "maya" | "daniel
                 {isGoing ? "Cancel sample spot" : application ? application.status === "approved" ? "Application approved" : "Awaiting review" : full ? "Full" : "Apply to help"}
               </button>
             </div>
-            {isGoing && <p className="text-sm font-bold text-success">✓ Sample booking · saved for this visit only.</p>}
+            {isGoing && <p className="flex items-center gap-1.5 text-sm font-bold text-success"><CloserIcon name="check" /> Sample booking · saved for this visit only.</p>}
           </li>
         );
       })}

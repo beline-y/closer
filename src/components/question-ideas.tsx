@@ -7,6 +7,7 @@ import { Modal } from "@/components/kit/modal";
 import { refreshQuestionIdeas } from "@/app/question-idea-actions";
 import type { QuestionIdea } from "@/lib/question-ideas";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 export function QuestionIdeas({ className, onChoose }: { className?: string; onChoose?: (question: string) => void }) {
   const router = useRouter();
@@ -47,7 +48,7 @@ export function QuestionIdeas({ className, onChoose }: { className?: string; onC
           if (onChoose) onChoose(q);
           else router.push(`/family/cards?idea=${encodeURIComponent(q)}`);
         }} className="group flex min-h-20 w-full items-start gap-4 rounded-2xl border border-border bg-background p-4 text-left transition hover:border-role-volunteer hover:bg-role-volunteer-soft disabled:opacity-60">
-          <span className="flex-1"><span className="block text-lg font-bold">{q}</span><span className="mt-2 flex flex-wrap gap-2 text-sm text-role-volunteer-ink">Use in my draft{source === "mistral" && <span className="rounded-full bg-role-volunteer-soft px-2 font-bold">✨ Made with Mistral (AI)</span>}</span></span>
+          <span className="flex-1"><span className="block text-lg font-bold">{q}</span><span className="mt-2 flex flex-wrap gap-2 text-sm text-role-volunteer-ink">Use in my draft{source === "mistral" && <span className="inline-flex items-center gap-1 rounded-full bg-role-volunteer-soft px-2 font-bold"><CloserIcon name="sparkles" /> Made with Mistral (AI)</span>}</span></span>
           <ArrowUpRight className="mt-1 size-5 shrink-0 text-role-volunteer-ink" aria-hidden />
         </button></li>)}
       </ul>}

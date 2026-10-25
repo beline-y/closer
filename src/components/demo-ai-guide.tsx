@@ -16,13 +16,13 @@ export function DemoAIGuide() {
           <p className="mt-2 text-sm text-muted-foreground">The 60 curated questions come first. After those are used, Mistral can create more if the guardian has enabled AI. Generated ideas carry a Made with Mistral (AI) label.</p>
         </li>
         <li className="rounded-2xl bg-role-care-soft p-4">
-          <h3 className="font-extrabold">3. Daily wellbeing reviews · Emma → Sarah → Leo</h3>
+          <h3 className="font-extrabold">3. Daily wellbeing reviews · Emma, then Sarah, then Leo</h3>
           <p className="mt-1">In Emma’s feed, find Daily support for Leo, read the consent, and enable daily reviews if you wish. After a scheduled review, switch to Sarah and open Alerts for the summary, supporting excerpts and suggested next step.</p>
           <p className="mt-2 text-sm text-muted-foreground">Reviews use the previous completed day, so enabling them does not generate a review immediately. Delivered prompts appear in Emma’s daily invitations and Leo’s Today page. Leo has no AI-generation button.</p>
         </li>
         <li className="rounded-2xl bg-role-volunteer-soft p-4">
-          <h3 className="font-extrabold">4. Volunteer message screening · Maya → Sarah</h3>
-          <p className="mt-1">As Maya, open Events and Apply to help, or answer a question. Submit a fictional message. Switch to Sarah, open Volunteers → Applicant messages, and review the assessment and excerpts before approving or rejecting.</p>
+          <h3 className="font-extrabold">4. Volunteer message screening · Maya, then Sarah</h3>
+          <p className="mt-1">As Maya, open Events and Apply to help, or answer a question. Submit a fictional message. Switch to Sarah, open Volunteers, then Applicant messages, and review the assessment and excerpts before approving or rejecting.</p>
           <p className="mt-2 text-sm text-muted-foreground">Flagged messages appear first. Use All awaiting review for unflagged messages and Reviewed messages for saved decisions. AI failures also require manual review; approval here does not send an answer to a child or book a visit.</p>
         </li>
       </ol>

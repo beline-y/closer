@@ -12,7 +12,6 @@ export function DemoBanner() {
     <div role="region" aria-label="Demo mode" className="bg-foreground text-background">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-sm sm:justify-between">
         <p>
-          <span aria-hidden>🎭 </span>
           <strong>Demo mode.</strong> All people and stories are fictional.
         </p>
         {/* usePathname() needs a Suspense boundary on dynamic routes */}

@@ -11,7 +11,7 @@ export default function FamilyMemoriesPage() {
   return (
     <>
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-extrabold">Memories with Leo 📸</h1>
+        <h1 className="text-3xl font-extrabold">Memories with Leo</h1>
         <p className="text-lg text-muted-foreground">A shared album. Leo sees the same photos.</p>
       </header>
       <Suspense fallback={<MemoriesAlbum viewer="emma" />}>

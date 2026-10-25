@@ -1,6 +1,7 @@
 // Placeholder data for screens whose feature isn't built yet. Same cast as the seed.
 // Each feature branch replaces its slice with a real table + RLS + seed, then deletes it here.
 // Times are relative ("daysAgo") so the demo always looks recent.
+import type { IconName } from "@/components/icons/closer-icon";
 import type { CastId } from "@/lib/cast";
 import { PATIENT_IDS } from "@/lib/cast";
 import type { Thresholds } from "@/lib/nudges";
@@ -67,38 +68,37 @@ export type Memory = {
   caption: string;
   takenOn: string;
   tag: MemoryTag;
-  /** Placeholder "photo": emoji on a gradient until uploads exist */
-  emoji: string;
+  /** Placeholder "photo": the tag's icon on this gradient until uploads exist */
   gradient: string;
   photoUrl?: string;
   sharedDaysAgo: number;
-  reactions: { emoji: string; by: CastId[] }[];
+  reactions: { kind: "heart" | "hug" | "strong" | "laugh" | "star"; by: CastId[] }[];
   comments: { by: CastId; body: string }[];
 };
 
 export const MEMORIES: Memory[] = [
   {
     id: "m-1", by: "emma", caption: "Our day at the aquarium. You wouldn't leave the shark tunnel!", takenOn: "Aug 14, 2026", tag: "holiday",
-    emoji: "🦈", gradient: "from-sky-300 to-indigo-400", sharedDaysAgo: 0,
-    reactions: [{ emoji: "❤️", by: ["james", "noah"] }, { emoji: "😂", by: ["james"] }],
+    gradient: "from-sky-300 to-indigo-400", sharedDaysAgo: 0,
+    reactions: [{ kind: "heart", by: ["james", "noah"] }, { kind: "laugh", by: ["james"] }],
     comments: [{ by: "james", body: "Best day of the summer!" }],
   },
   {
     id: "m-2", by: "james", caption: "Biscuit waiting for you by the door, every single day.", takenOn: "Oct 20, 2026", tag: "pet",
-    emoji: "🐶", gradient: "from-amber-200 to-orange-300", sharedDaysAgo: 1,
-    reactions: [{ emoji: "🥹", by: ["emma"] }],
-    comments: [{ by: "leo", body: "Biscuit!!! 🐶" }],
+    gradient: "from-amber-200 to-orange-300", sharedDaysAgo: 1,
+    reactions: [{ kind: "hug", by: ["emma"] }],
+    comments: [{ by: "leo", body: "Biscuit!!!" }],
   },
   {
-    id: "m-3", by: "noah", caption: "Soccer team photo, we saved your spot 🥅", takenOn: "Sep 30, 2026", tag: "school",
-    emoji: "⚽", gradient: "from-lime-200 to-emerald-300", sharedDaysAgo: 3,
-    reactions: [{ emoji: "⭐", by: ["emma", "james"] }],
+    id: "m-3", by: "noah", caption: "Soccer team photo, we saved your spot!", takenOn: "Sep 30, 2026", tag: "school",
+    gradient: "from-lime-200 to-emerald-300", sharedDaysAgo: 3,
+    reactions: [{ kind: "star", by: ["emma", "james"] }],
     comments: [],
   },
   {
     id: "m-4", by: "emma", caption: "Your 9th birthday: the dinosaur cake!", takenOn: "Mar 2, 2026", tag: "birthday",
-    emoji: "🎂", gradient: "from-pink-200 to-rose-300", sharedDaysAgo: 6,
-    reactions: [{ emoji: "❤️", by: ["james"] }],
+    gradient: "from-pink-200 to-rose-300", sharedDaysAgo: 6,
+    reactions: [{ kind: "heart", by: ["james"] }],
     comments: [{ by: "emma", body: "You blew out all 9 candles in one go." }],
   },
 ];
@@ -107,8 +107,8 @@ export const MEMORIES: Memory[] = [
 // Patient: private journal
 // ---------------------------------------------------------------------------
 export const JOURNAL_ENTRIES = [
-  { daysAgo: 0, emoji: "🐋", body: "Today I drew a whale shark. They are the biggest fish in the world.", sharedWithCare: false },
-  { daysAgo: 2, emoji: "🌧️", body: "I was a bit scared before the test but Sarah held my hand.", sharedWithCare: true },
+  { daysAgo: 0, body: "Today I drew a whale shark. They are the biggest fish in the world.", sharedWithCare: false },
+  { daysAgo: 2, body: "I was a bit scared before the test but Sarah held my hand.", sharedWithCare: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,6 @@ export const JOURNAL_ENTRIES = [
 export type VolunteerStory = {
   castId: CastId;
   firstName: string;
-  avatar: string;
   job: string;
   story: string;
   passions: string[];
@@ -128,13 +127,13 @@ export type VolunteerStory = {
 
 export const VOLUNTEER_STORIES: Record<"maya" | "daniel", VolunteerStory> = {
   maya: {
-    castId: "maya", firstName: "Maya", avatar: "🐬", job: "Marine biologist",
+    castId: "maya", firstName: "Maya", job: "Marine biologist",
     story: "I study dolphins and coral reefs. When I was 10, I spent a long time in hospital, and a nurse brought me a book about the ocean. I never stopped reading about it.",
     passions: ["Diving", "Dolphins", "Underwater photos"], dreams: "To discover a new species of coral.",
     funFact: "A dolphin once stole my snorkel!", languages: ["English", "Spanish"],
   },
   daniel: {
-    castId: "daniel", firstName: "Daniel", avatar: "✈️", job: "Airline pilot",
+    castId: "daniel", firstName: "Daniel", job: "Airline pilot",
     story: "I fly big planes across the ocean. As a kid I built paper planes every day and tested them from my balcony.",
     passions: ["Flying", "Astronomy", "Paper planes"], dreams: "To fly over the North Pole and see the northern lights.",
     funFact: "I've seen a sunrise and a sunset in the same flight.", languages: ["English", "French"],
@@ -155,37 +154,37 @@ export const VOLUNTEER_ROSTER: RosterVolunteer[] = [
   { ...VOLUNTEER_STORIES.maya, id: "maya", slotsPerWeek: 2, ages: [6, 14] },
   { ...VOLUNTEER_STORIES.daniel, id: "daniel", slotsPerWeek: 1, ages: [8, 17] },
   {
-    id: "ines", firstName: "Inès", avatar: "🦕", job: "Paleontologist",
+    id: "ines", firstName: "Inès", job: "Paleontologist",
     story: "I dig up dinosaur bones and put them back together at the natural history museum. I found my first fossil on a beach when I was eight.",
     passions: ["Dinosaurs", "Fossils", "Hiking"], dreams: "To name a dinosaur nobody has discovered yet.",
     funFact: "I once slept in the museum, right under a T. rex skeleton.", languages: ["French", "English"], slotsPerWeek: 2, ages: [6, 14],
   },
   {
-    id: "clara", firstName: "Clara", avatar: "🎶", job: "Music teacher",
+    id: "clara", firstName: "Clara", job: "Music teacher",
     story: "I teach music in a primary school and sing in a small band. My cat Pixel always naps on my guitar case.",
     passions: ["Guitar", "Songwriting", "Cats"], dreams: "To record an album of songs written by kids.",
     funFact: "Pixel meows along when I play in tune.", languages: ["English", "Portuguese"], slotsPerWeek: 1, ages: [8, 17],
   },
   {
-    id: "tom", firstName: "Tom", avatar: "🚄", job: "Train driver",
+    id: "tom", firstName: "Tom", job: "Train driver",
     story: "I drive high-speed trains between big cities. At home, a LEGO railway runs around my whole living room.",
     passions: ["Model trains", "LEGO", "Maps"], dreams: "To drive a train all the way across Canada.",
     funFact: "My LEGO railway has 600 pieces of track.", languages: ["English"], slotsPerWeek: 2, ages: [5, 12],
   },
   {
-    id: "hugo", firstName: "Hugo", avatar: "🏅", job: "Youth soccer coach",
+    id: "hugo", firstName: "Hugo", job: "Youth soccer coach",
     story: "I coach a team of under-12s. When I broke my leg at eleven, I learned to juggle a ball sitting on my bed.",
     passions: ["Soccer", "Juggling", "Basketball"], dreams: "To take my team to a tournament abroad.",
     funFact: "I can juggle a ball 200 times without dropping it.", languages: ["English", "French"], slotsPerWeek: 2, ages: [7, 15],
   },
   {
-    id: "nadia", firstName: "Nadia", avatar: "🎨", job: "Comic book artist",
+    id: "nadia", firstName: "Nadia", job: "Comic book artist",
     story: "I draw comics for a children's magazine. My first one was about a dragon who was afraid of the dark.",
     passions: ["Drawing", "Comics", "Dragons"], dreams: "To turn a story invented by kids into a real comic book.",
     funFact: "I can draw with both hands at the same time.", languages: ["English", "Arabic", "French"], slotsPerWeek: 1, ages: [6, 17],
   },
   {
-    id: "sam", firstName: "Sam", avatar: "🐾", job: "Veterinarian",
+    id: "sam", firstName: "Sam", job: "Veterinarian",
     story: "I take care of cats, dogs and rabbits, and once I nursed a baby fox back to health.",
     passions: ["Cats", "Horses", "Wildlife rescue"], dreams: "To open a rescue center for wild animals.",
     funFact: "My three cats are named after planets.", languages: ["English", "Spanish"], slotsPerWeek: 2, ages: [6, 15],
@@ -227,7 +226,7 @@ export const SHARED_ANSWERS = [
 export type HospitalEvent = {
   id: string;
   title: string;
-  emoji: string;
+  icon: IconName;
   location: string;
   when: string;
   description: string;
@@ -236,9 +235,9 @@ export type HospitalEvent = {
 };
 
 export const EVENTS: HospitalEvent[] = [
-  { id: "ev-1", title: "Board game afternoon", emoji: "🎲", location: "Pediatrics playroom", when: "Saturday, 2:00 PM", description: "Classic board games with the kids who feel up to it. Games are provided.", capacity: 6, signups: ["daniel"] },
-  { id: "ev-2", title: "Drawing workshop", emoji: "🎨", location: "Art room, 2nd floor", when: "Wednesday, 4:00 PM", description: "Help kids draw their dream job. Bring your best stories!", capacity: 4, signups: ["maya"] },
-  { id: "ev-3", title: "Career day", emoji: "🧑‍🚀", location: "Main hall", when: "Friday, Nov 6, 10:00 AM", description: "Volunteers share what their job is like, with photos and props. 10 minutes each.", capacity: 10, signups: ["maya", "daniel"] },
+  { id: "ev-1", title: "Board game afternoon", icon: "played", location: "Pediatrics playroom", when: "Saturday, 2:00 PM", description: "Classic board games with the kids who feel up to it. Games are provided.", capacity: 6, signups: ["daniel"] },
+  { id: "ev-2", title: "Drawing workshop", icon: "draw", location: "Art room, 2nd floor", when: "Wednesday, 4:00 PM", description: "Help kids draw their dream job. Bring your best stories!", capacity: 4, signups: ["maya"] },
+  { id: "ev-3", title: "Career day", icon: "rocket", location: "Main hall", when: "Friday, Nov 6, 10:00 AM", description: "Volunteers share what their job is like, with photos and props. 10 minutes each.", capacity: 10, signups: ["maya", "daniel"] },
 ];
 
 export type ContactRequestStatus = "pending_care" | "pending_guardian" | "sent_to_volunteer" | "accepted" | "declined";

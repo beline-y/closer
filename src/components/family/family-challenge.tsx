@@ -5,6 +5,7 @@ import { useState } from "react";
 import { submitChallengeEntry } from "@/app/activity-actions";
 import { DrawingCanvas } from "@/components/activities/drawing-canvas";
 import { createClient } from "@/lib/supabase/client";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // The family member's side of a challenge. Their drawing goes next to Leo's, and both are
 // revealed the moment this one is sent (until then, neither sees the other).
@@ -16,8 +17,8 @@ export function FamilyChallenge({ sessionId, patientId, title, theme, emoji }: {
   if (done) {
     return (
       <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-4 text-center">
-        <span aria-hidden className="animate-heart text-9xl">
-          🤝
+        <span aria-hidden className="animate-heart text-role-family-ink">
+          <CloserIcon name="challenge" className="size-28" strokeWidth={1.5} />
         </span>
         <h1 role="status" className="text-3xl font-extrabold">
           Revealed! Leo can see both drawings now.
@@ -57,10 +58,10 @@ export function FamilyChallenge({ sessionId, patientId, title, theme, emoji }: {
       <span aria-hidden className="text-8xl">
         {emoji}
       </span>
-      <p className="font-bold text-role-family-ink">🤝 Leo challenged you</p>
+      <p className="flex items-center gap-1.5 font-bold text-role-family-ink"><CloserIcon name="challenge" /> Leo challenged you</p>
       <h1 className="text-3xl font-extrabold">{title}</h1>
       {theme && <p className="text-xl">“{theme}”</p>}
-      <p className="text-muted-foreground">🔒 Leo&apos;s drawing is hidden until you send yours. Then you both see them side by side.</p>
+      <p className="flex items-center gap-1.5 text-muted-foreground"><CloserIcon name="lock" /> Leo&apos;s drawing is hidden until you send yours. Then you both see them side by side.</p>
       <button type="button" onClick={() => setDrawing(true)} className="min-h-14 w-full rounded-2xl bg-role-family-ink text-xl font-extrabold text-white">
         Draw mine ▶
       </button>

@@ -1,5 +1,6 @@
 // What the AI module returns for a child's drawings (ml/closer_ai/bridge.py, drawings_view).
 // Every drawing is described, never interpreted; images are not kept, only their reading.
+import type { IconName } from "@/components/icons/closer-icon";
 
 export type DrawingAffect = "positive" | "neutral" | "negative" | "unclear";
 
@@ -31,10 +32,10 @@ export type DrawingsView = {
 };
 
 // The feeling a drawing shows explicitly (smiling or crying faces, hearts, written words). Never color alone.
-export const DRAWING_FEELINGS: Record<"positive" | "neutral" | "negative", { label: string; icon: string; color: string; className: string }> = {
-  positive: { label: "Happy", icon: "☺", color: "var(--success)", className: "bg-success-soft text-success" },
-  neutral: { label: "Neutral", icon: "–", color: "var(--muted-foreground)", className: "bg-muted text-muted-foreground" },
-  negative: { label: "Sad", icon: "☹", color: "var(--alert)", className: "bg-alert-soft text-alert" },
+export const DRAWING_FEELINGS: Record<"positive" | "neutral" | "negative", { label: string; icon: IconName; color: string; className: string }> = {
+  positive: { label: "Happy", icon: "happy", color: "var(--success)", className: "bg-success-soft text-success" },
+  neutral: { label: "Neutral", icon: "neutral", color: "var(--muted-foreground)", className: "bg-muted text-muted-foreground" },
+  negative: { label: "Sad", icon: "sad", color: "var(--alert)", className: "bg-alert-soft text-alert" },
 };
 
 export function feelingOf(d: Pick<DrawingItem, "affect" | "sad_faces">): keyof typeof DRAWING_FEELINGS {

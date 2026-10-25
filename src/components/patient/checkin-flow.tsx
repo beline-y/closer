@@ -4,6 +4,8 @@ import { Camera, ImageIcon, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { saveCheckin } from "@/app/checkin-actions";
+import { CloserIcon, type IconName } from "@/components/icons/closer-icon";
+import { MoodFace } from "@/components/icons/mood-face";
 import { MoodPicker } from "@/components/kit/mood-picker";
 import { ACTIVITIES, type ActivityKind, type CheckInInput, type DishRating, LIKINGS, MEAL_AMOUNTS, MEALS, type MenuDish } from "@/lib/checkin";
 import type { Streak } from "@/lib/streak";
@@ -85,7 +87,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
   function submit() {
     if (!mood) {
       setStep(0);
-      setError("Pick how you feel first 🙂");
+      setError("Pick how you feel first.");
       return;
     }
     setError(null);
@@ -192,7 +194,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
           "meal",
           2,
           menu.length === 0 ? (
-            <p className="text-lg text-muted-foreground">No menu today. Tell your family what you ate in your note 🙂</p>
+            <p className="text-lg text-muted-foreground">No menu today. Tell your family what you ate in your note.</p>
           ) : (
             <div className="flex flex-col gap-5">
               {MEALS.filter((m) => menu.some((d) => d.meal === m.value)).map((meal) => (
@@ -205,8 +207,8 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
                       return (
                         <div key={dish.id} className="flex flex-col gap-3 rounded-2xl bg-muted/60 p-3">
                           <p className="flex items-center gap-3 text-lg font-bold">
-                            <span aria-hidden className="text-4xl">
-                              {dish.icon}
+                            <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-role-patient-ink">
+                              <CloserIcon name={meal.icon} className="size-6" />
                             </span>
                             {dish.dish}
                           </p>
@@ -220,13 +222,11 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
                                 aria-label={l.label}
                                 onClick={() => rate(dish.id, { liking: r?.liking === l.value ? null : l.value })}
                                 className={cn(
-                                  "flex min-h-14 flex-col items-center justify-center rounded-xl text-3xl transition active:scale-90",
+                                  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition active:scale-90",
                                   r?.liking === l.value ? "bg-card shadow ring-2 ring-role-patient-ink" : "bg-card/60",
                                 )}
                               >
-                                <span aria-hidden className={cn(r?.liking === l.value && "animate-pop")}>
-                                  {l.emoji}
-                                </span>
+                                <MoodFace value={l.value} className={cn("size-8", r?.liking === l.value && "animate-pop")} />
                                 <span className="text-[0.7rem] font-bold">{l.label}</span>
                               </button>
                             ))}
@@ -241,7 +241,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
                                 onClick={() => rate(dish.id, { amount: r?.amount === a.value ? null : a.value })}
                                 className={cn(chip(r?.amount === a.value), "min-h-11 px-3 text-base")}
                               >
-                                <span aria-hidden>{a.emoji}</span> {a.label}
+                                {a.label}
                               </button>
                             ))}
                           </div>
@@ -261,9 +261,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
             <div role="group" aria-label="Activities" className="flex flex-wrap gap-2">
               {ACTIVITIES.map((a) => (
                 <button key={a.value} type="button" aria-pressed={activities.includes(a.value)} onClick={() => setActivities(toggle(activities, a.value))} className={chip(activities.includes(a.value))}>
-                  <span aria-hidden className="text-2xl">
-                    {a.emoji}
-                  </span>
+                  <CloserIcon name={a.icon} className="size-5" />
                   {a.label}
                 </button>
               ))}
@@ -311,7 +309,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
           onClick={() => (last ? submit() : setStep(step + 1))}
           className="ml-auto min-h-14 flex-1 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
         >
-          {saving ? "Sending…" : last ? "Send to my family 💛" : "Next"}
+          {saving ? "Sending…" : last ? "Send to my family" : "Next"}
         </button>
       </div>
 
@@ -322,7 +320,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
         onClick={submit}
         className="hidden min-h-16 rounded-2xl bg-role-patient text-2xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50 md:block"
       >
-        {saving ? "Sending…" : "Send to my family 💛"}
+        {saving ? "Sending…" : "Send to my family"}
       </button>
     </div>
   );
@@ -331,7 +329,16 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
 // Celebrates, never punishes: total days connected, a flame that grows, milestone badges,
 // and "Welcome back!" after a break.
 function Celebration({ streak }: { streak: Streak }) {
-  const confetti = ["🎉", "💛", "⭐", "🌈", "🎈", "💛", "✨", "🎉"];
+  const confetti: { icon: IconName; tone: string }[] = [
+    { icon: "party", tone: "text-mood-5" },
+    { icon: "heart", tone: "text-role-family" },
+    { icon: "star", tone: "text-mood-4" },
+    { icon: "sparkles", tone: "text-role-volunteer" },
+    { icon: "party", tone: "text-role-care" },
+    { icon: "heart", tone: "text-role-family" },
+    { icon: "sparkles", tone: "text-mood-4" },
+    { icon: "star", tone: "text-mood-5" },
+  ];
   const milestone = streak.milestoneToday;
   const flameSize = Math.min(9, 4 + streak.totalDays / 5); // rem, grows with the days
   return (
@@ -339,20 +346,20 @@ function Celebration({ streak }: { streak: Streak }) {
       {/* Reserve space for the decoration so it cannot cover the message or controls. */}
       <div aria-hidden className="pointer-events-none flex h-12 w-full max-w-lg shrink-0 select-none items-center justify-around gap-2">
         {confetti.map((c, i) => (
-          <span key={i} className="animate-rise text-2xl sm:text-3xl" style={{ animationDelay: `${i * 80}ms` }}>
-            {c}
+          <span key={i} className={cn("animate-rise", c.tone)} style={{ animationDelay: `${i * 80}ms` }}>
+            <CloserIcon name={c.icon} className="size-6 sm:size-8" />
           </span>
         ))}
       </div>
-      <span aria-hidden className="animate-heart leading-none" style={{ fontSize: `${flameSize}rem` }}>
-        {milestone ? milestone.emoji : "🔥"}
+      <span aria-hidden className="animate-heart leading-none text-mood-5" style={{ fontSize: `${flameSize}rem` }}>
+        <CloserIcon name={milestone ? milestone.icon : "streak"} className="size-[1em]" strokeWidth={1.5} />
       </span>
       <div role="status" className="flex flex-col gap-2">
-        <h1 className="text-4xl font-extrabold">{streak.welcomeBack ? "Welcome back! 💛" : `Connected for ${streak.totalDays} ${streak.totalDays === 1 ? "day" : "days"}!`}</h1>
+        <h1 className="text-4xl font-extrabold">{streak.welcomeBack ? "Welcome back!" : `Connected for ${streak.totalDays} ${streak.totalDays === 1 ? "day" : "days"}!`}</h1>
         {streak.welcomeBack && <p className="text-xl">That&apos;s {streak.totalDays} days connected in all. We missed you!</p>}
         {milestone && (
-          <p className="mx-auto animate-pop rounded-full bg-role-patient-soft px-5 py-2 text-xl font-extrabold text-role-patient-ink">
-            New badge: {milestone.emoji} {milestone.name}
+          <p className="mx-auto flex animate-pop items-center gap-2 rounded-full bg-role-patient-soft px-5 py-2 text-xl font-extrabold text-role-patient-ink">
+            New badge: <CloserIcon name={milestone.icon} /> {milestone.name}
           </p>
         )}
         <p className="text-lg text-muted-foreground">
@@ -360,15 +367,15 @@ function Celebration({ streak }: { streak: Streak }) {
           {!streak.welcomeBack && streak.streakDays > 1 && ` ${streak.streakDays} days in a row${streak.restDays ? " (rest days count too)" : ""}.`}
         </p>
         {streak.next && !milestone && (
-          <p className="text-muted-foreground">
-            {streak.next.daysToGo === 1 ? "Tomorrow" : `In ${streak.next.daysToGo} days`}: {streak.next.milestone.emoji} {streak.next.milestone.name}
+          <p className="flex items-center justify-center gap-1.5 text-muted-foreground">
+            {streak.next.daysToGo === 1 ? "Tomorrow" : `In ${streak.next.daysToGo} days`}: <CloserIcon name={streak.next.milestone.icon} /> {streak.next.milestone.name}
           </p>
         )}
       </div>
       <ul aria-label="Badges" className="flex gap-2">
         {MILESTONES.map((m) => (
-          <li key={m.days} title={m.name} className={cn("flex size-12 items-center justify-center rounded-full text-2xl", streak.totalDays >= m.days ? "bg-role-patient-soft" : "bg-muted opacity-40 grayscale")}>
-            <span aria-hidden>{m.emoji}</span>
+          <li key={m.days} title={m.name} className={cn("flex size-12 items-center justify-center rounded-full", streak.totalDays >= m.days ? "bg-role-patient-soft text-role-patient-ink" : "bg-muted text-muted-foreground opacity-50")}>
+            <CloserIcon name={m.icon} className="size-6" />
             <span className="sr-only">
               {m.name} ({m.days} days){streak.totalDays >= m.days ? ", earned" : ""}
             </span>

@@ -1,11 +1,13 @@
 "use client";
 
 import { useId, useState } from "react";
+import { MoodFace } from "@/components/icons/mood-face";
 import { dayLabel } from "@/lib/dates";
 import { getMood, type MoodPoint, MOODS } from "@/lib/mood";
 import { type AiLevel, LEVELS } from "@/lib/nurse-round";
 import { useToday } from "@/lib/use-today";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // Single-series charts for the care team. Mark specs: 2px lines, 8px markers with a
 // 2px surface ring, 4px rounded bar ends, recessive grid, hover tooltip, table view.
@@ -55,7 +57,7 @@ export function MoodSparkline({ points, label }: { points: MoodPoint[]; label: s
       </svg>
       {hovered && (
         <Tooltip x={(hover! / Math.max(1, points.length - 1)) * 100} y={0}>
-          {dayLabel(today, hovered.daysAgo)} · {hovered.mood ? `${getMood(hovered.mood).emoji} ${getMood(hovered.mood).label}` : "No check-in"}
+          {dayLabel(today, hovered.daysAgo)} · {hovered.mood ? getMood(hovered.mood).label : "No check-in"}
         </Tooltip>
       )}
     </div>
@@ -63,7 +65,7 @@ export function MoodSparkline({ points, label }: { points: MoodPoint[]; label: s
 }
 
 // ---------------------------------------------------------------------------
-// Mood chart: 7 or 30 days, y axis = mood 1-5 with emoji ticks
+// Mood chart: 7 or 30 days, y axis = mood 1-5 with face ticks
 // ---------------------------------------------------------------------------
 export function MoodChart({ history }: { history: MoodPoint[] }) {
   const today = useToday();
@@ -126,7 +128,7 @@ export function MoodChart({ history }: { history: MoodPoint[] }) {
               {[...points].reverse().map((p) => (
                 <tr key={p.daysAgo} className="border-t">
                   <td className="px-3 py-1.5">{dayLabel(today, p.daysAgo, "long")}</td>
-                  <td className="px-3 py-1.5">{p.mood ? `${getMood(p.mood).emoji} ${getMood(p.mood).label} (${p.mood}/5)` : "No check-in"}</td>
+                  <td className="px-3 py-1.5">{p.mood ? `${getMood(p.mood).label} (${p.mood}/5)` : "No check-in"}</td>
                 </tr>
               ))}
             </tbody>
@@ -138,9 +140,9 @@ export function MoodChart({ history }: { history: MoodPoint[] }) {
             {MOODS.map((m) => (
               <g key={m.value}>
                 <line x1={pad.l} x2={w - pad.r} y1={y(m.value)} y2={y(m.value)} stroke="var(--border)" strokeWidth="1" />
-                <text x={pad.l - 10} y={y(m.value)} dy="0.35em" textAnchor="end" fontSize="16" aria-hidden>
-                  {m.emoji}
-                </text>
+                <foreignObject x={pad.l - 30} y={y(m.value) - 10} width="20" height="20" aria-hidden>
+                  <MoodFace value={m.value} className="size-5" />
+                </foreignObject>
               </g>
             ))}
             {points.map((p, i) =>
@@ -163,7 +165,7 @@ export function MoodChart({ history }: { history: MoodPoint[] }) {
           </svg>
           {hovered && (
             <Tooltip x={(x(hover!) / w) * 100} y={((hovered.mood ? y(hovered.mood) : pad.t + ih / 2) / h) * 100 - 3}>
-              {dayLabel(today, hovered.daysAgo, "long")} · {hovered.mood ? `${getMood(hovered.mood).emoji} ${getMood(hovered.mood).label}` : "No check-in"}
+              {dayLabel(today, hovered.daysAgo, "long")} · {hovered.mood ? getMood(hovered.mood).label : "No check-in"}
             </Tooltip>
           )}
         </div>
@@ -365,7 +367,7 @@ export function DistressBars({ points }: { points: DistressPoint[] }) {
         {(Object.keys(LEVELS) as AiLevel[]).map((level) => (
           <li key={level} className="inline-flex items-center gap-1.5">
             <span className="size-2.5 rounded-sm" style={{ background: LEVELS[level].color }} aria-hidden />
-            <span aria-hidden>{LEVELS[level].icon}</span> {LEVELS[level].label}
+            <CloserIcon name={LEVELS[level].icon} /> {LEVELS[level].label}
           </li>
         ))}
       </ul>
@@ -449,7 +451,7 @@ export function DrawingFeelingTimeline({ points, labels, days = 30 }: { points: 
             <g key={f}>
               <line x1={pad.l} x2={w - pad.r} y1={rowY(f)} y2={rowY(f)} stroke="var(--border)" />
               <text x={pad.l - 10} y={rowY(f)} dy="0.35em" textAnchor="end" fontSize="13" fill="var(--muted-foreground)">
-                {labels[f].icon} {labels[f].label}
+                {labels[f].label}
               </text>
             </g>
           ))}

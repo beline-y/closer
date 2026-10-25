@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { ACTIVITY_TYPES, type ShareChoice } from "@/lib/activities";
-import { REACTIONS } from "@/lib/checkin";
+import { isReactionKey } from "@/lib/checkin";
 import { getMyPatient } from "@/lib/data/checkins";
 import { todayIn } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -127,20 +127,20 @@ export async function submitChallengeEntry(sessionId: string, resultPath: string
   return { ok: true, status: "completed" };
 }
 
-// One reaction per person on a shared result: same emoji removes it, another changes it.
-export async function reactToResult(sessionId: string, emoji: string): Promise<ActivityActionResult> {
-  if (!REACTIONS.some((r) => r.emoji === emoji)) return { ok: false, error: "Unknown reaction." };
+// One reaction per person on a shared result: the same one removes it, another changes it.
+export async function reactToResult(sessionId: string, kind: string): Promise<ActivityActionResult> {
+  if (!isReactionKey(kind)) return { ok: false, error: "Unknown reaction." };
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
   if (!userId) return { ok: false, error: "Not signed in." };
   const match = { session_id: sessionId, user_id: userId };
-  const { data: existing } = await supabase.from("activity_reactions").select("emoji").match(match).maybeSingle();
+  const { data: existing } = await supabase.from("activity_reactions").select("kind").match(match).maybeSingle();
   const { error } = !existing
-    ? await supabase.from("activity_reactions").insert({ ...match, emoji })
-    : existing.emoji === emoji
+    ? await supabase.from("activity_reactions").insert({ ...match, kind })
+    : existing.kind === kind
       ? await supabase.from("activity_reactions").delete().match(match)
-      : await supabase.from("activity_reactions").update({ emoji }).match(match);
+      : await supabase.from("activity_reactions").update({ kind }).match(match);
   if (error) return { ok: false, error: "Couldn't react." };
   refresh();
   return { ok: true };

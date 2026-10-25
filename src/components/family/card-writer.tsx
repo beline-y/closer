@@ -7,6 +7,7 @@ import { CARD_COLORS } from "@/components/kit/reveal-card";
 import { relativeDay } from "@/lib/dates";
 import type { Card, CardColor } from "@/lib/data/cards";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 const COLOR_NAMES: Record<CardColor, string> = { sun: "Sunshine", coral: "Coral", sky: "Sky", lilac: "Lilac" };
 
@@ -78,7 +79,7 @@ export function CardWriter({ initialBody = "", cards }: { initialBody?: string; 
           ))}
         </fieldset>
         <button type="submit" disabled={!body.trim() || sealing} className="min-h-14 rounded-2xl bg-role-family-ink text-lg font-extrabold text-white disabled:opacity-50">
-          {sealing ? "Sealing…" : "Seal card for Leo 💌"}
+          {sealing ? "Sealing…" : "Seal card for Leo"}
         </button>
         {justSealed && (
           <p aria-live="polite" className="animate-rise font-bold">
@@ -94,14 +95,12 @@ export function CardWriter({ initialBody = "", cards }: { initialBody?: string; 
             Waiting to be opened ({sealed.length})
           </h2>
           {sealed.length === 0 ? (
-            <p className="text-muted-foreground">Leo has opened all your cards 💛</p>
+            <p className="text-muted-foreground">Leo has opened all your cards.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {sealed.map((c) => (
                 <li key={c.id} className={cn("flex items-center gap-3 rounded-2xl p-4", CARD_COLORS[c.color])}>
-                  <span aria-hidden className="text-2xl">
-                    ✉️
-                  </span>
+                  <CloserIcon name="card" className="size-6" />
                   <p className="line-clamp-1 flex-1">{c.body}</p>
                   <TakeBack id={c.id} />
                 </li>
@@ -113,12 +112,12 @@ export function CardWriter({ initialBody = "", cards }: { initialBody?: string; 
           <h2 id="opened-title" className="text-xl font-extrabold">
             Opened by Leo
           </h2>
-          {opened.length === 0 && <p className="text-muted-foreground">Nothing opened yet. You&apos;ll see it here the moment Leo opens one 💌</p>}
+          {opened.length === 0 && <p className="text-muted-foreground">Nothing opened yet. You&apos;ll see it here the moment Leo opens one.</p>}
           <ul className="flex flex-col gap-2">
             {opened.map((c) => (
               <li key={c.id} className="flex flex-col gap-1 rounded-2xl bg-card p-4 ring-1 ring-border">
                 <p className="line-clamp-2">{c.body}</p>
-                <p className="text-sm font-bold text-role-family-ink">💌 Leo opened your card {relativeDay(c.openedDaysAgo ?? 0).toLowerCase()}</p>
+                <p className="flex items-center gap-1.5 text-sm font-bold text-role-family-ink"><CloserIcon name="card" /> Leo opened your card {relativeDay(c.openedDaysAgo ?? 0).toLowerCase()}</p>
               </li>
             ))}
           </ul>

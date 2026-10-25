@@ -30,6 +30,7 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  --color-surface-muted: var(--surface-muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -79,6 +80,8 @@
 /* Warm, soft palette: never clinical on the patient side */
 :root {
   --background: oklch(0.985 0.012 75);
+  /* A slightly darker tint of the background: one flat area, no border, no shadow */
+  --surface-muted: oklch(0.955 0.02 75);
   --foreground: oklch(0.25 0.03 50);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.25 0.03 50);
@@ -142,6 +145,7 @@
 
 .dark {
   --background: oklch(0.2 0.02 50);
+  --surface-muted: oklch(0.24 0.02 50);
   --foreground: oklch(0.96 0.01 75);
   --card: oklch(0.25 0.02 50);
   --card-foreground: oklch(0.96 0.01 75);
@@ -182,6 +186,30 @@
   --tap: 2.75rem;
 }
 
+/* Phone type scale: body 15px, small 13px, titles one or two steps smaller. From tablet
+   width up, Tailwind's default scale applies. Tap targets use spacing, not font size, so
+   they stay at 44px or more. */
+@media (width < 48rem) {
+  :root {
+    --text-sm: 0.8125rem;
+    --text-sm--line-height: 1.35;
+    --text-base: 0.9375rem;
+    --text-base--line-height: 1.45;
+    --text-lg: 1.0625rem;
+    --text-lg--line-height: 1.45;
+    --text-xl: 1.125rem;
+    --text-xl--line-height: 1.4;
+    --text-2xl: 1.3125rem;
+    --text-2xl--line-height: 1.3;
+    --text-3xl: 1.5rem;
+    --text-3xl--line-height: 1.25;
+    --text-4xl: 1.75rem;
+    --text-4xl--line-height: 1.2;
+    --text-5xl: 2.125rem;
+    --text-5xl--line-height: 1.15;
+  }
+}
+
 @keyframes pop {
   from { transform: scale(0.85); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -214,7 +242,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-base text-foreground;
   }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;

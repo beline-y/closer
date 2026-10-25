@@ -7,6 +7,8 @@ import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { castByPatientId } from "@/lib/cast";
 import { relativeDay } from "@/lib/dates";
 import { ALERT_LABELS, CARE_ALERTS } from "@/lib/demo-fixtures";
+import { CloserIcon } from "@/components/icons/closer-icon";
+import { cn } from "@/lib/utils";
 
 // Triggered alerts with "Mark as reviewed". Saved for this visit only.
 export function AlertsList() {
@@ -25,7 +27,7 @@ export function AlertsList() {
               <Link href={`/care/patients/${a.patientId}`} className="hover:underline">
                 {patient?.name}
               </Link>{" "}
-              · <span className={isOpen ? "text-alert" : ""}>{isOpen ? "⚠ " : "✓ "}{ALERT_LABELS[a.kind]}</span>
+              · <span className={cn("inline-flex items-center gap-1", isOpen && "text-alert")}><CloserIcon name={isOpen ? "alert" : "check"} /> {ALERT_LABELS[a.kind]}</span>
             </span>
             <span className="text-sm text-muted-foreground">
               {a.detail} · {relativeDay(a.daysAgo)}
@@ -52,7 +54,7 @@ export function AlertsList() {
           To review ({open.length})
         </h2>
         {open.length === 0 ? (
-          <EmptyState emoji="🌤️" title="All clear">
+          <EmptyState icon="check" title="All clear">
             No alert to review. New ones appear here as soon as a threshold is crossed.
           </EmptyState>
         ) : (
