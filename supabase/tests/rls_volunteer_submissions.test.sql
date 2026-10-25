@@ -1,4 +1,6 @@
 begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
 select plan(10);
 
 insert into public.volunteer_submissions(id,volunteer_id,volunteer_name,kind,context_key,context_label,body,screening_state,categories,explanation,evidence)
