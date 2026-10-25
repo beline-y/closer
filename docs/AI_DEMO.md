@@ -28,8 +28,9 @@ as anonymous natural wording. Access and consent are enforced by the question-po
 
 With `DEMO_MODE=true`, Emma's quick actions link to **Try AI notification demo**, followed
 by **Preview a parent notification**. The preview reads the latest shared check-in from the past
-seven local calendar days, including today. The button explicitly explains that shared mood,
-activities and note are sent to Mistral; no photos or private content are queried.
+seven local calendar days, including today. Shared mood, activities and note are sent
+to Mistral; no photos or private content are queried. The card keeps the invitation
+and its audience visible, with technical source details omitted.
 
 The preview control is shown only to the guardian; Leo has no AI-generation button.
 The server restricts the demo to fictional Leo and seeded accounts, with session/RLS
@@ -43,7 +44,7 @@ separate parent and patient templates then produce the invitation. For a shared 
 - Parent: “Ask Leo how the film was today. What was their favorite part?”
 - Patient: “Want to tell someone your favorite part of the film today?”
 
-The preview shows its audience and source check-in date/activity. Care observations and source
+The preview shows its audience. Source grounding is checked on the server. Care observations and source
 quotes stay server-side. Guardian previews are withheld on a safeguarding flag, and low-mood
 signals use the existing gentle support invitation. Provider failure shows an error, not a fake
 AI success. Dismissing or refreshing affects only this page.
