@@ -13,14 +13,14 @@ import { getRepliesForPatient, getThinkingOfYouToday } from "@/lib/data/nudges";
 import { NudgeReplies } from "@/components/nudge-replies";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { relativeDay } from "@/lib/dates";
-import { COMFORT_CARDS, MEMORIES, TODAY_QUESTION } from "@/lib/demo-fixtures";
+import { MEMORIES, TODAY_QUESTION } from "@/lib/demo-fixtures";
+import { getSealedCards } from "@/lib/data/cards";
 import { getActivities } from "@/lib/data/activities";
 import { todayIn } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Today · Closer" };
 
 export default function PatientTodayPage() {
-  const sealed = COMFORT_CARDS.filter((c) => c.sealed).length;
   const newMemories = MEMORIES.filter((m) => m.sharedDaysAgo <= 1);
 
   return (
@@ -53,22 +53,9 @@ export default function PatientTodayPage() {
           <span className="text-lg">🔒 Dad answered! Answer to see his.</span>
         </Link>
 
-        {sealed > 0 && (
-          <Link
-            href="/patient/connect"
-            className="flex items-center gap-4 rounded-3xl bg-role-family-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5"
-          >
-            <span aria-hidden className="animate-wiggle text-5xl">
-              💌
-            </span>
-            <span className="flex flex-col">
-              <span className="font-heading text-2xl font-extrabold">
-                {sealed} {sealed === 1 ? "card" : "cards"} for you
-              </span>
-              <span className="text-lg text-muted-foreground">Open them when you want</span>
-            </span>
-          </Link>
-        )}
+        <Suspense fallback={null}>
+          <CardsWaiting />
+        </Suspense>
 
         <Suspense fallback={<div className="min-h-32 rounded-3xl bg-card ring-1 ring-border" />}>
           <SuggestedActivity />
@@ -214,6 +201,28 @@ async function SuggestedActivity() {
           {pick.title}
         </span>
         <span className="text-muted-foreground">About {pick.minutes} minutes · Start ▶</span>
+      </span>
+    </Link>
+  );
+}
+
+// "2 cards for you": sealed cards from the family (count only, never the text).
+async function CardsWaiting() {
+  const sealed = (await getSealedCards()).length;
+  if (sealed === 0) return null;
+  return (
+    <Link
+      href="/patient/connect"
+      className="flex items-center gap-4 rounded-3xl bg-role-family-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5"
+    >
+      <span aria-hidden className="animate-wiggle text-5xl">
+        💌
+      </span>
+      <span className="flex flex-col">
+        <span className="font-heading text-2xl font-extrabold">
+          {sealed} {sealed === 1 ? "card" : "cards"} for you
+        </span>
+        <span className="text-lg text-muted-foreground">Open them when you want</span>
       </span>
     </Link>
   );
