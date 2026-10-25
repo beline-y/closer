@@ -14,7 +14,8 @@ and media. Three things keep the problem honest:
 The nurse's round adds a second, independent view: brief and often skipped, but less
 fooled by masking. What a child eats depends on the menu as much as on their mood, so
 the ward's intake of the same dish is the baseline. Some children's app usage is not
-tracked at all.
+tracked at all. Each child draws in their own style; distress shifts it a little (darker,
+fewer colors, more often alone or with sad faces), so only changes against that style help.
 
 Randomness uses one stream per (child, day, purpose), so two policies that leave a child
 in the same state see the same future draws (common random numbers).
@@ -28,8 +29,8 @@ from datetime import date, timedelta
 import numpy as np
 
 from .contract import (
-    INTAKE_SCORE, WARD_MEALS, ChildHistory, ChildProfile, ContextEvent, DayRecord, Drawing, MediaLog, NurseObservation,
-    WardMeal, interest_groups,
+    INTAKE_SCORE, WARD_MEALS, ChildHistory, ChildProfile, ContextEvent, DayRecord, Drawing, DrawingReading, MediaLog,
+    NurseObservation, WardMeal, interest_groups,
 )
 from .notes_gen import generate_note
 
@@ -155,6 +156,19 @@ class WardParams:
 
 
 @dataclass
+class DrawingStyle:
+    """How a child usually draws."""
+
+    brightness: float
+    saturation: float
+    dark: float
+    colors: float
+    coverage: float
+    warm: float
+    people: float
+
+
+@dataclass
 class Truth:
     """What really happened, hidden from the policy: used for rewards and metrics."""
 
@@ -188,6 +202,13 @@ class ChildSimulator:
         self.ward = WardParams(
             nurse_rate=float(ward_rng.uniform(*self.config.nurse_rate)), appetite=float(ward_rng.normal(0, 0.4)),
             tracked=bool(ward_rng.random() >= self.config.untracked_share),
+        )
+        style_rng = np.random.default_rng([self.seed, 1_000_002])
+        self.style = DrawingStyle(
+            brightness=float(style_rng.uniform(0.45, 0.8)), saturation=float(style_rng.uniform(0.35, 0.75)),
+            dark=float(style_rng.uniform(0.05, 0.35)), colors=float(style_rng.uniform(3, 9)),
+            coverage=float(style_rng.uniform(0.1, 0.45)), warm=float(style_rng.uniform(0.3, 0.7)),
+            people=float(style_rng.uniform(0.6, 2.2)),
         )
         p = self.params
         self.groups = interest_groups(p.interests)
@@ -305,6 +326,8 @@ class ChildSimulator:
             record.screening = float(np.clip(self._rng(t, 5).normal((0.15, 0.45, 0.75)[z], 0.12), 0, 1))
         record.ward_meals, popularity = self._menu(day)
         record.nurse = self._nurse(day, z, pain, fatigue, big_today, isolation, popularity)
+        lonely = isolation or self._days_without_family >= 2
+        record.drawing_readings = tuple(self._drawing_reading(z, lonely, k) for k in range(record.drawings))
         contact = record.family_contacts > 0 or family_visit
         self._days_without_family = 0 if contact else self._days_without_family + 1
         if not self.ward.tracked:  # the child still lives it; the store just never hears about it
@@ -520,6 +543,36 @@ class ChildSimulator:
             pain=int(np.clip(round(pain + rng.normal(0, 0.8)), 0, 10)) if rng.random() < 0.7 else None,
             night_sleep=sleep, refused_care=bool(rng.random() < _sigmoid(-4.5 + 0.9 * shown + 0.8 * big_today)),
             asks_psychologist=bool(rng.random() < _sigmoid(-6.0 + 1.9 * shown)),
+        )
+
+    def _drawing_reading(self, z: int, lonely: bool, k: int) -> DrawingReading:
+        """What the drawing analysis would return for today's k-th drawing (colors and content)."""
+        rng, st = self._rng(self.t, 800 + k), self.style
+        e = (0.0, 0.5, 1.0)[z] * (0.5 if self.params.masking else 1.0)
+
+        def unit(x: float) -> float:
+            return round(float(np.clip(x, 0, 1)), 3)
+
+        people = int(rng.poisson(max(0.2, st.people - 0.4 * e)))
+        smiling = int(rng.binomial(people, max(0.05, 0.6 - 0.3 * e)))
+        sad = int(rng.binomial(people, 0.03 + 0.15 * e))
+        weights = np.array([0.3 + 0.2 * e * lonely, 0.2 + 0.15 * e, max(0.05, 0.35 - 0.15 * e), 0.15])
+        affect = ("positive", "negative", "neutral", "unclear")
+        chance = np.array([max(0.05, 0.35 - 0.25 * e), 0.03 + 0.15 * e, 0.2, 0.0])
+        chance[3] = 1 - chance.sum()
+        return DrawingReading(
+            brightness=unit(st.brightness - 0.08 * e + rng.normal(0, 0.07)),
+            saturation=unit(st.saturation - 0.08 * e + rng.normal(0, 0.07)),
+            dark_share=unit(st.dark + 0.12 * e + rng.normal(0, 0.07)),
+            colors=int(np.clip(round(st.colors - 2 * e + rng.normal(0, 1.2)), 0, 12)),
+            coverage=unit(st.coverage - 0.06 * e + rng.normal(0, 0.06)),
+            warm_share=unit(st.warm - 0.08 * e + rng.normal(0, 0.1)),
+            people=people, alone=people == 1 and rng.random() < 0.4 + 0.2 * e + 0.2 * lonely,
+            family=people >= 2 and rng.random() < max(0.1, 0.6 - 0.2 * e - 0.2 * lonely),
+            smiling_faces=smiling, sad_faces=sad,
+            setting=str(rng.choice(("home", "hospital", "outdoors", "other"), p=weights / weights.sum())),
+            sun=bool(rng.random() < 0.4 - 0.15 * e), rain=bool(rng.random() < 0.05 + 0.08 * e),
+            affect=str(rng.choice(affect, p=chance)), read_by_claude=True,
         )
 
     def _feelings(self, rng, z: int, big_tomorrow: bool, lonely: bool, fatigue: float) -> tuple[str, ...]:

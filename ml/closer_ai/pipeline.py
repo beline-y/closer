@@ -25,7 +25,7 @@ from .policy.baselines import PPOPolicy
 from .contract import DayRecord
 from .policy.obs import ACTIONS, DIGEST, PRIORITY, WAIT, action_mask, observe, with_screenings
 from .policy.whittle import indices_from
-from .safety import ALERT_FOR_LEVEL, SafetyFlag, check_text, most_severe
+from .safety import ALERT_FOR_LEVEL, SafetyFlag, check_text, drawing_flags, most_severe
 from .store import ACTION_RANK, PatientData, Store
 from .text import analyze_note
 
@@ -83,6 +83,8 @@ def _alert_reason(flag: SafetyFlag, where: str) -> str:
         return "The child asked to talk to someone today"
     if flag.level == "care_request":
         return "The nurse asked for the psychologist to see the child today"
+    if flag.category == "claude_drawing":
+        return f"Today's drawing, read by Claude, explicitly shows {'danger' if flag.level == 'crisis' else 'distress'}"
     what = flag.category.removeprefix("claude_").replace("_", " ")
     if flag.level == "crisis":
         return f"Safety rule: possible {what} in today's {where}"
@@ -150,6 +152,11 @@ def summary_facts(data: PatientData, probs: np.ndarray, t: int, factors: list[di
         "recent_notes": [{"days_ago": t - k, "text": r.note} for k, r in enumerate(h.days) if r.note and t - k < 3],
         "shared_drawings": [{"days_ago": t - k, "title": d.title, "emotion": d.emotion, "themes": list(d.themes)}
                             for k, r in enumerate(h.days) if t - k < 7 for d in r.shared_drawings],
+        "drawings_this_week": [
+            {"days_ago": t - k, "shows": x.description or None, "explicit_feeling": x.affect, "colors_used": x.colors,
+             "dark_ink_share": round(x.dark_share, 2)}
+            for k, r in enumerate(h.days) if t - k < 7 for x in r.drawing_readings
+        ][-5:],
         "care_context": {"now": sorted({e.kind for e in known if e.active_on(today.day)}),
                          "coming": sorted({e.kind for e in known if e.starts_on > today.day})},
         "decision": {"action": ACTIONS[action], "urgency_index": urgency, "rule_checked": rule},
@@ -175,6 +182,7 @@ def decide(data: PatientData, assessor: Assessor, policy, reader=None, summarize
     flags = [(f, "check-in note") for f in check_text(today.note)]
     flags += [(f, "drawing") for d in today.shared_drawings for f in check_text(d.title)]
     flags += [(f, "nurse's note") for f in check_text(nurse_note)]
+    flags += [(f, "drawing") for f in drawing_flags(today)]
     if today.wants_to_talk:
         flags.append((SafetyFlag("child_request", "wants_to_talk", ""), ""))
     if today.nurse and today.nurse.asks_psychologist:

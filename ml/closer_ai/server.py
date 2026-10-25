@@ -6,6 +6,7 @@ listens on localhost: a demo service for fictional data, not a hardened public s
 
     POST /v1/patients/<id>/sync                the app's check-ins in, the care-tab report out
     PUT  /v1/patients/<id>/observations/<day>  the nurse's round in, the updated report out
+    POST /v1/patients/<id>/drawings            a drawing in (base64), its reading and the updated report out
     POST /v1/overview                          several syncs at once, one line per child out
     GET  /v1/menu/<day>, PUT /v1/menu/<day>    the ward's menu
     GET  /v1/health                            no secret needed, says nothing about children
@@ -27,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .bridge import (
-    BadRequest, Engine, menu_from_json, observation_from_json, open_store, overview_row, patient_id, report,
+    MAX_IMAGE, BadRequest, Engine, ingest_drawing, menu_from_json, observation_from_json, open_store, overview_row, patient_id, report,
     parse_day, sync_patient,
 )
 
@@ -36,6 +37,7 @@ MAX_BODY = 1_000_000
 ROUTES = (
     ("POST", re.compile(r"/v1/patients/([^/]+)/sync"), "sync"),
     ("PUT", re.compile(r"/v1/patients/([^/]+)/observations/(\d{4}-\d{2}-\d{2})"), "observation"),
+    ("POST", re.compile(r"/v1/patients/([^/]+)/drawings"), "drawing"),
     ("POST", re.compile(r"/v1/overview"), "overview"),
     ("GET", re.compile(r"/v1/menu/(\d{4}-\d{2}-\d{2})"), "get_menu"),
     ("PUT", re.compile(r"/v1/menu/(\d{4}-\d{2}-\d{2})"), "put_menu"),
@@ -62,6 +64,12 @@ class CareTabAPI:
         store.put_observation(pid, today, observation, visits, (body.get("observed_by") or "")[:80] or None)
         self.engine.refresh(store, pid, today)
         return report(store, pid, today, self.engine)
+
+    def drawing(self, store, body, pid):
+        drawing = ingest_drawing(store, self.engine, patient_id(pid), body)
+        today = parse_day(body.get("today") or body.get("local_date"))
+        self.engine.refresh(store, pid, today)
+        return {"drawing": drawing, "report": report(store, pid, today, self.engine)}
 
     def overview(self, store, body):
         children = body.get("patients") or []
@@ -121,7 +129,8 @@ class CareTabAPI:
                         self.headers.get("Authorization", "").encode(), f"Bearer {api.token}".encode()):
                     return self._send(HTTPStatus.UNAUTHORIZED, {"error": "missing or wrong secret"})
                 try:
-                    body = self._body() if method in ("POST", "PUT") else {}
+                    body = self._body(MAX_IMAGE * 4 // 3 + 10_000 if name == "drawing" else MAX_BODY) \
+                        if method in ("POST", "PUT") else {}
                     store = open_store(api.db)
                     try:
                         result = getattr(api, name)(store, body, *match.groups())
@@ -136,9 +145,9 @@ class CareTabAPI:
                     return self._send(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "internal error"})
                 self._send(HTTPStatus.OK, result)
 
-            def _body(self) -> dict:
+            def _body(self, limit: int) -> dict:
                 length = int(self.headers.get("Content-Length") or 0)
-                if length > MAX_BODY:
+                if length > limit:
                     raise BadRequest("body too large")
                 try:
                     body = json.loads(self.rfile.read(length) or b"{}")

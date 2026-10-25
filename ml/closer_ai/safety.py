@@ -96,11 +96,18 @@ def check_day(record: DayRecord) -> list[SafetyFlag]:
         flags += check_text(drawing.title)
     if record.wants_to_talk:
         flags.append(SafetyFlag("child_request", "wants_to_talk", ""))
+    flags += drawing_flags(record)
     if record.nurse is not None:
         flags += check_text(record.nurse.note)
         if record.nurse.asks_psychologist:
             flags.append(SafetyFlag("care_request", "nurse_request", ""))
     return flags
+
+
+def drawing_flags(record: DayRecord) -> list[SafetyFlag]:
+    """Drawings Claude found explicitly dangerous (self-harm, an adult hurting the child, death...)."""
+    return [SafetyFlag(x.safety, "claude_drawing", x.description) for x in record.drawing_readings
+            if x.safety in ("crisis", "concern")]
 
 
 def most_severe(flags: list[SafetyFlag]) -> SafetyFlag | None:

@@ -17,7 +17,7 @@ estimate of how the child is doing is not RL: it is a supervised model, used as 
 
 ```mermaid
 flowchart LR
-    S["Signals<br/>check-ins, notes, drawings,<br/>media, people, nurse's round,<br/>ward menu, care context"] --> F["71 causal features<br/>vs the child's own habits"]
+    S["Signals<br/>check-ins, notes, drawings,<br/>media, people, nurse's round,<br/>ward menu, care context"] --> F["76 causal features<br/>vs the child's own habits"]
     F --> B["Belief: additive assessor<br/>P(stable, fragile, distress)"]
     Q["Answer to a validated<br/>question (if asked)"] -->|Bayes update| B
     B --> O["19-dim observation<br/>+ log λ"]
@@ -72,7 +72,7 @@ deployment to meet the budget.
 
 ### Belief: the assessor (supervised, not RL)
 
-A generalized additive model: each of the 71 features goes through its own cubic B-spline (5 knots), with
+A generalized additive model: each of the 76 features goes through its own cubic B-spline (5 knots), with
 missing-value indicators, then a multinomial logistic regression ($C = 0.3$). Being additive, the log-odds of
 distress split exactly into one contribution per feature, which is what the care tab shows as "what weighs most
 today". Its AUC for distress matches gradient boosting, so interpretability costs nothing. Inference is plain numpy,
@@ -80,7 +80,9 @@ about 130 µs per child-day, fast enough to run inside the RL environment at eve
 
 Features are causal (day $t$ only uses data up to $t$) and mostly relative to the child's own baseline. Missing data
 stays missing: not checking in is itself a signal, and app usage the store never received is unknown, never zero.
-The nurse's round adds 11 features (how the child looked, engagement during care, pain score, sleep, refused care,
+Every drawing becomes an 18-value vector (colors from the pixels, what Claude sees drawn), and 5 features compare
+this week's drawings with the child's own earlier ones, shrunk toward a population prior early in the stay. The
+nurse's round adds 11 features (how the child looked, engagement during care, pain score, sleep, refused care,
 the nurse's request, meals eaten, and meals eaten **relative to the other children on the same dish**).
 
 ### Information gathering: the "ask" action
@@ -125,7 +127,7 @@ Deterministic rules run before the agent, and nothing the agent does can remove 
 
 | Trigger | Alert |
 |---|---|
-| Crisis language in a note, a shared drawing's title or the nurse's note (rules, or Claude's second reading) | urgent |
+| Crisis language in a note, a shared drawing's title or the nurse's note (rules, or Claude's second reading), or a drawing Claude sees explicitly showing self-harm or an adult hurting the child | urgent |
 | Strong statements (worthless, unloved, fear of dying) | priority |
 | The child taps "I'd like to talk to someone" | priority |
 | The nurse ticks "I'd like the psychologist to see this child" | priority |

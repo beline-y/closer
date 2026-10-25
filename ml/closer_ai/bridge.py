@@ -9,13 +9,18 @@ in one place.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import re
 import threading
 from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
-from .contract import AFFECTS, ENGAGEMENT, INTAKE, NIGHT_SLEEP, VISITOR_KINDS, WARD_MEALS, NurseObservation
+from PIL import UnidentifiedImageError
+
+from .contract import AFFECTS, ENGAGEMENT, INTAKE, NIGHT_SLEEP, VISITOR_KINDS, WARD_MEALS, Drawing, NurseObservation
+from .drawings import analyze, image_hash
 from .pipeline import run_daily
 from .store import Store
 
@@ -121,6 +126,30 @@ def menu_from_json(data: dict) -> dict[str, str | None]:
     return {meal: _text(data.get(meal), 80) for meal in WARD_MEALS}
 
 
+MAX_IMAGE = 8_000_000
+
+
+def ingest_drawing(store: Store, engine: Engine, pid: str, payload: dict) -> dict:
+    """A drawing from the app: colors and content read, stored as a reading (never the image)."""
+    day = parse_day(payload.get("local_date"))
+    if store.data_version(pid) is None:
+        raise BadRequest("unknown patient: sync it first")
+    try:
+        image = base64.b64decode(payload.get("image") or "", validate=True)
+    except (binascii.Error, ValueError):
+        raise BadRequest("image must be base64") from None
+    if not image or len(image) > MAX_IMAGE:
+        raise BadRequest(f"image must be 1 byte to {MAX_IMAGE // 1_000_000} MB")
+    title = _text(payload.get("title"), 80)
+    try:
+        reading = analyze(image, engine.reader(store), title)
+    except (UnidentifiedImageError, OSError):
+        raise BadRequest("not an image Pillow can read") from None
+    shared = Drawing(_int(payload.get("emotion"), 1, 5, "emotion"), (), title) if payload.get("shared") else None
+    new = store.add_drawing(pid, day, image_hash(image), reading, shared)
+    return {"new": new, "reading": asdict(reading) | {"themes": list(reading.themes), "vector": list(reading.vector())}}
+
+
 # -- the engine: models and Claude, shared by every request ---------------------------------------
 @dataclass
 class Engine:
@@ -139,6 +168,14 @@ class Engine:
     def claude(self) -> bool:
         return self.client is not None
 
+    def reader(self, store: Store):
+        """A Claude reader whose readings are cached in this store, or None without Claude."""
+        if self.client is None:
+            return None
+        from .claude import ClaudeReader, StoreCache
+
+        return ClaudeReader(self.client, cache=StoreCache(store))
+
     def refresh(self, store: Store, pid: str, today: date, force: bool = False) -> bool:
         """Re-run the daily job for one child if its inputs (or the models) changed since the last run.
 
@@ -153,11 +190,10 @@ class Engine:
                 raise BadRequest("unknown patient")
             if not force and latest and latest[-1]["data_version"] >= current and latest[-1]["model_version"] == self.version:
                 return False
-            reader = summarizer = None
-            if self.client is not None:
-                from .claude import ClaudeReader, ClaudeSummarizer, StoreCache
+            reader, summarizer = self.reader(store), None
+            if reader is not None:
+                from .claude import ClaudeSummarizer
 
-                reader = ClaudeReader(self.client, cache=StoreCache(store))
                 summarizer = ClaudeSummarizer(self.client, language=self.language)
                 days = store.load(today, patient_ids=[pid])[0].history.days
                 reader.warm([(r.note, "child") for r in days if r.note]
@@ -204,6 +240,8 @@ def report(store: Store, pid: str, today: date, engine: Engine, days: int = 14) 
             "affect": list(seen["observation"].affect), "visits": seen["visits"], "observed_by": seen["observed_by"],
             "updated_at": seen["updated_at"]},
         "menu": store.menu(today),
+        "drawings": [{k: v for k, v in d.items() if k != "read_by_claude"}
+                     for d in store.drawing_readings(pid, start, today)][:12],
     }
 
 

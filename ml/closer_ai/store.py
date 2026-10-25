@@ -3,22 +3,24 @@
 One file holds the signals the AI may read, the care context, the nurse's daily round
 and the ward's menu, and what the AI writes back (assessments, alerts and the
 psychologist's review of each alert). It mirrors the data contract in contract.py.
-Comfort cards, question answers and photos are never stored; drawings keep their details
-only when the child shared them with the care team.
+Comfort cards, question answers and photos are never stored. Drawing images are not stored
+either: every drawing keeps a reading (colors and what is drawn) and its vector; titles,
+themes and the child's emoji are kept only when the child shared the drawing.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from .contract import (
     ACTIVITIES, AFFECTS, CONTEXT_KINDS, DRAWING_THEMES, ENGAGEMENT, FEELINGS, INTAKE, INTAKE_SCORE, MEALS,
     MEDIA_COMPANY, MEDIA_KINDS, NIGHT_SLEEP, VISITOR_KINDS, WARD_MEALS, WORRY_TOPICS, ChildHistory, ChildProfile,
-    ContextEvent, DayRecord, Drawing, MediaLog, NurseObservation, WardMeal,
+    ContextEvent, DayRecord, Drawing, DrawingReading, MediaLog, NurseObservation, WardMeal,
 )
 from .policy.obs import AlertState
 
@@ -89,6 +91,16 @@ CREATE TABLE IF NOT EXISTS drawings (
     themes TEXT NOT NULL DEFAULT '[]',  -- JSON list among: {", ".join(DRAWING_THEMES)}
     title TEXT CHECK (length(title) <= 80),
     CHECK (shared_with_care_team = 1 OR (emotion IS NULL AND title IS NULL AND themes = '[]'))
+);
+-- One reading per analyzed drawing, shared or not: colors and what is drawn, never the image.
+CREATE TABLE IF NOT EXISTS drawing_readings (
+    id INTEGER PRIMARY KEY,
+    patient_id TEXT NOT NULL REFERENCES patients (id) ON DELETE CASCADE,
+    local_date TEXT NOT NULL,
+    image_sha256 TEXT NOT NULL,  -- the same drawing sent twice is counted once
+    reading TEXT NOT NULL,  -- JSON of DrawingReading
+    created_at TEXT NOT NULL,
+    UNIQUE (patient_id, image_sha256)
 );
 -- Films, series, cartoons, music, games, books, podcasts.
 CREATE TABLE IF NOT EXISTS media_logs (
@@ -196,6 +208,7 @@ CREATE INDEX IF NOT EXISTS screenings_patient_date ON screenings (patient_id, lo
 CREATE INDEX IF NOT EXISTS context_patient ON care_context_events (patient_id, starts_on);
 CREATE INDEX IF NOT EXISTS alerts_patient_date ON ai_alerts (patient_id, for_date);
 CREATE INDEX IF NOT EXISTS nurse_date ON nurse_observations (local_date);
+CREATE INDEX IF NOT EXISTS drawing_readings_patient_date ON drawing_readings (patient_id, local_date);
 """
 
 
@@ -277,6 +290,11 @@ class Store:
             self.db.executemany(
                 "INSERT INTO drawings (patient_id, local_date, shared_with_care_team, emotion, themes, title) VALUES (?, ?, ?, ?, ?, ?)",
                 shared + private,
+            )
+            self.db.executemany(
+                "INSERT INTO drawing_readings (patient_id, local_date, image_sha256, reading, created_at) VALUES (?, ?, ?, ?, ?)",
+                [(patient_id, d, hashlib.sha256(f"{patient_id}|{d}|{k}|{x}".encode()).hexdigest(), _reading_json(x), _now())
+                 for k, x in enumerate(r.drawing_readings)],
             )
             self.db.executemany(
                 "INSERT INTO media_logs (patient_id, local_date, kind, minutes, with_whom, reaction, is_rewatch) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -369,6 +387,33 @@ class Store:
                     self.db.execute("DELETE FROM ward_menus WHERE local_date = ? AND meal = ?", (day.isoformat(), meal))
             self.bump()
 
+    def add_drawing(self, patient_id: str, day: date, image_sha256: str, reading: DrawingReading,
+                    shared: Drawing | None = None) -> bool:
+        """A new drawing: counted, read, and (if the child shared it) its title, themes and emoji. False if known."""
+        with self.db:
+            cursor = self.db.execute(
+                "INSERT OR IGNORE INTO drawing_readings (patient_id, local_date, image_sha256, reading, created_at) VALUES (?, ?, ?, ?, ?)",
+                (patient_id, day.isoformat(), image_sha256, _reading_json(reading), _now()),
+            )
+            if cursor.rowcount == 0:
+                return False
+            if shared is None:
+                self.db.execute("INSERT INTO drawings (patient_id, local_date) VALUES (?, ?)", (patient_id, day.isoformat()))
+            else:
+                self.db.execute(
+                    "INSERT INTO drawings (patient_id, local_date, shared_with_care_team, emotion, themes, title) VALUES (?, ?, 1, ?, ?, ?)",
+                    (patient_id, day.isoformat(), shared.emotion, json.dumps(list(shared.themes or reading.themes)), shared.title),
+                )
+            self.bump(patient_id)
+        return True
+
+    def drawing_readings(self, patient_id: str, start: date, end: date) -> list[dict]:
+        rows = self.db.execute(
+            "SELECT local_date, reading FROM drawing_readings WHERE patient_id = ? AND local_date BETWEEN ? AND ? ORDER BY local_date DESC, id DESC",
+            (patient_id, start.isoformat(), end.isoformat()),
+        )
+        return [{"local_date": r["local_date"], **json.loads(r["reading"])} for r in rows]
+
     # -- reads for the care tab ----------------------------------------------------------
     def menu(self, day: date) -> dict[str, str | None]:
         rows = {r["meal"]: r["dish"] for r in self.db.execute("SELECT * FROM ward_menus WHERE local_date = ?", (day.isoformat(),))}
@@ -448,6 +493,8 @@ class Store:
             r.drawings += 1
             if row["shared_with_care_team"]:
                 r.shared_drawings += (Drawing(row["emotion"], tuple(json.loads(row["themes"])), row["title"]),)
+        for row in self._rows("drawing_readings", pid, start, today):
+            day(row).drawing_readings += (_drawing_reading(row["reading"]),)
         for row in self._rows("media_logs", pid, start, today):
             day(row).media += (MediaLog(row["kind"], row["minutes"], row["with_whom"], row["reaction"],
                                         bool(row["is_rewatch"])),)
@@ -591,6 +638,15 @@ class Store:
         return [dict(r) for r in self.db.execute(
             "SELECT patient_id, for_date, source, priority, outcome FROM ai_alerts WHERE outcome IS NOT NULL OR source = 'psy_manual'"
         )]
+
+
+def _reading_json(reading: DrawingReading) -> str:
+    return json.dumps(asdict(reading) | {"themes": list(reading.themes)})
+
+
+def _drawing_reading(text: str) -> DrawingReading:
+    data = json.loads(text)
+    return DrawingReading(**data | {"themes": tuple(data["themes"])})
 
 
 def _observation(row: sqlite3.Row) -> NurseObservation:
