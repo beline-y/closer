@@ -97,14 +97,15 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 
 **Shared:** landing with the demo role picker, demo banner with "Switch role" on every page, login, patient login (number pad), join with code, guardian consent, account (export, delete).
 
-**Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet; tabs Today · Connect · Question · Memories · Me):
-- Today: greeting, "who's thinking of you" avatars, mood check-in, today's question, one suggested activity, new memories ("Emma shared a memory").
+**Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet, same order; tabs Today · Connect · Play · Memories · Me):
+- Today: greeting, mood of the day (check-in, food score, reactions, streak), today's question (the card opens the full question screen, which has no tab of its own), who's thinking of you, one suggested activity.
 - Check-in: five emoji, then optional photo, today's menu dishes to rate (yuck to yum, how much), activities and note, then a celebration with the streak ("Connected for 12 days!", badges at 3, 7, 14, 30).
-- Connect: five nudge buttons (I miss you, Call me, I'm bored, I'm proud of myself, I need a hug) with a cooldown ring, then a recipient picker, then "Sent! ❤️"; sealed comfort cards to open (envelope stack, open animation, archive).
-- Question: answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
+- Connect: five nudge buttons with a cooldown ring, then a recipient picker, then "Sent! ❤️"; replies from family; sealed comfort cards to open (envelope stack, open animation, archive); the creations Leo shared, with the family's reactions, comments and revealed challenges.
+- Question (from Today): answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
+- Play: today's theme at the top, "Continue" for unfinished activities (drafts saved, challenges waiting for family), the library by type (Draw, Make and snap, Quiz, Story time, Challenge with family). Results aren't kept here: after finishing, Leo chooses share with family, add to Memories, or keep for myself.
+- Activity: full-screen drawing (finger and stylus, colors, sizes, eraser, undo, clear), make and snap (steps then photo), quiz (5 questions, score), story (write or dictate, autosaved), challenge with family (both draw, reveal side by side).
 - Memories: the same album as the family.
-- Me: things to do (activity library), my creations (with reactions and comments), journal.
-- Activity: full-screen drawing (finger and stylus, colors, sizes, eraser, undo, clear), make and snap (steps then photo), quiz (5 questions, score), story (write or dictate), challenge with family (both draw, reveal side by side). Then: share with family, add to Memories, or keep for myself.
+- Me (private): "🔒 Only you can see this, unless you share it." Journal (private by default, share one entry), "Kept for myself" (results kept private, with "Share with my family" / "Add to Memories"), "My moods" as a friendly calendar (no charts), badges and streak. Enforced by RLS: drafts and kept results are readable by the patient only; the care team only gets completion counts.
 
 **Family** (phone first, works on desktop; tabs Feed · Question · Cards · Memories, patient switcher in the header):
 - Feed: check-ins, nudges pinned on top until answered, opened cards, question reveals, new memories, with reactions. Presence lines ("Leo opened your card", "Leo is waiting for your answer"). The guardian also sees volunteer contact requests to approve.

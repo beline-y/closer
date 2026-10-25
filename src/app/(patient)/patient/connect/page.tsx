@@ -3,10 +3,12 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
 import { RevealCard } from "@/components/kit/reveal-card";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ResultCard } from "@/components/activities/result-card";
 import { NudgeReplies } from "@/components/nudge-replies";
 import { NudgePanel } from "@/components/patient/nudge-panel";
 import { CAST } from "@/lib/cast";
 import { getMyPatient } from "@/lib/data/checkins";
+import { getResults } from "@/lib/data/activities";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { getNudgeState, getRepliesForPatient } from "@/lib/data/nudges";
 import { COMFORT_CARDS } from "@/lib/demo-fixtures";
@@ -26,6 +28,10 @@ export default function PatientConnectPage() {
 
       <Suspense fallback={<div className="min-h-64" />}>
         <Nudges />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <SharedCreations />
       </Suspense>
 
       <section aria-labelledby="cards-title" className="flex flex-col gap-4">
@@ -91,5 +97,31 @@ async function Nudges() {
         </section>
       )}
     </>
+  );
+}
+
+// What the family said about the creations Leo shared (reactions and comments, live).
+async function SharedCreations() {
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const shared = (await getResults(patient.id, patient.timezone, { days: 14, sharedOnly: true })).filter((r) => r.reactions.length || r.comments.length || (r.activity.type === "challenge" && r.partnerEntry));
+  if (shared.length === 0) return null;
+  return (
+    <section aria-labelledby="creations-title" className="flex flex-col gap-4">
+      <LiveRefresh
+        channel={`patient-shared-${patient.id}`}
+        watch={[{ table: "activity_reactions" }, { table: "activity_comments" }, { table: "challenge_entries" }]}
+      />
+      <h2 id="creations-title" className="text-3xl font-extrabold">
+        Your creations with your family 🎨
+      </h2>
+      <ul className="grid gap-4 md:grid-cols-2">
+        {shared.map((r) => (
+          <li key={r.id}>
+            <ResultCard result={r} viewer="patient" me={patient.id} />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

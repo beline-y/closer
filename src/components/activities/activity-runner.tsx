@@ -3,7 +3,7 @@
 import { Camera, Check, ImageIcon, Loader2, Mic, MicOff } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { finishActivity } from "@/app/activity-actions";
+import { finishActivity, saveDraft, startActivity } from "@/app/activity-actions";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { type Activity, ACTIVITY_TYPES, type ShareChoice } from "@/lib/activities";
 import type { CastMember } from "@/lib/cast";
@@ -23,13 +23,15 @@ async function uploadResult(patientId: string, blob: Blob): Promise<string> {
 }
 
 // Intro -> do the activity -> choose who sees it -> saved. Everything ends with a result to keep.
-export function ActivityRunner({ activity, patientId, circle }: { activity: Activity; patientId: string; circle: CastMember[] }) {
+export function ActivityRunner({ activity, patientId, circle, resume }: { activity: Activity; patientId: string; circle: CastMember[]; resume?: { sessionId: string; text: string } | null }) {
   const [stage, setStage] = useState<"intro" | "doing" | "share" | "saved">("intro");
   const [result, setResult] = useState<Result | null>(null);
   const [partner, setPartner] = useState<CastMember | null>(null);
   const [saved, setSaved] = useState<ShareChoice | "challenge" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
+  // The unfinished session behind this run (created at Start, or the one being continued).
+  const [sessionId, setSessionId] = useState<string | null>(resume?.sessionId ?? null);
   const type = ACTIVITY_TYPES[activity.type];
 
   // Hidden by Next's <Activity> when navigating away: start fresh next time.
@@ -40,6 +42,7 @@ export function ActivityRunner({ activity, patientId, circle }: { activity: Acti
     startSaving(async () => {
       const res = await finishActivity({
         activityId: activity.id,
+        sessionId,
         resultPath: r.path,
         resultText: r.text,
         score: r.score,
@@ -116,14 +119,14 @@ export function ActivityRunner({ activity, patientId, circle }: { activity: Acti
     }
     if (activity.type === "make_snap") return <MakeAndSnap activity={activity} onPhoto={gotImage} error={error} />;
     if (activity.type === "quiz") return <Quiz activity={activity} onDone={(score, total) => { setResult({ score, scoreTotal: total, text: `${score}/${total}` }); setStage("share"); }} />;
-    if (activity.type === "story") return <StoryWriter activity={activity} onDone={(text) => { setResult({ text }); setStage("share"); }} />;
+    if (activity.type === "story") return <StoryWriter activity={activity} sessionId={sessionId} initialText={resume?.text ?? ""} onDone={(text) => { setResult({ text }); setStage("share"); }} />;
   }
 
   // Intro
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
-      <Link href="/patient/me" className="min-h-11 self-start content-center rounded-full px-3 font-bold text-muted-foreground hover:bg-muted">
-        ← All activities
+      <Link href="/patient/play" className="min-h-11 self-start content-center rounded-full px-3 font-bold text-muted-foreground hover:bg-muted">
+        ← Play
       </Link>
       <div className="flex flex-col items-center gap-3 rounded-3xl bg-role-patient-soft p-6 text-center">
         <span aria-hidden className="animate-pop text-8xl">
@@ -164,10 +167,18 @@ export function ActivityRunner({ activity, patientId, circle }: { activity: Acti
       <button
         type="button"
         disabled={activity.type === "challenge" && !partner}
-        onClick={() => setStage("doing")}
+        onClick={() => {
+          setStage("doing");
+          // Saved as unfinished so it shows under "Continue" if Leo stops halfway.
+          if (!sessionId && activity.type !== "challenge") {
+            void startActivity(activity.id).then((r) => {
+              if (r.ok) setSessionId(r.sessionId);
+            });
+          }
+        }}
         className="min-h-16 rounded-2xl bg-role-patient text-2xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
       >
-        Start ▶
+        {resume ? "Continue ▶" : "Start ▶"}
       </button>
     </div>
   );
@@ -214,9 +225,14 @@ function Saved({ activity, choice, partner }: { activity: Activity; choice: Shar
       </h1>
       <p className="text-lg text-muted-foreground">It counts in your activity of the day: {ACTIVITY_TYPES[activity.type].emoji} {ACTIVITY_TYPES[activity.type].label}</p>
       <div className="flex flex-wrap justify-center gap-3">
-        <Link href="/patient/me" className="flex min-h-14 items-center rounded-2xl bg-role-patient px-6 text-xl font-extrabold">
-          My creations
+        <Link href="/patient/play" className="flex min-h-14 items-center rounded-2xl bg-role-patient px-6 text-xl font-extrabold">
+          Play more
         </Link>
+        {choice === "private" && (
+          <Link href="/patient/me" className="flex min-h-14 items-center rounded-2xl bg-muted px-6 text-xl font-bold">
+            🔒 In Me
+          </Link>
+        )}
         <Link href="/patient" className="flex min-h-14 items-center rounded-2xl bg-muted px-6 text-xl font-bold">
           Today
         </Link>
@@ -350,8 +366,14 @@ function Quiz({ activity, onDone }: { activity: Activity; onDone: (score: number
 // ---------------------------------------------------------------------------
 type Recognition = { start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }>; resultIndex: number }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean; continuous: boolean };
 
-function StoryWriter({ activity, onDone }: { activity: Activity; onDone: (text: string) => void }) {
-  const [text, setText] = useState("");
+function StoryWriter({ activity, sessionId, initialText, onDone }: { activity: Activity; sessionId: string | null; initialText: string; onDone: (text: string) => void }) {
+  const [text, setText] = useState(initialText);
+  // Autosave the draft (2 s after the last change) so "Continue" picks it up.
+  useEffect(() => {
+    if (!sessionId || text === initialText) return;
+    const t = setTimeout(() => void saveDraft(sessionId, text), 2000);
+    return () => clearTimeout(t);
+  }, [sessionId, text, initialText]);
   const [listening, setListening] = useState(false);
   const recognition = useRef<Recognition | null>(null);
   const [canDictate] = useState(() => typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window));

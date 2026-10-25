@@ -115,6 +115,39 @@ export async function getResults(patientId: string, timezone: string, { days = 1
   });
 }
 
+/** Unfinished activities of the patient (last 7 days) and challenges waiting for family. */
+export async function getUnfinished(patientId: string, timezone: string) {
+  const supabase = await createClient();
+  const today = todayIn(timezone);
+  const since = new Date(Date.parse(today) - 6 * 86_400_000).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("activity_sessions")
+    .select("id, status, result_text, local_date, partner_id, activities(id, type, title, emoji)")
+    .eq("patient_id", patientId)
+    .in("status", ["started", "waiting_partner"])
+    .gte("local_date", since)
+    .order("created_at", { ascending: false });
+  return (data ?? []).flatMap((s) =>
+    s.activities
+      ? [{
+          id: s.id,
+          status: s.status,
+          draft: s.result_text,
+          daysAgo: daysBetween(today, s.local_date),
+          partner: s.partner_id ? (castByUserId(s.partner_id) ?? null) : null,
+          activity: s.activities,
+        }]
+      : [],
+  );
+}
+
+/** The draft of one unfinished session (patient only). */
+export async function getDraft(sessionId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("activity_sessions").select("id, result_text").eq("id", sessionId).eq("status", "started").maybeSingle();
+  return data ? { sessionId: data.id, text: data.result_text ?? "" } : null;
+}
+
 /** Challenges waiting for the signed-in family member (title only, never the patient's side). */
 export async function getMyPendingChallenges() {
   const supabase = await createClient();
