@@ -392,3 +392,21 @@ from (values
   ('b0000000-0000-4000-8000-000000000004', '11111111-1111-4111-8111-111111111111', 'Thank you Mom', interval '3 days 21 hours'),
   ('b0000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222222', 'I want to read the next chapter!', interval '2 days 20 hours')
 ) as c(session, user_id, body, ago);
+
+-- ---------------------------------------------------------------------------
+-- Comfort cards for Leo: two sealed (Emma, Noah) waiting to be opened, two opened
+-- earlier this week (James, Emma) in his archive.
+-- ---------------------------------------------------------------------------
+insert into public.comfort_cards (patient_id, author_id, body, color, opened_at, created_at) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '22222222-2222-4222-8222-222222222222',
+   'My brave little explorer, I''m counting the sleeps until we go to the aquarium together. I love you to the moon and back. Mom',
+   'coral', null, now() - interval '1 day'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '77777777-7777-4777-8777-777777777777',
+   'Hi Leo! The whole class made you a giant dinosaur poster. Mrs. Lee says we can bring it soon. Get better fast! Noah',
+   'sky', null, now() - interval '5 hours'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '33333333-3333-4333-8333-333333333333',
+   'Hey champ, I''m learning the guitar song you like. Concert in your room on Saturday! Dad',
+   'sun', now() - interval '2 days', now() - interval '3 days'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '22222222-2222-4222-8222-222222222222',
+   'Remember: you are stronger than you think, and you''re never alone. Mom',
+   'lilac', now() - interval '5 days', now() - interval '6 days');

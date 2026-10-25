@@ -6,19 +6,16 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { ResultCard } from "@/components/activities/result-card";
 import { NudgeReplies } from "@/components/nudge-replies";
 import { NudgePanel } from "@/components/patient/nudge-panel";
-import { CAST } from "@/lib/cast";
+import { SealedCards } from "@/components/patient/sealed-cards";
+import { getOpenedCards, getSealedCards } from "@/lib/data/cards";
 import { getMyPatient } from "@/lib/data/checkins";
 import { getResults } from "@/lib/data/activities";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { getNudgeState, getRepliesForPatient } from "@/lib/data/nudges";
-import { COMFORT_CARDS } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Connect · Closer" };
 
 export default function PatientConnectPage() {
-  const sealed = COMFORT_CARDS.filter((c) => c.sealed);
-  const opened = COMFORT_CARDS.filter((c) => !c.sealed);
-
   return (
     <>
       <header className="flex flex-col gap-1">
@@ -30,10 +27,24 @@ export default function PatientConnectPage() {
         <Nudges />
       </Suspense>
 
+      <Suspense fallback={<div className="min-h-48" />}>
+        <Cards />
+      </Suspense>
+
       <Suspense fallback={null}>
         <SharedCreations />
       </Suspense>
+    </>
+  );
+}
 
+// Sealed cards to open (no text until opened), then the archive Leo can reread.
+async function Cards() {
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const [sealed, opened] = await Promise.all([getSealedCards(), getOpenedCards(patient.id, patient.timezone)]);
+  return (
+    <>
       <section aria-labelledby="cards-title" className="flex flex-col gap-4">
         <h2 id="cards-title" className="text-3xl font-extrabold">
           Cards for you 💌
@@ -43,16 +54,9 @@ export default function PatientConnectPage() {
             When someone writes you a card, it will wait for you here.
           </EmptyState>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {sealed.map((c) => (
-              <li key={c.id}>
-                <RevealCard from={CAST[c.from]} body={c.body} color={c.color} sealed />
-              </li>
-            ))}
-          </ul>
+          <SealedCards cards={sealed} />
         )}
       </section>
-
       {opened.length > 0 && (
         <section aria-labelledby="archive-title" className="flex flex-col gap-4">
           <h2 id="archive-title" className="text-2xl font-extrabold">
@@ -61,7 +65,7 @@ export default function PatientConnectPage() {
           <ul className="grid gap-4 sm:grid-cols-2">
             {opened.map((c) => (
               <li key={c.id}>
-                <RevealCard from={CAST[c.from]} body={c.body} color={c.color} sealed={false} />
+                <RevealCard from={c.from} body={c.body} color={c.color} sealed={false} />
               </li>
             ))}
           </ul>
