@@ -67,21 +67,29 @@ const ACTIVE: Record<RoleKey, string> = {
 
 type WithPath<P> = P & { pathname: string | null };
 
+/** True when pathname is href itself or a page below it, by whole segments
+ * ("/patient/me" matches "/patient/me/x", never "/patient/memories"). */
+export function isWithin(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 // Screens without their own tab light up the tab they belong to.
 const BELONGS_TO: Record<string, string> = {
   "/patient/question": "/patient",
   "/patient/checkin": "/patient",
   "/patient/activities": "/patient/play",
   "/care/patients": "/care",
+  "/family/challenge": "/family",
 };
 
+// One rule for the bottom bar, the side rail and the top tabs: exactly one tab is active.
 function activeMatcher(role: RoleKey, pathname: string | null) {
   const home = NAV[role][0].href;
-  const owner = pathname && Object.entries(BELONGS_TO).find(([prefix]) => pathname.startsWith(prefix))?.[1];
+  const owner = pathname && Object.entries(BELONGS_TO).find(([prefix]) => isWithin(pathname, prefix))?.[1];
   return (href: string) => {
     if (pathname === null) return false;
     if (owner) return href === owner;
-    return href === home ? pathname === home : pathname.startsWith(href);
+    return href === home ? pathname === home : isWithin(pathname, href);
   };
 }
 
