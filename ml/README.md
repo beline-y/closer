@@ -214,6 +214,8 @@ The nurse (Sarah in the demo) sees the AI's read of each child and adds what onl
   child's usual drawings (how many, explicit feelings, dark ink, colors), the feeling each drawing shows over 30
   days, its dark ink against the child's usual range, and a card per drawing with its palette and Claude's
   description. The image itself is not kept.
+- **Volunteers → Matches** (`/care/volunteers`): this week's suggested volunteer for every child, the alternatives,
+  each volunteer's visits left, and the visits to rate. See [Volunteer matching](#volunteer-matching).
 
 ```
 browser ──> Next.js server ──(RLS: may Sarah see this child?)──> Supabase
@@ -236,6 +238,36 @@ npm run dev                             # in another terminal, from the repo roo
 
 The first visit reads every child's notes once (about 30 s with Claude); after that, pages load in about a second.
 Without the service (on a Vercel preview, for example), the care tab says so and everything else works.
+
+## Volunteer matching
+
+**Volunteers → Matches** suggests, each week, one volunteer for every child the nurse follows: the one the child is
+most likely to enjoy meeting, the most isolated children first. Volunteers never see any of it. A suggestion only
+means the nurse tells the child about a volunteer: the child decides whether to ask for a visit, which the care team
+and the guardian then approve (the app's contact flow, docs/SPEC.md).
+
+1. **Affinity, read by Claude.** One call per child reads the child's age and interests (no name, no check-in,
+   nothing medical) next to every volunteer's public story. For each volunteer it returns a fit (strong, good, some,
+   none), what they share ("trains → LEGO railway at home"), one sentence for the nurse and a first question the
+   child could ask. Each pair is read once and cached. Without Claude, a topic lexicon gives a coarser fit.
+2. **Learning from visits, a contextual bandit.** The nurse rates each visit: went well, okay, hard. A Bayesian
+   linear model of the outcome, from the pair's features (affinity, shared interests, age fit, how their earlier
+   visits went) plus one effect per volunteer, is refit on every request. Pairs are ranked by an upper confidence
+   bound (LinUCB): a volunteer with few rated visits keeps the benefit of the doubt, and the board is the same on
+   every reload.
+3. **Sharing out the visits.** Each volunteer offers a few visits a week. Children with no family linked, a fragile
+   wellbeing reading (the assessor's P(stable)) or no recent volunteer visit weigh more, and the Hungarian algorithm
+   shares out the free visits for the highest need-weighted chance of a good visit. Requests in progress and this
+   week's suggestions hold their volunteer's visits. For a child in distress, the board says to check with the
+   psychologist first.
+
+Does the learning pay off? In simulation (10 children, 8 volunteers offering 2 visits a week, each volunteer secretly
+better or worse than their story suggests), ranking by affinity alone gives a visit that goes well 69% of the time
+over weeks 9 to 16; learning from the ratings raises it to 75%, on all 10 seeds (`matching.simulate`, in the tests).
+
+The roster (Maya and Daniel, plus six background volunteers) and the contact requests are still demo fixtures in the
+app. The AI store keeps only volunteer ids, the suggestions and the rated visits. Endpoints: `POST /v1/matching`,
+and `/v1/matching/suggestions` and `/v1/matching/visits` to record a suggestion or a rating first.
 
 ## Run it
 
@@ -290,6 +322,7 @@ python -m closer_ai eval-reader --n 80           # lexicon vs Claude on planted 
 | `evaluate.py`, `report.py` | Cohorts, metrics, paired bootstrap, the full report |
 | `claude.py`, `pipeline.py`, `cli.py` | Claude reader and daily summaries; the evening job; the command line |
 | `drawings.py` | Every drawing reduced to a reading and its vector: colors from the pixels, content from Claude |
+| `matching.py` | Volunteer matching: affinity (Claude or the lexicon), the LinUCB learner, need weights, the weekly assignment |
 | `bridge.py`, `server.py` | The app's vocabulary mapped to the contract; the care tab's local JSON API (standard library) |
 
 ## Limits, honestly

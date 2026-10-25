@@ -2,9 +2,9 @@
 
 The app (Supabase) stays the source of truth for what the child shares; the AI module keeps
 its own SQLite store. The Next.js server is the only link: it forwards the check-ins the
-signed-in care team member may read (RLS), the nurse's round and the ward's menu, and gets
-back what the care tab shows. The app's vocabulary is mapped to the data contract here,
-in one place.
+signed-in care team member may read (RLS), the nurse's round, the ward's menu and the
+volunteer roster, and gets back what the care tab shows. The app's vocabulary is mapped to
+the data contract here, in one place.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import base64
 import binascii
 import re
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 from pathlib import Path
@@ -20,9 +21,13 @@ from pathlib import Path
 import numpy as np
 from PIL import UnidentifiedImageError
 
-from .contract import AFFECTS, ENGAGEMENT, INTAKE, NIGHT_SLEEP, VISITOR_KINDS, WARD_MEALS, Drawing, NurseObservation
+from .contract import (
+    AFFECTS, CONTACT_STATUSES, ENGAGEMENT, INTAKE, NIGHT_SLEEP, VISIT_OUTCOMES, VISITOR_KINDS, WARD_MEALS, Drawing,
+    NurseObservation,
+)
 from .drawings import analyze, image_hash
 from .features import DRAWING_PRIOR, DRAWING_PRIOR_WEIGHT, DRAWING_SCALE, FEATURES, FeatureBuilder
+from .matching import WEEK, Affinity, Child, Request, Suggestion, Visit, Volunteer, pair_features, plan_week, rule_affinity
 from .pipeline import run_daily
 from .store import Store
 
@@ -198,6 +203,121 @@ def drawings_view(store: Store, pid: str, today: date, days: int = 30) -> dict:
     }
 
 
+# -- volunteer matching ---------------------------------------------------------------------------
+VOLUNTEER_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
+def volunteer_id(value) -> str:
+    if not isinstance(value, str) or not VOLUNTEER_ID.fullmatch(value):
+        raise BadRequest("bad volunteer id")
+    return value
+
+
+def _objects(value, limit: int, name: str) -> list[dict]:
+    if not isinstance(value, list) or len(value) > limit or not all(isinstance(x, dict) for x in value):
+        raise BadRequest(f"{name} must be a list of at most {limit} objects")
+    return value
+
+
+def _texts(values, limit: int, name: str, count: int = 20) -> tuple[str, ...]:
+    if values is None:
+        return ()
+    if not isinstance(values, list):
+        raise BadRequest(f"{name} must be a list")
+    return tuple(t for t in (_text(v, limit) for v in values[:count]) if t)
+
+
+def volunteers_from_json(items) -> list[Volunteer]:
+    """The app's roster: each volunteer's public story, the visits they offer a week and their usual ages."""
+    roster = {}
+    for v in _objects(items, 100, "volunteers"):
+        vid, first_name = volunteer_id(v.get("id")), _text(v.get("first_name"), 40)
+        if not first_name:
+            raise BadRequest("a volunteer needs a first name")
+        ages = v.get("ages", [5, 17])
+        low, high = (_int(a, 3, 18, "ages") for a in ages) if isinstance(ages, list) and len(ages) == 2 else (None, None)
+        if low is None or high is None or low > high:
+            raise BadRequest("ages must be [youngest, oldest]")
+        slots = _int(v.get("slots"), 0, 14, "slots")
+        roster[vid] = Volunteer(
+            vid, first_name, _text(v.get("job"), 80) or "Volunteer", _text(v.get("story"), 600) or "",
+            _texts(v.get("passions"), 40, "passions", 8), _text(v.get("dreams"), 200) or "",
+            _text(v.get("fun_fact"), 200) or "", _texts(v.get("languages"), 30, "languages", 6),
+            1 if slots is None else slots, (low, high),
+        )
+    return list(roster.values())
+
+
+def children_from_json(store: Store, items, today: date) -> list[Child]:
+    """The children this care team member may see (RLS), with the wellbeing assessment's latest reading."""
+    children = {}
+    for c in _objects(items, 200, "patients"):
+        pid, nickname = patient_id(str(c.get("id", ""))), _text(c.get("nickname"), 40)
+        if not nickname:
+            raise BadRequest("nickname is required")
+        birth_year = _int(c.get("birth_year"), 1990, 2100, "birth_year") or today.year - 10
+        interests = _texts(c.get("interests"), 40, "interests")
+        has_family = bool(c.get("has_family", True))
+        store.upsert_patient(pid, nickname, birth_year, list(interests), has_family, today)
+        latest = store.assessments(pid, today - timedelta(days=2), today)
+        a = latest[-1] if latest else None
+        children[pid] = Child(pid, nickname, max(0, today.year - birth_year), interests, has_family,
+                              a["p_stable"] if a else None, a["level"] if a else None)
+    return list(children.values())
+
+
+def requests_from_json(items, children: list[Child], volunteers: list[Volunteer]) -> list[Request]:
+    """The app's contact requests. Those about a child or a volunteer outside the plan are left out."""
+    known = {c.id for c in children}, {v.id for v in volunteers}
+    requests = []
+    for r in _objects(items or [], 1000, "requests"):
+        status = _choice(r.get("status"), CONTACT_STATUSES, "status")
+        if status is None:
+            raise BadRequest("a request needs a status")
+        if r.get("patient_id") in known[0] and r.get("volunteer_id") in known[1]:
+            requests.append(Request(r["patient_id"], r["volunteer_id"], status, parse_day(r.get("local_date"))))
+    return requests
+
+
+def _visits(store: Store) -> list[Visit]:
+    return [Visit(r["patient_id"], r["volunteer_id"], date.fromisoformat(r["local_date"]), r["outcome"], r["features"])
+            for r in store.volunteer_visits()]
+
+
+def matching_view(store: Store, engine: Engine, payload: dict, suggestion: dict | None = None,
+                  rating: dict | None = None) -> dict:
+    """The care team's matching board. A suggestion or a visit rating, when given, is recorded first."""
+    today = parse_day(payload.get("today"))
+    volunteers = volunteers_from_json(payload.get("volunteers"))
+    children = children_from_json(store, payload.get("patients"), today)
+    requests = requests_from_json(payload.get("requests"), children, volunteers)
+    affinities = engine.affinities(store, children, volunteers)
+    by_child, by_volunteer = {c.id: c for c in children}, {v.id: v for v in volunteers}
+
+    def pair(data: dict) -> tuple[Child, Volunteer]:
+        pid, vid = patient_id(str(data.get("patient_id", ""))), volunteer_id(data.get("volunteer_id"))
+        if pid not in by_child or vid not in by_volunteer:
+            raise BadRequest("this child or this volunteer is not in the plan")
+        return by_child[pid], by_volunteer[vid]
+
+    if suggestion is not None:
+        child, volunteer = pair(suggestion)
+        store.put_volunteer_suggestion(child.id, volunteer.id, today, _text(suggestion.get("suggested_by"), 80))
+    visits = _visits(store)
+    if rating is not None:
+        child, volunteer = pair(rating)
+        day = parse_day(rating.get("local_date"))
+        outcome = _choice(rating.get("outcome"), VISIT_OUTCOMES, "outcome")
+        if outcome is None or day > today:
+            raise BadRequest("a visit is rated once it happened, as one of " + ", ".join(VISIT_OUTCOMES))
+        features = pair_features(child, volunteer, affinities[(child.id, volunteer.id)], visits, day)
+        store.put_volunteer_visit(child.id, volunteer.id, day, outcome, features, _text(rating.get("rated_by"), 80))
+        visits = _visits(store)
+    suggestions = [Suggestion(r["patient_id"], r["volunteer_id"], date.fromisoformat(r["local_date"]))
+                   for r in store.volunteer_suggestions(today - WEEK)]
+    return plan_week(children, volunteers, affinities, requests, suggestions, visits, today) | {"claude": engine.claude}
+
+
 # -- the engine: models and Claude, shared by every request ---------------------------------------
 @dataclass
 class Engine:
@@ -211,6 +331,7 @@ class Engine:
         self.version = f"{self.assessor.version}+{getattr(self.policy, 'version', 'policy')}"
         self._guard = threading.Lock()
         self._locks: dict[str, threading.Lock] = {}
+        self._matching = threading.Lock()
 
     @property
     def claude(self) -> bool:
@@ -223,6 +344,40 @@ class Engine:
         from .claude import ClaudeReader, StoreCache
 
         return ClaudeReader(self.client, cache=StoreCache(store))
+
+    def affinities(self, store: Store, children: list[Child], volunteers: list[Volunteer]) -> dict[tuple[str, str], Affinity]:
+        """Every pair's affinity: Claude's reading, cached in the store; new pairs are read with one call per
+        child, in parallel; the lexicon stands in without Claude or when a call fails. One computation at a
+        time, so two requests never pay for the same reading."""
+        if self.client is None:
+            return {(c.id, v.id): rule_affinity(c, v) for c in children for v in volunteers}
+        from .claude import ClaudeMatcher
+
+        matcher = ClaudeMatcher(self.client, language=self.language)
+        with self._matching:
+            found, todo = {}, {}
+            for c in children:
+                for v in volunteers:
+                    cached = store.get_reading(matcher.key(c.profile(), v.profile()))
+                    if cached is None:
+                        todo.setdefault(c.id, []).append(v)
+                    else:
+                        found[(c.id, v.id)] = Affinity(cached["fit"], tuple(cached["shared"]), cached["reason"],
+                                                       cached["starter"], "claude")
+            by_id = {c.id: c for c in children}
+            with ThreadPoolExecutor(max_workers=4) as pool:  # threads never touch the store
+                answers = dict(zip(todo, pool.map(
+                    lambda cid: matcher.read(by_id[cid].profile(), [v.profile() for v in todo[cid]]), todo)))
+            for cid, missing in todo.items():
+                for v in missing:
+                    reading = (answers[cid] or {}).get(v.id)
+                    if reading is None:
+                        found[(cid, v.id)] = rule_affinity(by_id[cid], v)
+                        continue
+                    store.put_reading(matcher.key(by_id[cid].profile(), v.profile()), reading)
+                    found[(cid, v.id)] = Affinity(reading["fit"], tuple(reading["shared"]), reading["reason"],
+                                                  reading["starter"], "claude")
+            return found
 
     def refresh(self, store: Store, pid: str, today: date, force: bool = False) -> bool:
         """Re-run the daily job for one child if its inputs (or the models) changed since the last run.

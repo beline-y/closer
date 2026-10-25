@@ -44,6 +44,11 @@ ENGAGEMENT = ("engaged", "quiet", "refuses")
 DRAWING_SETTINGS = ("home", "hospital", "outdoors", "other")
 DRAWING_AFFECTS = ("positive", "neutral", "negative", "unclear")
 NIGHT_SLEEP = ("good", "restless", "poor")
+# Volunteer matching. Contact requests follow the app's flow (docs/SPEC.md): only the child starts one.
+MATCH_FITS = ("strong", "good", "some", "none")
+VISIT_OUTCOMES = ("great", "okay", "hard")
+CONTACT_PENDING = ("pending_care", "pending_guardian", "sent_to_volunteer")
+CONTACT_STATUSES = CONTACT_PENDING + ("accepted", "declined", "cancelled")
 
 
 @dataclass(frozen=True)
