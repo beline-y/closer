@@ -35,7 +35,8 @@ const ACTION_ICONS: Record<AiAction, ReactNode> = {
   priority: <BellRing className="size-4" aria-hidden />,
 };
 
-export function AiOffline({ configured }: { configured: boolean }) {
+export function AiOffline({ missing }: { missing: string[] }) {
+  const configured = missing.length === 0;
   return (
     <section className="flex flex-col gap-2 rounded-xl border border-dashed bg-card p-5">
       <h2 className="flex items-center gap-2 font-heading text-lg font-extrabold">
@@ -47,9 +48,20 @@ export function AiOffline({ configured }: { configured: boolean }) {
           ? "Check-ins and alerts still work. Try again in a moment."
           : "Check-ins and alerts still work. The AI summary and the nurse's round need the AI service running next to the app."}
       </p>
+      {!configured && (
+        <p className="text-sm font-bold">
+          Missing in this deployment:{" "}
+          {missing.map((name, i) => (
+            <span key={name}>
+              {i > 0 && " and "}
+              <code className="rounded bg-muted px-1.5 py-0.5">{name}</code>
+            </span>
+          ))}
+        </p>
+      )}
       <p className="text-sm text-muted-foreground">
         Start it with <code className="rounded bg-muted px-1.5 py-0.5">cd ml && python -m closer_ai serve</code>, then set <code className="rounded bg-muted px-1.5 py-0.5">CLOSER_AI_URL</code> and{" "}
-        <code className="rounded bg-muted px-1.5 py-0.5">CLOSER_AI_TOKEN</code> in .env.local.
+        <code className="rounded bg-muted px-1.5 py-0.5">CLOSER_AI_TOKEN</code> in .env.local, or in the host&apos;s environment variables (Vercel), then redeploy.
       </p>
     </section>
   );

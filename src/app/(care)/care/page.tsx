@@ -6,7 +6,7 @@ import { PatientsTable } from "@/components/care/patients-table";
 import { WardMenuForm } from "@/components/care/ward-menu-form";
 import { StatTile } from "@/components/kit/stat-tile";
 import { getCarePatientRows } from "@/lib/data/care";
-import { aiConfigured, getWardMenu } from "@/lib/data/care-ai";
+import { aiConfigured, getWardMenu, missingAiSettings } from "@/lib/data/care-ai";
 import { getVisiblePatients } from "@/lib/data/circle";
 import { todayIn } from "@/lib/dates";
 
@@ -46,7 +46,7 @@ async function PatientsOverview() {
         <StatTile label="Open alerts" value={alerts} tone={alerts ? "alert" : undefined} />
         {aiAnswered && <StatTile label="Fragile or needs support" value={needSupport} tone={needSupport ? "alert" : undefined} hint="AI reading" />}
       </div>
-      {aiAnswered ? cards.length > 0 && <AiOverviewCards cards={cards} /> : <AiOffline configured={aiConfigured()} />}
+      {aiAnswered ? cards.length > 0 && <AiOverviewCards cards={cards} /> : <AiOffline missing={missingAiSettings()} />}
       <PatientsTable rows={rows} />
     </>
   );

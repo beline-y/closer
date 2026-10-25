@@ -14,7 +14,12 @@ const TIMEOUT_MS = 45_000;
 const OVERVIEW_TIMEOUT_MS = 90_000;
 
 export function aiConfigured(): boolean {
-  return Boolean(process.env.CLOSER_AI_URL && process.env.CLOSER_AI_TOKEN);
+  return missingAiSettings().length === 0;
+}
+
+/** Names of the settings this deployment lacks (never their values), to say what to fix. */
+export function missingAiSettings(): string[] {
+  return (["CLOSER_AI_URL", "CLOSER_AI_TOKEN"] as const).filter((name) => !process.env[name]?.trim());
 }
 
 async function call<T>(method: "GET" | "POST" | "PUT", path: string, body?: unknown, timeout = TIMEOUT_MS): Promise<T | null> {

@@ -11,7 +11,7 @@ import { InteractionBars, MoodChart } from "@/components/kit/charts";
 import { EmptyState } from "@/components/kit/empty-state";
 import { MoodDot } from "@/components/kit/mood-dot";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
-import { aiConfigured, getAiReport } from "@/lib/data/care-ai";
+import { getAiReport, missingAiSettings } from "@/lib/data/care-ai";
 import { type CheckInView, getCheckins, moodSeries } from "@/lib/data/checkins";
 import { getVisiblePatient, type VisiblePatient } from "@/lib/data/circle";
 import { getThresholds } from "@/lib/data/nudges";
@@ -140,7 +140,7 @@ function AiLoading({ nickname }: { nickname: string }) {
 async function AiSection({ patient, checkins }: { patient: VisiblePatient; checkins: CheckInView[] }) {
   const today = todayIn(patient.timezone);
   const report = await getAiReport(patient, today, checkins);
-  if (!report) return <AiOffline configured={aiConfigured()} />;
+  if (!report) return <AiOffline missing={missingAiSettings()} />;
   const computed = report.assessment?.computed_at;
   return (
     <div className="grid items-start gap-6 xl:grid-cols-[1.1fr_1fr]">
