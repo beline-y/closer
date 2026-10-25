@@ -201,6 +201,64 @@ export type Database = {
           },
         ]
       }
+      ai_summaries: {
+        Row: {
+          kind: string
+          patient_id: string
+          payload: Json
+          stored_at: string
+        }
+        Insert: {
+          kind: string
+          patient_id: string
+          payload: Json
+          stored_at?: string
+        }
+        Update: {
+          kind?: string
+          patient_id?: string
+          payload?: Json
+          stored_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_summaries_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_minutes: {
+        Row: {
+          last_seen_at: string
+          local_date: string
+          minutes: number
+          patient_id: string
+        }
+        Insert: {
+          last_seen_at?: string
+          local_date: string
+          minutes?: number
+          patient_id: string
+        }
+        Update: {
+          last_seen_at?: string
+          local_date?: string
+          minutes?: number
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_minutes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       care_unit_members: {
         Row: {
           unit_id: string
@@ -1330,6 +1388,14 @@ export type Database = {
         Args: { p_consent_at: string; p_patient_id: string }
         Returns: boolean
       }
+      care_engagement: {
+        Args: { p_days: number; p_patient_id: string }
+        Returns: {
+          family_contacts: number
+          local_date: string
+          minutes_in_app: number
+        }[]
+      }
       claim_daily_review: {
         Args: { p_for_date: string; p_patient_id: string }
         Returns: {
@@ -1347,6 +1413,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_app_minute: { Args: never; Returns: undefined }
       my_pending_challenges: {
         Args: never
         Returns: {
