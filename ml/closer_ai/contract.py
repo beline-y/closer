@@ -82,6 +82,7 @@ class DrawingReading:
     themes: tuple[str, ...] = ()
     description: str = ""
     read_by_claude: bool = False  # False: colors only
+    palette: tuple[str, ...] = ()  # dominant ink colors as hex, most used first (for display, not in the vector)
 
     def vector(self) -> tuple[float, ...]:
         """The synthesis vector (DRAWING_VECTOR), each value in 0..1."""

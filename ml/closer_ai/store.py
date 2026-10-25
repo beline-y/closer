@@ -397,6 +397,8 @@ class Store:
             )
             if cursor.rowcount == 0:
                 return False
+            # A drawing from before the first check-in moves the admission earlier, as a check-in would.
+            self.db.execute("UPDATE patients SET admitted_on = min(admitted_on, ?) WHERE id = ?", (day.isoformat(), patient_id))
             if shared is None:
                 self.db.execute("INSERT INTO drawings (patient_id, local_date) VALUES (?, ?)", (patient_id, day.isoformat()))
             else:
@@ -641,12 +643,12 @@ class Store:
 
 
 def _reading_json(reading: DrawingReading) -> str:
-    return json.dumps(asdict(reading) | {"themes": list(reading.themes)})
+    return json.dumps(asdict(reading) | {"themes": list(reading.themes), "palette": list(reading.palette)})
 
 
 def _drawing_reading(text: str) -> DrawingReading:
     data = json.loads(text)
-    return DrawingReading(**data | {"themes": tuple(data["themes"])})
+    return DrawingReading(**data | {"themes": tuple(data["themes"]), "palette": tuple(data.get("palette", ()))})
 
 
 def _observation(row: sqlite3.Row) -> NurseObservation:

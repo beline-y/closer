@@ -44,15 +44,25 @@ def prepare(image: bytes) -> tuple[bytes, str]:
     return out.getvalue(), "image/jpeg"
 
 
-def color_features(image: bytes) -> dict[str, float]:
-    """Brightness, saturation, dark ink, hues used, ink coverage and warmth of the drawing."""
+def palette(pixels: np.ndarray, size: int = 5) -> tuple[str, ...]:
+    """The dominant colors of the ink (RGB rows), most used first, as hex. Colors under 4% of the ink are dropped."""
+    strip = Image.fromarray(pixels.reshape(1, -1, 3).astype(np.uint8))
+    quantized = strip.quantize(colors=size, method=Image.Quantize.MEDIANCUT)
+    counts = sorted(quantized.getcolors() or [], reverse=True)
+    rgb = quantized.getpalette()
+    return tuple("#{:02x}{:02x}{:02x}".format(*rgb[3 * i: 3 * i + 3]) for n, i in counts if n >= 0.04 * len(pixels))
+
+
+def color_features(image: bytes) -> dict:
+    """Brightness, saturation, dark ink, hues used, ink coverage, warmth and palette of the drawing."""
     picture = _rgb(image)
     picture.thumbnail((THUMB, THUMB))
     hsv = np.asarray(picture.convert("HSV"), dtype=float) / 255.0
     h, s, v = hsv[..., 0].ravel(), hsv[..., 1].ravel(), hsv[..., 2].ravel()
     ink = ~((v > 0.88) & (s < 0.15))  # anything that is not white paper
     if not ink.any():
-        return {"brightness": 1.0, "saturation": 0.0, "dark_share": 0.0, "colors": 0, "coverage": 0.0, "warm_share": 0.0}
+        return {"brightness": 1.0, "saturation": 0.0, "dark_share": 0.0, "colors": 0, "coverage": 0.0, "warm_share": 0.0,
+                "palette": ()}
     hi, si, vi = h[ink], s[ink], v[ink]
     colored = (si > 0.25) & (vi > 0.25)
     bins = np.bincount((hi[colored] * 12).astype(int) % 12, minlength=12) if colored.any() else np.zeros(12)
@@ -62,7 +72,7 @@ def color_features(image: bytes) -> dict[str, float]:
     return {
         "brightness": round(float(vi.mean()), 3), "saturation": round(float(si.mean()), 3),
         "dark_share": round(float((vi < 0.3).mean()), 3), "colors": hues, "coverage": round(float(ink.mean()), 3),
-        "warm_share": round(float(warm), 3),
+        "warm_share": round(float(warm), 3), "palette": palette(np.asarray(picture).reshape(-1, 3)[ink]),
     }
 
 

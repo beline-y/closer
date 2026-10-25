@@ -210,6 +210,10 @@ The nurse (Sarah in the demo) sees the AI's read of each child and adds what onl
 - **Patient page**: today's summary (level, chance of distress and its 3-day trend, what weighs most, the decision,
   14 days of readings, the alerts sent to the psychologist) next to the nurse's round. Saving the round re-runs the
   job for that child and the summary updates in about 10 seconds.
+- **Drawings tab** (patient page): the nurse adds a photo of today's drawing; the page shows this week against the
+  child's usual drawings (how many, explicit feelings, dark ink, colors), the feeling each drawing shows over 30
+  days, its dark ink against the child's usual range, and a card per drawing with its palette and Claude's
+  description. The image itself is not kept.
 
 ```
 browser ──> Next.js server ──(RLS: may Sarah see this child?)──> Supabase

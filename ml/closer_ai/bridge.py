@@ -17,10 +17,12 @@ from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
+import numpy as np
 from PIL import UnidentifiedImageError
 
 from .contract import AFFECTS, ENGAGEMENT, INTAKE, NIGHT_SLEEP, VISITOR_KINDS, WARD_MEALS, Drawing, NurseObservation
 from .drawings import analyze, image_hash
+from .features import DRAWING_PRIOR, DRAWING_PRIOR_WEIGHT, DRAWING_SCALE, FEATURES, FeatureBuilder
 from .pipeline import run_daily
 from .store import Store
 
@@ -147,7 +149,53 @@ def ingest_drawing(store: Store, engine: Engine, pid: str, payload: dict) -> dic
         raise BadRequest("not an image Pillow can read") from None
     shared = Drawing(_int(payload.get("emotion"), 1, 5, "emotion"), (), title) if payload.get("shared") else None
     new = store.add_drawing(pid, day, image_hash(image), reading, shared)
-    return {"new": new, "reading": asdict(reading) | {"themes": list(reading.themes), "vector": list(reading.vector())}}
+    return {"new": new, "reading": asdict(reading) | {"themes": list(reading.themes), "palette": list(reading.palette),
+                                                      "vector": list(reading.vector())}}
+
+
+def drawings_view(store: Store, pid: str, today: date, days: int = 30) -> dict:
+    """The care tab's drawings page: each drawing, the child's usual range, and this week against it.
+
+    The comparisons are the assessor's own drawing features, so the page shows what the model compares.
+    """
+    loaded = store.load(today, days=days, patient_ids=[pid])
+    if not loaded:
+        raise BadRequest("unknown patient")
+    history = loaded[0].history
+    builder = FeatureBuilder(history.profile, history.context)
+    for record in history.days:
+        builder.append(record)
+    t = len(history.days) - 1
+    row = dict(zip(FEATURES, builder.row(t)))
+    week = [x for r in history.days[-7:] for x in r.drawing_readings]
+    earlier = [x for r in history.days[:-7] for x in r.drawing_readings]
+
+    def usual(i: int, scale: float = 1.0) -> dict:
+        values = [x.vector()[i] for x in earlier]
+        mean = (DRAWING_PRIOR_WEIGHT * DRAWING_PRIOR[i] + sum(values)) / (DRAWING_PRIOR_WEIGHT + len(values))
+        sd = float(np.std(values)) if len(values) >= 3 else float(DRAWING_SCALE[i])
+        return {"mean": round(float(mean) * scale, 3), "sd": round(max(sd, 0.02) * scale, 3)}
+
+    def number(name: str) -> float | None:
+        value = row[name]
+        return None if np.isnan(value) else round(float(value), 3)
+
+    return {
+        "today": today.isoformat(),
+        "drawings": [
+            asdict(x) | {"themes": list(x.themes), "palette": list(x.palette), "local_date": r.day.isoformat(),
+                         "days_ago": (today - r.day).days}
+            for r in reversed(history.days) for x in r.drawing_readings
+        ],
+        "usual": {"dark_share": usual(2), "colors": usual(3, 12), "from_drawings": len(earlier),
+                  "per_week": round(len(earlier) / max(1, len(history.days) - 7) * 7, 1) if len(history.days) > 7 else None},
+        "this_week": {
+            "count": len(week), "positive": sum(x.affect == "positive" for x in week),
+            "negative": sum(x.affect == "negative" or x.sad_faces > 0 for x in week),
+            "alone": sum(x.alone for x in week), "change": number("drawing_change_7d"),
+            "dark_shift": number("drawing_dark_shift_7d"), "color_shift": number("drawing_color_shift_7d"),
+        },
+    }
 
 
 # -- the engine: models and Claude, shared by every request ---------------------------------------

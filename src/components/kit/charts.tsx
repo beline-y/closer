@@ -372,3 +372,172 @@ export function DistressBars({ points }: { points: DistressPoint[] }) {
     </figure>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Drawings: the feeling each one shows, and its dark ink against the usual range
+// ---------------------------------------------------------------------------
+export type DrawingPoint = { daysAgo: number; feeling: "positive" | "neutral" | "negative"; dark: number; description: string };
+
+const FEELING_ROWS = ["positive", "neutral", "negative"] as const;
+
+function ChartFrame({ title, table, children }: { title: string; table: { head: string[]; rows: (string | number)[][] }; children: React.ReactNode }) {
+  const [asTable, setAsTable] = useState(false);
+  const titleId = useId();
+  return (
+    <figure className="flex flex-col gap-3" aria-labelledby={titleId}>
+      <div className="flex items-center justify-between gap-2">
+        <figcaption id={titleId} className="font-heading text-lg font-extrabold">
+          {title}
+        </figcaption>
+        <button type="button" onClick={() => setAsTable((t) => !t)} className="min-h-9 rounded-lg px-3 text-sm font-bold text-role-care-ink hover:bg-muted">
+          {asTable ? "Show chart" : "Show table"}
+        </button>
+      </div>
+      {asTable ? (
+        <div className="max-h-72 overflow-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted text-left">
+              <tr>
+                {table.head.map((h) => (
+                  <th key={h} className="px-3 py-2">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {table.rows.map((row, i) => (
+                <tr key={i} className="border-t">
+                  {row.map((cell, j) => (
+                    <td key={j} className="px-3 py-1.5 tabular-nums">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        children
+      )}
+    </figure>
+  );
+}
+
+/** One dot per drawing over the last `days` days, on the row of the feeling it shows. */
+export function DrawingFeelingTimeline({ points, labels, days = 30 }: { points: DrawingPoint[]; labels: Record<DrawingPoint["feeling"], { label: string; icon: string; color: string }>; days?: number }) {
+  const today = useToday();
+  const [hover, setHover] = useState<number | null>(null);
+  const w = 600;
+  const h = 150;
+  const pad = { l: 118, r: 14, t: 14, b: 26 };
+  const x = (daysAgo: number) => pad.l + ((days - 1 - daysAgo) / (days - 1)) * (w - pad.l - pad.r);
+  const rowY = (f: DrawingPoint["feeling"]) => pad.t + FEELING_ROWS.indexOf(f) * ((h - pad.t - pad.b) / 2);
+  // Same day, same row: spread the dots a little so each one stays visible.
+  const placed = points.map((p, i) => ({ ...p, i, offset: points.slice(0, i).filter((q) => q.daysAgo === p.daysAgo && q.feeling === p.feeling).length }));
+  const hovered = hover !== null ? placed[hover] : null;
+
+  return (
+    <ChartFrame
+      title="Feeling shown in the drawings"
+      table={{ head: ["Day", "Feeling", "What is drawn"], rows: [...points].sort((a, b) => a.daysAgo - b.daysAgo).map((p) => [dayLabel(today, p.daysAgo, "long"), labels[p.feeling].label, p.description || "—"]) }}
+    >
+      <div className="relative" onPointerLeave={() => setHover(null)}>
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Feeling shown in each drawing over 30 days. Use Show table for the details.">
+          {FEELING_ROWS.map((f) => (
+            <g key={f}>
+              <line x1={pad.l} x2={w - pad.r} y1={rowY(f)} y2={rowY(f)} stroke="var(--border)" />
+              <text x={pad.l - 10} y={rowY(f)} dy="0.35em" textAnchor="end" fontSize="13" fill="var(--muted-foreground)">
+                {labels[f].icon} {labels[f].label}
+              </text>
+            </g>
+          ))}
+          {[days - 1, 21, 14, 7, 0].map((d) => (
+            <text key={d} x={x(d)} y={h - 6} textAnchor="middle" fontSize="13" fill="var(--muted-foreground)">
+              {d === 0 ? "Today" : `${d} d ago`}
+            </text>
+          ))}
+          {placed.map((p) => (
+            <g key={p.i} onPointerEnter={() => setHover(p.i)}>
+              <circle cx={x(p.daysAgo) + p.offset * 9} cy={rowY(p.feeling)} r={14} fill="transparent" />
+              <circle cx={x(p.daysAgo) + p.offset * 9} cy={rowY(p.feeling)} r={hover === p.i ? 7 : 6} fill={labels[p.feeling].color} stroke="var(--card)" strokeWidth="2" />
+            </g>
+          ))}
+        </svg>
+        {hovered && (
+          <Tooltip x={((x(hovered.daysAgo) + hovered.offset * 9) / w) * 100} y={(rowY(hovered.feeling) / h) * 100 - 4}>
+            {dayLabel(today, hovered.daysAgo, "long")} · {labels[hovered.feeling].label}
+            {hovered.description && <span className="block max-w-72 whitespace-normal opacity-80">{hovered.description}</span>}
+          </Tooltip>
+        )}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/** Share of dark ink in each drawing, against the child's usual range (mean ± one standard deviation). */
+export function DrawingInkChart({ points, usual, days = 30 }: { points: DrawingPoint[]; usual: { mean: number; sd: number }; days?: number }) {
+  const today = useToday();
+  const [hover, setHover] = useState<number | null>(null);
+  const w = 600;
+  const h = 170;
+  const pad = { l: 44, r: 14, t: 12, b: 26 };
+  const ih = h - pad.t - pad.b;
+  const max = Math.min(1, Math.max(0.5, ...points.map((p) => p.dark), usual.mean + usual.sd) + 0.05);
+  const x = (daysAgo: number) => pad.l + ((days - 1 - daysAgo) / (days - 1)) * (w - pad.l - pad.r);
+  const y = (v: number) => pad.t + ih - (Math.min(v, max) / max) * ih;
+  const sorted = [...points].sort((a, b) => b.daysAgo - a.daysAgo);
+  const path = sorted.map((p, i) => `${i ? "L" : "M"}${x(p.daysAgo).toFixed(1)},${y(p.dark).toFixed(1)}`).join("");
+  const low = Math.max(0, usual.mean - usual.sd);
+  const high = Math.min(max, usual.mean + usual.sd);
+  const hovered = hover !== null ? sorted[hover] : null;
+  const pct = (v: number) => `${Math.round(v * 100)}%`;
+
+  return (
+    <ChartFrame
+      title="Dark ink in each drawing"
+      table={{ head: ["Day", "Dark ink", "Usual range"], rows: [...sorted].reverse().map((p) => [dayLabel(today, p.daysAgo, "long"), pct(p.dark), `${pct(low)} to ${pct(high)}`]) }}
+    >
+      <div className="relative" onPointerLeave={() => setHover(null)}>
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Share of dark ink in each drawing, with the child's usual range. Use Show table for the values.">
+          {[0, max / 2, max].map((t) => (
+            <g key={t}>
+              <line x1={pad.l} x2={w - pad.r} y1={y(t)} y2={y(t)} stroke="var(--border)" />
+              <text x={pad.l - 6} y={y(t)} dy="0.35em" textAnchor="end" fontSize="13" fill="var(--muted-foreground)">
+                {pct(t)}
+              </text>
+            </g>
+          ))}
+          <rect x={pad.l} width={w - pad.l - pad.r} y={y(high)} height={Math.max(2, y(low) - y(high))} fill="var(--role-care)" opacity={0.15} />
+          <line x1={pad.l} x2={w - pad.r} y1={y(usual.mean)} y2={y(usual.mean)} stroke="var(--role-care-ink)" strokeDasharray="4 4" opacity={0.6} />
+          {[days - 1, 21, 14, 7, 0].map((d) => (
+            <text key={d} x={x(d)} y={h - 6} textAnchor="middle" fontSize="13" fill="var(--muted-foreground)">
+              {d === 0 ? "Today" : `${d} d ago`}
+            </text>
+          ))}
+          <path d={path} fill="none" stroke="var(--role-care-ink)" strokeWidth="2" strokeLinejoin="round" />
+          {sorted.map((p, i) => (
+            <g key={i} onPointerEnter={() => setHover(i)}>
+              <circle cx={x(p.daysAgo)} cy={y(p.dark)} r={14} fill="transparent" />
+              <circle cx={x(p.daysAgo)} cy={y(p.dark)} r={hover === i ? 6 : 4.5} fill="var(--role-care-ink)" stroke="var(--card)" strokeWidth="2" />
+            </g>
+          ))}
+        </svg>
+        {hovered && (
+          <Tooltip x={(x(hovered.daysAgo) / w) * 100} y={(y(hovered.dark) / h) * 100 - 4}>
+            {dayLabel(today, hovered.daysAgo, "long")} · {pct(hovered.dark)} dark ink
+          </Tooltip>
+        )}
+      </div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-4 rounded-sm bg-role-care/30" aria-hidden /> Usual range ({pct(low)} to {pct(high)})
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-role-care-ink" aria-hidden /> One drawing
+        </li>
+      </ul>
+    </ChartFrame>
+  );
+}

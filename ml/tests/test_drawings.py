@@ -120,3 +120,21 @@ def test_ingest_from_the_app(assessor):
     assert store.load(TODAY)[0].history.days[-1].shared_drawings[0].title == "ma maison"
     with pytest.raises(BadRequest):
         ingest_drawing(store, engine, LEO, payload | {"image": base64.b64encode(b"not an image").decode()})
+
+
+def test_drawings_page_compares_the_week_with_earlier_drawings():
+    from closer_ai.bridge import drawings_view
+
+    store = Store()
+    store.add_patient(ChildProfile(LEO, 9, (), True, TODAY - timedelta(days=3)), "Leo", 2017)
+    happy = replace(analyze(SUNNY), affect="positive", smiling_faces=2, people=2)
+    sad = replace(analyze(DARK), affect="negative", sad_faces=1, people=1, alone=True)
+    for k in (20, 16, 12):
+        store.add_drawing(LEO, TODAY - timedelta(days=k), f"h{k}", happy)
+    for k in (2, 0):
+        store.add_drawing(LEO, TODAY - timedelta(days=k), f"s{k}", sad)
+    view = drawings_view(store, LEO, TODAY)
+    assert [d["days_ago"] for d in view["drawings"]] == [0, 2, 12, 16, 20]  # older drawings moved the admission back
+    assert view["this_week"]["count"] == 2 and view["this_week"]["negative"] == 2 and view["this_week"]["alone"] == 2
+    assert view["this_week"]["dark_shift"] > 0.3 and view["usual"]["from_drawings"] == 3
+    assert view["drawings"][0]["palette"] and view["drawings"][0]["palette"][0].startswith("#")

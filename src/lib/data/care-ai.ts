@@ -1,6 +1,7 @@
 import "server-only";
 import type { CheckInView } from "@/lib/data/checkins";
 import type { VisiblePatient } from "@/lib/data/circle";
+import type { DrawingsView } from "@/lib/drawings";
 import type { AiOverview, AiReport, NurseRoundInput, WardMenu } from "@/lib/nurse-round";
 import { createClient } from "@/lib/supabase/server";
 
@@ -111,6 +112,17 @@ export async function saveAiRound(patientId: string, today: string, round: Nurse
       note: round.note,
     },
   });
+}
+
+/** Every drawing of the last 30 days and this week against the child's usual drawings. */
+export async function getDrawingsView(patientId: string, today: string): Promise<DrawingsView | null> {
+  return call<DrawingsView>("GET", `/v1/patients/${patientId}/drawings/${today}`);
+}
+
+/** A drawing (JPEG, base64) for Claude and the color analysis; the image itself is not kept. */
+export async function sendDrawing(patientId: string, today: string, image: string, title: string | null): Promise<boolean> {
+  const result = await call<{ drawing: unknown }>("POST", `/v1/patients/${patientId}/drawings`, { local_date: today, today, image, title });
+  return result !== null;
 }
 
 export async function getWardMenu(day: string): Promise<WardMenu | null> {

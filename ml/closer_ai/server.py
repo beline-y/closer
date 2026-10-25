@@ -7,6 +7,7 @@ listens on localhost: a demo service for fictional data, not a hardened public s
     POST /v1/patients/<id>/sync                the app's check-ins in, the care-tab report out
     PUT  /v1/patients/<id>/observations/<day>  the nurse's round in, the updated report out
     POST /v1/patients/<id>/drawings            a drawing in (base64), its reading and the updated report out
+    GET  /v1/patients/<id>/drawings/<day>      the drawings page: every drawing and this week against the usual
     POST /v1/overview                          several syncs at once, one line per child out
     GET  /v1/menu/<day>, PUT /v1/menu/<day>    the ward's menu
     GET  /v1/health                            no secret needed, says nothing about children
@@ -28,7 +29,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .bridge import (
-    MAX_IMAGE, BadRequest, Engine, ingest_drawing, menu_from_json, observation_from_json, open_store, overview_row, patient_id, report,
+    MAX_IMAGE, BadRequest, Engine, drawings_view, ingest_drawing, menu_from_json, observation_from_json, open_store, overview_row, patient_id, report,
     parse_day, sync_patient,
 )
 
@@ -38,6 +39,7 @@ ROUTES = (
     ("POST", re.compile(r"/v1/patients/([^/]+)/sync"), "sync"),
     ("PUT", re.compile(r"/v1/patients/([^/]+)/observations/(\d{4}-\d{2}-\d{2})"), "observation"),
     ("POST", re.compile(r"/v1/patients/([^/]+)/drawings"), "drawing"),
+    ("GET", re.compile(r"/v1/patients/([^/]+)/drawings/(\d{4}-\d{2}-\d{2})"), "drawings"),
     ("POST", re.compile(r"/v1/overview"), "overview"),
     ("GET", re.compile(r"/v1/menu/(\d{4}-\d{2}-\d{2})"), "get_menu"),
     ("PUT", re.compile(r"/v1/menu/(\d{4}-\d{2}-\d{2})"), "put_menu"),
@@ -70,6 +72,9 @@ class CareTabAPI:
         today = parse_day(body.get("today") or body.get("local_date"))
         self.engine.refresh(store, pid, today)
         return {"drawing": drawing, "report": report(store, pid, today, self.engine)}
+
+    def drawings(self, store, body, pid, day):
+        return drawings_view(store, patient_id(pid), parse_day(day))
 
     def overview(self, store, body):
         children = body.get("patients") or []

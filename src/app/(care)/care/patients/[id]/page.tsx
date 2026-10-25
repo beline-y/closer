@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AiOffline, AiSummary } from "@/components/care/ai-summary";
 import { NurseRoundForm } from "@/components/care/nurse-round-form";
+import { PatientTabs } from "@/components/care/patient-tabs";
 import { ThresholdsForm } from "@/components/care/thresholds-form";
 import { AlertBadge } from "@/components/kit/alert-badge";
 import { InteractionBars, MoodChart } from "@/components/kit/charts";
@@ -62,6 +63,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <AlertBadge count={alerts.length} />
       </header>
+      <PatientTabs patientId={patient.id} />
 
       {alerts.length > 0 && (
         <ul className="flex flex-col gap-2">
