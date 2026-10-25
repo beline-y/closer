@@ -25,7 +25,7 @@ export function ApplicantMessages({ submissions, loadError }: { submissions: Vol
     });
   };
   return <div className="flex flex-col gap-4">
-    <p className="text-sm text-muted-foreground">Private volunteer applications and answers. Mistral flags language for your review; it does not judge the applicant or make the decision. Approval records your decision here; it does not publish the message or schedule a visit.</p>
+    <p className="text-sm text-muted-foreground">Review each message before approving. Approval does not publish it or book a visit.</p>
     <div className="flex flex-wrap items-center gap-2">
       <label className="font-bold">Show <select value={filter} onChange={(e) => setFilter(e.target.value)} className="ml-2 min-h-11 rounded-lg border bg-background px-3">
         <option value="attention">Flagged or screening unavailable</option><option value="all">All awaiting review</option><option value="history">Reviewed messages</option>

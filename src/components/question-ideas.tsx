@@ -40,7 +40,7 @@ export function QuestionIdeas({ className, onChoose }: { className?: string; onC
           {pending ? "Finding ideas…" : questions.length ? "More ideas" : "Show ideas"}
         </button>
       </div>
-      <p className="text-muted-foreground">Choose an idea to put it in your card draft. You can change every word before sending. Choosing an idea never sends it.</p>
+      <p className="text-muted-foreground">Choose a question, then edit your card before sending.</p>
       {questions.length > 0 && <ul className="flex flex-col gap-3" aria-label="AI question ideas">
         {ideas.map(({ text: q, source }) => <li key={q}><button type="button" disabled={pending} onClick={() => {
           setOpen(false);
@@ -51,8 +51,7 @@ export function QuestionIdeas({ className, onChoose }: { className?: string; onC
           <ArrowUpRight className="mt-1 size-5 shrink-0 text-role-volunteer-ink" aria-hidden />
         </button></li>)}
       </ul>}
-      <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{pending ? "Finding three fresh ideas…" : error ?? (questions.length ? "Your ideas are ready. Pick one to start writing." : "")}</p>
-      <p className="text-xs text-muted-foreground">Ideas come from our list of 60 questions first, never the same one twice for your family. When you&apos;ve seen them all, and only if the guardian turned on AI, Mistral suggests new ones using only an age range and interests: never names, check-ins, answers or drafts.</p>
+      <p role="status" aria-live="polite" className={pending || error ? "text-sm text-muted-foreground" : "sr-only"}>{pending ? "Finding three fresh ideas…" : error ?? (questions.length ? "Ideas ready." : "")}</p>
     </Modal>
   </>;
 }

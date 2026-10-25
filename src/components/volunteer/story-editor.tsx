@@ -51,9 +51,8 @@ export function StoryEditor({ me }: { me: "maya" | "daniel" }) {
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="avatar" className="font-bold">
-            Photo
+            Your avatar
           </label>
-          <p className="text-sm text-muted-foreground">Real photo upload comes with the volunteers feature. Pick an emoji for now.</p>
           <div id="avatar" role="radiogroup" aria-label="Avatar" className="flex flex-wrap gap-2">
             {["🐬", "🐳", "🪸", "🌊", "🔬", "🐢"].map((a) => (
               <button

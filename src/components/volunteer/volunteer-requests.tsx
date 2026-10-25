@@ -16,7 +16,7 @@ export function VolunteerRequests({ me }: { me: "maya" | "daniel" }) {
       <p className="flex items-start gap-3 rounded-2xl bg-role-volunteer-soft p-4">
         <ShieldCheck className="mt-0.5 size-5 shrink-0 text-role-volunteer-ink" aria-hidden />
         <span>
-          Only a young explorer can ask to meet you. The care team and a guardian approve every request first. Meetings are supervised visits or moderated exchanges, never private chat.
+          Visits are supervised and approved by the care team and a guardian.
         </span>
       </p>
       {requests.length === 0 ? (
