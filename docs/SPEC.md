@@ -55,7 +55,7 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 
 **Family:**
 - **M:** join by code; guardian consent; check-in feed with reactions; nudges in-app and by email with quick replies; write comfort cards and get notified when opened; question of the day; patient switcher; memories album (photo, caption, date, tag, reactions, short comments).
-- **S:** notification preferences; AI question suggestions ("Question ideas", placeholder list until then); shared activities; guardian approves volunteer contact requests.
+- **S:** notification preferences; Mistral question ideas (refresh, choose, edit in a card draft, then explicitly seal; visit-only demo delivery); shared activities; guardian approves volunteer contact requests.
 - **C:** web push.
 
 **Care team:**
@@ -90,7 +90,7 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 12. Data export and account deletion.
 13. Seed data (2 weeks relative to today, `npm run db:seed`) and pgTAP RLS tests for every feature (`npm run db:test`); lint and typecheck before every commit.
 
-**Post-MVP:** real auth (issue #9), AI question suggestions, web push, grown-up theme.
+**Post-MVP:** real auth (issue #9), cross-account question/card delivery, web push, grown-up theme.
 
 ## Screens
 

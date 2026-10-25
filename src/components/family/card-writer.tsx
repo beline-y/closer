@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { QuestionIdeas } from "@/components/question-ideas";
 import { CARD_COLORS } from "@/components/kit/reveal-card";
 import { relativeDay } from "@/lib/dates";
 import { COMFORT_CARDS, type ComfortCard } from "@/lib/demo-fixtures";
@@ -9,9 +10,11 @@ import { cn } from "@/lib/utils";
 const COLOR_NAMES: Record<ComfortCard["color"], string> = { sun: "Sunshine", coral: "Coral", sky: "Sky", lilac: "Lilac" };
 
 // Write a sealed card; Leo opens it when ready. Saved for this visit only.
-export function CardWriter() {
+export function CardWriter({ initialBody = "" }: { initialBody?: string }) {
   const [cards, setCards] = useState(COMFORT_CARDS.filter((c) => c.from === "emma"));
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(initialBody);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const [draftMessage, setDraftMessage] = useState(initialBody ? "Your question is in the draft. Edit it below; nothing has been sent." : "");
   const [color, setColor] = useState<ComfortCard["color"]>("coral");
   const [justSealed, setJustSealed] = useState(false);
   const sealed = cards.filter((c) => c.sealed);
@@ -25,6 +28,7 @@ export function CardWriter() {
           if (!body.trim()) return;
           setCards((all) => [{ id: `cc-${Date.now()}`, from: "emma", color, body: body.trim(), sealed: true }, ...all]);
           setBody("");
+          setDraftMessage("");
           setJustSealed(true);
         }}
         className={cn("flex flex-col gap-4 rounded-3xl p-5 shadow-sm ring-1 ring-border transition-colors", CARD_COLORS[color])}
@@ -32,8 +36,12 @@ export function CardWriter() {
         <label htmlFor="card-body" className="text-xl font-extrabold">
           Write a card for Leo
         </label>
+        <p className="text-sm">Make it your own. Leo gets the card only when you choose to seal it.</p>
+        {draftMessage && <p role="status" className="rounded-2xl bg-card/75 p-3 font-bold">{draftMessage}</p>}
         <textarea
           id="card-body"
+          ref={bodyRef}
+          autoFocus={!!initialBody}
           value={body}
           onChange={(e) => {
             setBody(e.target.value);
@@ -44,6 +52,14 @@ export function CardWriter() {
           placeholder="Something to make Leo smile…"
           className="rounded-2xl border bg-card p-4 text-lg"
         />
+        <QuestionIdeas onChoose={(question) => {
+          const next = body.trim() ? `${body.trim()}\n\n${question}` : question;
+          if (next.length > 1000) { setDraftMessage("Make a little room in your card before adding another question."); return; }
+          setBody(next);
+          setJustSealed(false);
+          setDraftMessage("Question added to your draft. You can edit it before sealing your card.");
+          requestAnimationFrame(() => bodyRef.current?.focus());
+        }} />
         <fieldset className="flex flex-wrap items-center gap-2">
           <legend className="mb-2 font-bold">Card color</legend>
           {(Object.keys(CARD_COLORS) as ComfortCard["color"][]).map((c) => (
@@ -55,11 +71,12 @@ export function CardWriter() {
           ))}
         </fieldset>
         <button type="submit" disabled={!body.trim()} className="min-h-14 rounded-2xl bg-role-family-ink text-lg font-extrabold text-white disabled:opacity-50">
-          Seal the card 💌
+          Seal card for Leo 💌
         </button>
+        <p className="text-xs">Demo: cards stay in this visit; delivery to another account isn&apos;t connected yet.</p>
         {justSealed && (
           <p aria-live="polite" className="animate-rise font-bold">
-            Sealed! Leo will open it when ready. You&apos;ll know when it&apos;s opened.
+            Sealed for this demo visit! Your card is in the waiting list.
           </p>
         )}
       </form>

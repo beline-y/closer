@@ -122,7 +122,7 @@ export function validateReview(raw: unknown, context: ReviewContext): Review {
 // Adult alerts and child prompts are templates. Model prose and sensitive quotes
 // never enter notification previews. Full evidence is restricted to care staff.
 export function connectionMessages(name: string, review: Review, forDate: string, today: string) {
-  const when = shiftDate(today, -1) === forDate ? "yesterday" : `on ${forDate}`;
+  const when = forDate === today ? "today" : shiftDate(today, -1) === forDate ? "yesterday" : `on ${forDate}`;
   if (review.level === "priority" || review.level === "check_in") {
     return {
       parent: `Make a little time for ${name} today. Ask how they are feeling and what would help them feel supported.`,

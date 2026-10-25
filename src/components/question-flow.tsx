@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { VolunteerCard } from "@/components/kit/volunteer-card";
+import { QuestionIdeas } from "@/components/question-ideas";
 import { CAST, type CastId } from "@/lib/cast";
-import { QUESTION_IDEAS, TODAY_QUESTION, VOLUNTEER_ANSWERS, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { TODAY_QUESTION, VOLUNTEER_ANSWERS, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
 
 type Viewer = "leo" | "emma";
@@ -183,27 +184,5 @@ function VolunteerUnlock() {
         )}
       </Modal>
     </section>
-  );
-}
-
-// Family side: placeholder list until AI suggestions exist.
-export function QuestionIdeas({ className }: { className?: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className={cn("min-h-12 self-start rounded-full bg-role-volunteer-soft px-5 font-bold text-role-volunteer-ink", className)}>
-        💡 Question ideas
-      </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="Question ideas 💡">
-        <p className="text-muted-foreground">Fun questions to ask Leo. Smart suggestions are coming later.</p>
-        <ul className="flex flex-col gap-2">
-          {QUESTION_IDEAS.map((q) => (
-            <li key={q} className="rounded-2xl bg-muted px-4 py-3">
-              {q}
-            </li>
-          ))}
-        </ul>
-      </Modal>
-    </>
   );
 }
