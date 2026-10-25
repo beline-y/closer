@@ -3,10 +3,10 @@
 import { refresh } from "next/cache";
 import type { ActionResult } from "@/app/checkin-actions";
 import { castByUserId } from "@/lib/cast";
-import { saveAiRound, saveWardMenu, sendDrawing } from "@/lib/data/care-ai";
-import { getVisiblePatient, getVisiblePatients } from "@/lib/data/circle";
+import { saveAiRound, sendDrawing } from "@/lib/data/care-ai";
+import { getVisiblePatient } from "@/lib/data/circle";
 import { todayIn } from "@/lib/dates";
-import { AFFECTS, ENGAGEMENTS, INTAKES, NIGHT_SLEEPS, NURSE_NOTE_MAX, type NurseRoundInput, VISITORS, type WardMenu } from "@/lib/nurse-round";
+import { AFFECTS, ENGAGEMENTS, INTAKES, NIGHT_SLEEPS, NURSE_NOTE_MAX, type NurseRoundInput, VISITORS } from "@/lib/nurse-round";
 import { createClient } from "@/lib/supabase/server";
 
 const one = <T extends string>(value: unknown, allowed: readonly { value: T }[]): T | null =>
@@ -60,17 +60,6 @@ export async function addDrawing(patientId: string, imageBase64: string, title: 
   }
   const sent = await sendDrawing(patient.id, todayIn(patient.timezone), imageBase64, typeof title === "string" ? title.trim().slice(0, 80) || null : null);
   if (!sent) return { ok: false, error: "The AI service didn't answer. The drawing wasn't added." };
-  refresh();
-  return { ok: true };
-}
-
-// Today's ward menu: it sets every child's baseline for "ate less than the others".
-export async function saveTodaysMenu(menu: WardMenu): Promise<ActionResult> {
-  if (!(await careTeamMember())) return { ok: false, error: "Only the care team can set the menu." };
-  const [first] = await getVisiblePatients();
-  const clean = (dish: unknown) => (typeof dish === "string" ? dish.trim().slice(0, 80) || null : null);
-  const saved = await saveWardMenu(todayIn(first?.timezone ?? "UTC"), { lunch: clean(menu.lunch), dinner: clean(menu.dinner) });
-  if (!saved) return { ok: false, error: "The AI service didn't answer. The menu wasn't saved." };
   refresh();
   return { ok: true };
 }

@@ -12,7 +12,6 @@ import {
   type NurseRoundInput,
   VISITORS,
   WARD_MEALS,
-  type WardMenu,
 } from "@/lib/nurse-round";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +49,7 @@ function Choice<T extends string>({ options, value, onChange, label }: { options
 }
 
 // The nurse's round for today, in under a minute. Every field is optional.
-export function NurseRoundForm({ patientId, nickname, initial, menu, savedBy, claude }: { patientId: string; nickname: string; initial: NurseRoundInput; menu: WardMenu; savedBy: string | null; claude: boolean }) {
+export function NurseRoundForm({ patientId, nickname, initial, savedBy, claude }: { patientId: string; nickname: string; initial: NurseRoundInput; savedBy: string | null; claude: boolean }) {
   const [round, setRound] = useState<NurseRoundInput>(initial);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,14 +80,11 @@ export function NurseRoundForm({ patientId, nickname, initial, menu, savedBy, cl
         <span className="text-sm text-muted-foreground">{savedBy && !dirty ? `Saved by ${savedBy}` : "Takes under a minute"}</span>
       </header>
 
-      <Field label="Meals" hint="from the ward's menu">
+      <Field label="Meals">
         <div className="flex flex-col gap-3">
           {WARD_MEALS.map((meal) => (
             <div key={meal.value} className="flex flex-col gap-2">
-              <span className="text-sm">
-                <span className="font-bold">{meal.label}</span>
-                <span className="text-muted-foreground"> · {menu[meal.value] ?? "dish not set"}</span>
-              </span>
+              <span className="text-sm font-bold">{meal.label}</span>
               <Choice label={`${meal.label} eaten`} options={INTAKES} value={round[meal.value]} onChange={(v) => set(meal.value === "lunch" ? { lunch: v } : { dinner: v })} />
             </div>
           ))}

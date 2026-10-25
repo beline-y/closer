@@ -24,8 +24,10 @@ export type PatientRow = {
   minutesToday: number;
   familyContactToday: boolean;
   alerts: number;
-  /** The AI service's reading for today; null when it isn't running */
+  /** The AI service's reading for today, or its last stored one; null if none */
   ai: AiOverview | null;
+  /** "Oct 24, 2:10pm" when `ai` is the last stored reading, null when live */
+  aiStoredAt: string | null;
 };
 
 type SortKey = "name" | "lastCheckIn" | "minutesToday" | "alerts" | "ai";
@@ -125,7 +127,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                     {r.ai?.level ? (
                       <span className="flex flex-col items-start gap-0.5">
                         <LevelBadge level={r.ai.level} />
-                        <span className="text-xs text-muted-foreground">{r.ai.nurse_seen_today ? "Round done" : "Round to do"}</span>
+                        <span className="text-xs text-muted-foreground">{r.aiStoredAt ? `Summary from ${r.aiStoredAt}` : r.ai.nurse_seen_today ? "Round done" : "Round to do"}</span>
                       </span>
                     ) : (
                       <span className="text-muted-foreground">No reading</span>

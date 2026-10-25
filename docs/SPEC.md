@@ -38,7 +38,7 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - **Patient answers shown to volunteers:** only answers the patient chose to share ("Volunteers can read it, without my name", off by default). They go through a privacy filter (masks names, places, hospital names, emails, phone numbers) **and** need care team approval ("shareable"). The care team sees only those opted-in answers, already masked, in its review queue. Only the approved, masked copy reaches volunteers, in a table with no `patient_id`.
 - **Placeholder data:** screens whose feature isn't built yet read typed fixtures from `src/lib/demo-fixtures.ts` (same cast, relative dates). Each feature branch replaces its slice with a real table, RLS and seed. People, patients and links already come from Supabase.
 - **Background patients:** Ava (12) and Lucas (7) have no app account and no family linked; only Sarah follows them. They fill the care dashboard and trigger alerts.
-- **Meals come from the hospital menu.** The care team sets the menu per unit, day and meal (dish name + icon, "Copy last week" fills the empty days). The patient rates each dish (yuck to yum) and optionally how much they ate. Family reads "Lunch: pasta with tomato sauce, Leo loved it"; the care team reads ratings and amounts (appetite indicator).
+- **Meals come from the hospital menu.** For the demo, menus are seeded: a fixed weekly rotation per unit (one menu per weekday), so the patient always has today's dishes. The patient rates each dish (yuck to yum) and optionally how much they ate. Family reads "Lunch: pasta with tomato sauce, Leo loved it" and the "Food today" score. The care team doesn't see dishes or ratings. Post-demo: the care team uploads a photo of the paper menu and image-to-text turns it into dishes (issue "Menu upload with image-to-text (post-demo)"); the care team's Menu page is a "Coming soon" placeholder until then.
 - **Streak celebrates, never punishes.** Computed from `mood_checkins` only. Headline = total days connected. One rest day per 7 days keeps the run going. After a break: "Welcome back!", never "you lost your streak". Badges at 3, 7, 14 and 30 days, also shown in the family feed.
 - **Reactions:** one per person per check-in (❤️ heart, 🤗 hug, 💪 strong, 😂 laugh), changeable. Family and friends only.
 - **Activities are done in the app** (draw, make and snap, quiz, story, challenge with family) and end with a result. The patient chooses: share with family, add to Memories, or keep for themselves. A challenge is revealed side by side only when both are done. The care team only gets completion counts.
@@ -120,10 +120,12 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 - Events: list, details, sign up or cancel.
 - Requests: approved requests only, with status. No messaging.
 
-**Care team** (desktop first, tablet landscape; sidebar Patients · Alerts · Volunteers · Menus · Events · Settings):
-- Menus: week view per unit, add and remove dishes per day and meal, "Copy last week".
+**Care team** (desktop first, tablet landscape; sidebar Patients · Alerts · Volunteers · Menu · Events · Settings):
+- Menu: placeholder card "Upload today's menu" with a disabled camera button and a "Coming soon" badge (image-to-text is post-demo). No upload, no storage, no API call.
 - Patients: sortable, filterable table (name, 7-day mood sparkline, last check-in, time in app today, family contact today, alert badge).
-- Patient detail: mood chart (7 / 30 days), check-ins (mood, activity, meal, note only; no photos), family interactions per day, thresholds (low moods in a row, days without check-in, days without family contact, nudge cooldown).
+- Family today, time in app and the family interactions chart all come from `care_engagement()`, the same counts the AI receives, so the table, the charts and the AI summary tell the same story.
+- AI summary: when the AI service (Louis's model, run on his laptop for the hackathon) doesn't answer, the last stored summary shows with its date ("Summary from Oct 24, 2:10pm"), or "AI summary unavailable" if none.
+- Patient detail: mood chart (7 / 30 days), check-ins (mood, activity, note only; no photos, no dishes), family interactions per day, thresholds (low moods in a row, days without check-in, days without family contact, nudge cooldown).
 - Alerts: triggered alerts with "Mark as reviewed".
 - Volunteers: list with approve / suspend; answers to review ("Mark as shareable"); contact requests to approve.
 - Events: create, edit, see sign-ups.
@@ -153,7 +155,7 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `checkin_photos` | checkin_id (one photo per check-in), patient_id, path | **Patient and family only.** Storage bucket uses the same rule. Photos are resized (max 1600px) and re-encoded to WebP on the device, which strips EXIF and GPS. Realtime. |
 | `checkin_reactions` | checkin_id, user_id (one per person), emoji (❤️ 🤗 💪 😂) | Patient and family read; family and friends add, change and remove their own. Realtime. |
 | `care_units`, `care_unit_members` | name; unit_id, user_id. `patients.unit_id` | Members and the unit's patients and circles read. Written by seed or admin. |
-| `menu_items` | unit_id, menu_date, meal, dish_name, icon, position | The unit's care team writes. The unit's patients and their circle read. Volunteers: none. |
+| `menu_items` | unit_id, menu_date, meal, dish_name, icon, position | Seeded weekly rotation for the demo (the care team's write policy stays for the post-demo upload). The unit's patients and their circle read. Volunteers: none. |
 | `meal_ratings` | checkin_id, menu_item_id, patient_id, liking 1–5, amount | Patient rates today's dishes of their unit only. Patient, circle and care team read. Realtime. |
 | `nudges` | patient_id, kind (miss_you, call_me, bored, proud, hug) | Created only by `send_nudge(kind, recipients)`: active patient only, per-type cooldown from `patient_settings`, recipients limited to the patient's family and friends (default: all). Patient and recipients read. No care team, no volunteers. Realtime. |
 | `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji (❤️ 📞 🤗 ⭐), reply_text ≤ 140, replied_at | Recipient reads and replies on their own row only. The patient reads every reply (never "no reply"). Realtime. |
@@ -164,11 +166,12 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `question_answers` | daily_question_id, user_id, body ≤ 500, share_with_volunteers (patient only, off by default) | Read your own; others' only once you answered (live reveal via Realtime). No care team, no volunteers: the care team gets only shared answers, names masked, through `answers_to_review()`. |
 | `notifications` | user_id, kind, ref_id, read_at, emailed_at | Owner only. Delivered through Realtime. |
 | `notification_prefs` | user_id, email_enabled | Owner only. |
-| `app_sessions` | user_id, patient_id, started_at, last_seen_at | Patient only (60s heartbeat). Care team gets daily totals only. Time inside Closer, not device screen time. |
+| `app_minutes` | patient_id, local_date, minutes, last_seen_at | Written only by `log_app_minute()`: the patient's app pings once a minute while on screen, at most one minute per 50 s. Patient reads own. Care team gets daily totals only through `care_engagement()`. Time inside Closer, not device screen time. |
+| `ai_summaries` | patient_id, kind (overview / report), payload, stored_at | The last AI reading per child, shown when the AI service is off. Care team of the child only. |
 | `activity_events` | patient_id, actor_kind, event_type | Append-only, no content, trigger-filled. |
 | `alert_acks` | alert_type, for_date, acked_by, note | Care team. |
 
-**Dashboard functions:** `care_dashboard()` and `care_checkins(pid, days)`. Alerts are computed live from `patient_settings`.
+**Dashboard functions:** `care_engagement(pid, days)` returns, per local day, family contacts (replies, reactions, comments, cards, answers and finished challenges by active family and friends, plus a check-in with a visit) and minutes in app. Counts only, care team of the child only. It feeds the patients table, the interactions chart and the AI input (`family_contacts_per_day`). Alerts are computed live from `patient_settings` (care dashboard step).
 
 **Memories:**
 
@@ -218,14 +221,16 @@ One branch and one Vercel preview per step. Tested on the preview, then merged.
 | Role shells (layout, navigation, main screens) | `feature/role-shells` | ✅ |
 | Mood check-in | `feature/mood-checkin` | ✅ |
 | Nudges + notifications | `feature/nudges` | ✅ |
-| Menus, dish ratings, streak, one reaction, activities | `feature/checkin-v2-activities` | |
-| Comfort cards | `feature/comfort-cards` | |
-| Question of the day | `feature/daily-question` | |
+| Menus, dish ratings, streak, one reaction, activities | `feature/checkin-v2-activities` | ✅ |
+| Comfort cards | `feature/comfort-cards` | ✅ |
+| Question of the day | `feature/daily-question` | ✅ |
+| Care team real counts, last AI summary, Menu placeholder | `fix/care-real-data` | |
 | Care dashboard + alerts | `feature/care-dashboard` | |
 | Memories | `feature/memories` | |
 | Journal | `feature/journal` | |
 | Volunteers: questions, My story, events, requests | `feature/volunteers` | |
 | Export, delete, accessibility | `feature/privacy-polish` | |
 | Real auth (issue #9) | `feature/auth` | post-demo |
+| Menu upload with image-to-text | | post-demo |
 
 Deployment happens only after explicit approval.

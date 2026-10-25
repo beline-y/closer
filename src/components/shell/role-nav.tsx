@@ -52,7 +52,7 @@ export const NAV: Record<RoleKey, NavItem[]> = {
     { href: "/care", label: "Patients", icon: Users },
     { href: "/care/alerts", label: "Alerts", icon: AlertTriangle },
     { href: "/care/volunteers", label: "Volunteers", icon: HandHeart },
-    { href: "/care/menus", label: "Menus", icon: UtensilsCrossed },
+    { href: "/care/menus", label: "Menu", icon: UtensilsCrossed },
     { href: "/care/events", label: "Events", icon: CalendarDays },
     { href: "/care/settings", label: "Settings", icon: Settings },
   ],

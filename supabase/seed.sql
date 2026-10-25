@@ -125,7 +125,14 @@ values
   ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', '44444444-4444-4444-8444-444444444444', 'care_team', 'Pediatric nurse', false, 'active');
 
 -- ---------------------------------------------------------------------------
--- Care unit: Pediatrics (Leo, Ava, Lucas). Sarah writes its menus.
+-- "Today, N hours ago", but never before today's midnight in New York: seeded just
+-- after midnight, today's events still land today.
+create function pg_temp.today_ago(p_ago interval) returns timestamptz language sql stable as $$
+  select greatest(now() - p_ago, ((now() at time zone 'America/New_York')::date + time '00:05') at time zone 'America/New_York');
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Care unit: Pediatrics (Leo, Ava, Lucas). Its menus come from the seed below.
 -- ---------------------------------------------------------------------------
 delete from public.care_units where id = 'f0000000-0000-4000-8000-000000000001';
 insert into public.care_units (id, name) values ('f0000000-0000-4000-8000-000000000001', 'Pediatrics');
@@ -134,23 +141,27 @@ update public.patients set unit_id = 'f0000000-0000-4000-8000-000000000001'
   where id in ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
 
 -- ---------------------------------------------------------------------------
--- Menus: the last two weeks up to today (the rest of this week is empty, so
--- "Copy last week" has something to do). position 0 = main dish, 1 = dessert.
+-- Menus: a fixed weekly rotation (one menu per weekday), from two weeks ago to six
+-- months ahead, so Leo always has today's dishes to rate. Menu upload from a photo is
+-- post-demo. position 0 = main dish, 1 = dessert.
 -- ---------------------------------------------------------------------------
 insert into public.menu_items (unit_id, menu_date, meal, dish_name, icon, position, created_by)
-select 'f0000000-0000-4000-8000-000000000001', (now() at time zone 'America/New_York')::date - d, x.meal::public.meal_kind, x.dish, x.icon, x.pos,
+select 'f0000000-0000-4000-8000-000000000001', day, x.meal::public.meal_kind, x.dish, x.icon, x.pos,
        '44444444-4444-4444-8444-444444444444'
-from generate_series(0, 13) as d
+from generate_series(-14, 180) as g
+cross join lateral (select (now() at time zone 'America/New_York')::date + g as day) as d
+cross join lateral (select extract(isodow from d.day)::int as w) as wd
 cross join lateral (values
-  ('breakfast', (array['Oatmeal with banana', 'Yogurt and berries', 'Pancakes', 'Toast and jam', 'Scrambled eggs'])[d % 5 + 1],
-                (array['🥣', '🫐', '🥞', '🍞', '🍳'])[d % 5 + 1], 0),
-  ('lunch', (array['Pasta with tomato sauce', 'Chicken and rice', 'Veggie soup', 'Fish sticks and peas', 'Turkey sandwich', 'Mac and cheese', 'Pizza slice'])[d % 7 + 1],
-            (array['🍝', '🍗', '🥣', '🐟', '🥪', '🧀', '🍕'])[d % 7 + 1], 0),
-  ('lunch', (array['Apple compote', 'Chocolate pudding'])[d % 2 + 1], (array['🍎', '🍮'])[d % 2 + 1], 1),
-  ('dinner', (array['Chicken soup', 'Pizza night', 'Rice and veggies', 'Meatballs and mash', 'Tacos', 'Shepherd''s pie', 'Pasta bake'])[d % 7 + 1],
-             (array['🍲', '🍕', '🍚', '🥔', '🌮', '🥧', '🍝'])[d % 7 + 1], 0),
-  ('dinner', (array['Fruit salad', 'Ice cream'])[d % 2 + 1], (array['🍓', '🍨'])[d % 2 + 1], 1),
-  ('snack', (array['Apple slices', 'Banana', 'Crackers and cheese', 'Muffin'])[d % 4 + 1], (array['🍎', '🍌', '🧀', '🧁'])[d % 4 + 1], 0)
+  ('breakfast', (array['Oatmeal with banana', 'Yogurt and berries', 'Pancakes', 'Toast and jam', 'Scrambled eggs', 'Cereal and milk', 'French toast'])[wd.w],
+                (array['🥣', '🫐', '🥞', '🍞', '🍳', '🥛', '🍞'])[wd.w], 0),
+  ('lunch', (array['Pasta with tomato sauce', 'Chicken and rice', 'Veggie soup', 'Fish sticks and peas', 'Turkey sandwich', 'Mac and cheese', 'Pizza slice'])[wd.w],
+            (array['🍝', '🍗', '🥣', '🐟', '🥪', '🧀', '🍕'])[wd.w], 0),
+  ('lunch', (array['Apple compote', 'Chocolate pudding'])[wd.w % 2 + 1], (array['🍎', '🍮'])[wd.w % 2 + 1], 1),
+  ('dinner', (array['Chicken soup', 'Pizza night', 'Rice and veggies', 'Meatballs and mash', 'Tacos', 'Shepherd''s pie', 'Pasta bake'])[wd.w],
+             (array['🍲', '🍕', '🍚', '🥔', '🌮', '🥧', '🍝'])[wd.w], 0),
+  ('dinner', (array['Fruit salad', 'Ice cream'])[wd.w % 2 + 1], (array['🍓', '🍨'])[wd.w % 2 + 1], 1),
+  ('snack', (array['Apple slices', 'Banana', 'Crackers and cheese', 'Muffin', 'Apple slices', 'Banana', 'Muffin'])[wd.w],
+            (array['🍎', '🍌', '🧀', '🧁', '🍎', '🍌', '🧁'])[wd.w], 0)
 ) as x(meal, dish, icon, pos);
 
 -- ---------------------------------------------------------------------------
@@ -228,10 +239,15 @@ join public.menu_items m
   on m.unit_id = p.unit_id and m.menu_date = c.local_date and m.meal = any (d.meals)
  and (m.position = 0 or (m.position = 1 and d.mood >= 4));
 
--- Emma, James and Noah react to Leo's week (one reaction each per check-in).
-insert into public.checkin_reactions (checkin_id, user_id, emoji)
-select c.id, r.user_id, r.emoji
+-- Emma, James and Noah react to Leo's week (one reaction each per check-in), a few
+-- hours after it. With the nudges, cards, answers and visits below, the family is in
+-- touch every day but one (9 days ago, a quiet day): care_engagement() counts it all.
+insert into public.checkin_reactions (checkin_id, user_id, emoji, created_at)
+select c.id, r.user_id, r.emoji, c.created_at + interval '3 hours'
 from (values
+  (13, '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
+  (11, '33333333-3333-4333-8333-333333333333'::uuid, '🤗'),
+  (7,  '22222222-2222-4222-8222-222222222222'::uuid, '💪'),
   (12, '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
   (10, '22222222-2222-4222-8222-222222222222'::uuid, '🤗'),
   (10, '33333333-3333-4333-8333-333333333333'::uuid, '🤗'),
@@ -281,7 +297,7 @@ insert into demo_nudge_ids select d.ref, i.id from inserted i join demo_nudges d
 
 -- Today, 2 hours ago
 insert into public.nudges (patient_id, kind, created_at)
-values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'miss_you', now() - interval '2 hours');
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'miss_you', pg_temp.today_ago(interval '2 hours'));
 insert into demo_nudge_ids
 select 6, id from public.nudges
 where patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and created_at > now() - interval '3 hours';
@@ -374,14 +390,18 @@ values ('b0000000-0000-4000-8000-000000000006', '22222222-2222-4222-8222-2222222
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/b0000000-0000-4000-8000-000000000006/partner.webp',
         (((now() at time zone 'America/New_York')::date - 2) + time '20:45') at time zone 'America/New_York');
 
-insert into public.activity_reactions (session_id, user_id, emoji) values
+insert into public.activity_reactions (session_id, user_id, emoji, created_at)
+select r.session::uuid, r.user_id::uuid, r.emoji, s.completed_at + interval '1 hour'
+from (values
   ('b0000000-0000-4000-8000-000000000001', '22222222-2222-4222-8222-222222222222', '❤️'),
   ('b0000000-0000-4000-8000-000000000001', '77777777-7777-4777-8777-777777777777', '😂'),
   ('b0000000-0000-4000-8000-000000000003', '33333333-3333-4333-8333-333333333333', '💪'),
   ('b0000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222222', '🤗'),
   ('b0000000-0000-4000-8000-000000000004', '33333333-3333-4333-8333-333333333333', '❤️'),
   ('b0000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222222', '❤️'),
-  ('b0000000-0000-4000-8000-000000000006', '33333333-3333-4333-8333-333333333333', '❤️');
+  ('b0000000-0000-4000-8000-000000000006', '33333333-3333-4333-8333-333333333333', '❤️')
+) as r(session, user_id, emoji)
+join public.activity_sessions s on s.id = r.session::uuid;
 
 insert into public.activity_comments (session_id, user_id, body, created_at)
 select c.session::uuid, c.user_id::uuid, c.body, now() - c.ago
@@ -403,7 +423,7 @@ insert into public.comfort_cards (patient_id, author_id, body, color, opened_at,
    'coral', null, now() - interval '1 day'),
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '77777777-7777-4777-8777-777777777777',
    'Hi Leo! The whole class made you a giant dinosaur poster. Mrs. Lee says we can bring it soon. Get better fast! Noah',
-   'sky', null, now() - interval '5 hours'),
+   'sky', null, pg_temp.today_ago(interval '5 hours')),
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '33333333-3333-4333-8333-333333333333',
    'Hey champ, I''m learning the guitar song you like. Concert in your room on Saturday! Dad',
    'sun', now() - interval '2 days', now() - interval '3 days'),
@@ -430,7 +450,7 @@ from (values
 join public.question_bank b on b.text = q.text and b.source = 'curated';
 
 insert into public.question_answers (daily_question_id, user_id, body, created_at)
-select d.id, a.user_id::uuid, a.body, now() - a.ago
+select d.id, a.user_id::uuid, a.body, case when a.days_ago = 0 then pg_temp.today_ago(a.ago) else now() - a.ago end
 from (values
   (0, '33333333-3333-4333-8333-333333333333', 'Singing on stage at my cousin''s wedding. My knees were shaking!', interval '3 hours'),
   (1, '11111111-1111-4111-8111-111111111111', 'A baby dinosaur. A small one, so it fits in my room 🦖', interval '1 day 2 hours'),
@@ -441,3 +461,21 @@ from (values
 join public.daily_questions d
   on d.patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
  and d.local_date = (now() at time zone 'America/New_York')::date - a.days_ago;
+
+-- ---------------------------------------------------------------------------
+-- Minutes in the app (the patient's app adds one per minute on screen). Leo is a
+-- regular, Ava logs in briefly, Lucas hasn't opened it for two days.
+-- ---------------------------------------------------------------------------
+insert into public.app_minutes (patient_id, local_date, minutes, last_seen_at)
+select m.patient_id::uuid, (now() at time zone 'America/New_York')::date - m.days_ago, m.minutes, now() - interval '10 minutes'
+from (values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 0, 18), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 1, 46), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2, 38),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 3, 25), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 4, 41), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 5, 33),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 6, 52), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 7, 30), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 8, 36),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 9, 12), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 10, 20), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 11, 15),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 12, 40), ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 13, 28),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 0, 8), ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1, 6), ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, 9),
+  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 3, 14), ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 5, 11), ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 7, 15),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 2, 22), ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 3, 30), ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 4, 26),
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 6, 35), ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 8, 31)
+) as m(patient_id, days_ago, minutes);

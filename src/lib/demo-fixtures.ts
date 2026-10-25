@@ -16,19 +16,6 @@ export const ALERT_LABELS: Record<AlertKind, string> = {
   no_family_contact: "No family contact for 2 days",
 };
 
-export type CareMetrics = {
-  minutesInAppToday: number;
-  familyContactToday: boolean;
-  /** Family interactions per day, oldest first, 14 days */
-  interactions: number[];
-};
-
-export const CARE_METRICS: Record<string, CareMetrics> = {
-  [PATIENT_IDS.leo]: { minutesInAppToday: 42, familyContactToday: true, interactions: [4, 6, 3, 5, 7, 4, 2, 5, 6, 8, 5, 4, 7, 6] },
-  [PATIENT_IDS.ava]: { minutesInAppToday: 8, familyContactToday: false, interactions: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  [PATIENT_IDS.lucas]: { minutesInAppToday: 0, familyContactToday: false, interactions: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-};
-
 export type CareAlert = { id: string; patientId: string; kind: AlertKind; daysAgo: number; detail: string };
 
 export const CARE_ALERTS: CareAlert[] = [
