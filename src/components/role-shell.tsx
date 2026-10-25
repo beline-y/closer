@@ -52,8 +52,8 @@ export function RoleShell({ role, children }: { role: RoleKey; children: ReactNo
 
   if (role === "patient") {
     return (
-      <div data-tone="playful" className="kid-backdrop flex flex-1">
-        <aside className="sticky top-0 hidden h-dvh w-30 shrink-0 flex-col items-center gap-6 border-r bg-card/85 px-2 py-5 backdrop-blur md:flex">
+      <div data-tone="playful" className="flex flex-1 bg-[radial-gradient(circle_at_top_right,var(--role-patient-soft),transparent_45%)]">
+        <aside className="sticky top-0 hidden h-dvh w-28 shrink-0 flex-col items-center gap-6 border-r bg-card/80 px-2 py-5 md:flex">
           <span aria-hidden className="text-3xl">💛</span>
           <SideNav role="patient" className="w-full" />
           <PersonaAvatar person={me} size="lg" className="mt-auto" />

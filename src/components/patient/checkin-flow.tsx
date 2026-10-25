@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { saveCheckin } from "@/app/checkin-actions";
 import { MoodPicker } from "@/components/kit/mood-picker";
-import { ReadAloud } from "@/components/kit/read-aloud";
 import { ACTIVITIES, type ActivityKind, type CheckInInput, type DishRating, LIKINGS, MEAL_AMOUNTS, MEALS, type MenuDish } from "@/lib/checkin";
 import type { Streak } from "@/lib/streak";
 import { MILESTONES } from "@/lib/streak";
@@ -111,13 +110,10 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
       aria-labelledby={`step-${s}`}
       className={cn("flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border", s === "mood" && "md:col-span-2", i !== step && "max-md:hidden", "max-md:animate-rise")}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={`step-${s}`} className="text-2xl font-extrabold">
-          {TITLES[s]}
-          {s !== "mood" && <span className="ml-2 text-base font-normal text-muted-foreground">(if you want)</span>}
-        </h2>
-        <ReadAloud text={s === "mood" ? TITLES[s] : `${TITLES[s]} If you want.`} />
-      </div>
+      <h2 id={`step-${s}`} className="text-2xl font-extrabold">
+        {TITLES[s]}
+        {s !== "mood" && <span className="ml-2 text-base font-normal text-muted-foreground">(if you want)</span>}
+      </h2>
       {children}
     </section>
   );
@@ -129,7 +125,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
     );
 
   return (
-    <div className="hue-sun flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
       {/* Progress dots (phone only) */}
       <ol aria-label={`Step ${step + 1} of ${STEPS.length}`} className="flex justify-center gap-2 md:hidden">
         {STEPS.map((s, i) => (
@@ -231,7 +227,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
                                 <span aria-hidden className={cn(r?.liking === l.value && "animate-pop")}>
                                   {l.emoji}
                                 </span>
-                                <span className="text-xs font-bold">{l.label}</span>
+                                <span className="text-[0.7rem] font-bold">{l.label}</span>
                               </button>
                             ))}
                           </div>
@@ -313,7 +309,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
           type="button"
           disabled={saving || uploading || (step === 0 && !mood)}
           onClick={() => (last ? submit() : setStep(step + 1))}
-          className="pressable ml-auto min-h-14 flex-1 rounded-2xl bg-hue text-xl font-extrabold disabled:opacity-50"
+          className="ml-auto min-h-14 flex-1 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
         >
           {saving ? "Sending…" : last ? "Send to my family 💛" : "Next"}
         </button>
@@ -324,7 +320,7 @@ export function CheckInFlow({ patientId, initial, menu, doneActivities }: { pati
         type="button"
         disabled={saving || uploading || !mood}
         onClick={submit}
-        className="pressable hidden min-h-16 rounded-2xl bg-hue text-2xl font-extrabold disabled:opacity-50 md:block"
+        className="hidden min-h-16 rounded-2xl bg-role-patient text-2xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50 md:block"
       >
         {saving ? "Sending…" : "Send to my family 💛"}
       </button>
@@ -379,7 +375,7 @@ function Celebration({ streak }: { streak: Streak }) {
           </li>
         ))}
       </ul>
-      <Link href="/patient" className="hue-sun pressable flex min-h-14 items-center rounded-2xl bg-hue px-8 text-xl font-extrabold">
+      <Link href="/patient" className="flex min-h-14 items-center rounded-2xl bg-role-patient px-8 text-xl font-extrabold shadow-sm">
         Back to Today
       </Link>
     </div>

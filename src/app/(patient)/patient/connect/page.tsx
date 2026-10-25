@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
-import { PageHero } from "@/components/kit/page-hero";
 import { RevealCard } from "@/components/kit/reveal-card";
 import { LiveRefresh } from "@/components/live-refresh";
 import { ResultCard } from "@/components/activities/result-card";
@@ -19,9 +18,10 @@ export const metadata: Metadata = { title: "Connect · Closer" };
 export default function PatientConnectPage() {
   return (
     <>
-      <PageHero emoji="💛" title="Connect" hue="coral" listen="Connect. Tap a button to tell your people how you feel.">
-        Tap to tell your people.
-      </PageHero>
+      <header className="flex flex-col gap-1">
+        <h1 className="text-4xl font-extrabold">Connect 💛</h1>
+        <p className="text-xl text-muted-foreground">Tap to tell your people.</p>
+      </header>
 
       <Suspense fallback={<div className="min-h-64" />}>
         <Nudges />

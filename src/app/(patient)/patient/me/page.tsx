@@ -2,7 +2,6 @@ import { Lock } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
-import { PageHero } from "@/components/kit/page-hero";
 import { JournalBox } from "@/components/patient/journal-box";
 import { ShareKeptButtons } from "@/components/patient/kept-item";
 import { ACTIVITY_TYPES } from "@/lib/activities";
@@ -21,11 +20,12 @@ export const metadata: Metadata = { title: "Me · Closer" };
 export default function PatientMePage() {
   return (
     <>
-      <PageHero emoji="🦖" title="Me" hue="lilac" listen="Me. Only you can see this, unless you share it.">
-        <p className="flex items-center gap-2">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-4xl font-extrabold">Me 🦖</h1>
+        <p className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-lg font-bold">
           <Lock className="size-5 shrink-0" aria-hidden /> Only you can see this, unless you share it.
         </p>
-      </PageHero>
+      </header>
       <Suspense fallback={<div className="min-h-64" />}>
         <MySpace />
       </Suspense>
@@ -74,21 +74,21 @@ async function MySpace() {
 
   return (
     <>
-      <section aria-labelledby="badges-title" className="hue-sun flex flex-col gap-3 rounded-3xl bg-hue-soft p-5">
+      <section aria-labelledby="badges-title" className="flex flex-col gap-3 rounded-3xl bg-role-patient-soft p-5">
         <h2 id="badges-title" className="text-2xl font-extrabold">
           🔥 Connected for {streak.totalDays} {streak.totalDays === 1 ? "day" : "days"}
         </h2>
         {streak.streakDays > 1 && <p className="text-lg">{streak.streakDays} days in a row{streak.restDays ? " (rest days count too)" : ""}!</p>}
-        <ul aria-label="My badges" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <ul aria-label="My badges" className="flex flex-wrap gap-3">
           {MILESTONES.map((m) => {
             const earned = streak.totalDays >= m.days;
             return (
-              <li key={m.days} className={cn("flex flex-col items-center gap-1 rounded-3xl p-3 text-center", earned ? "bg-card shadow-sm ring-2 ring-hue" : "border-2 border-dashed border-hue bg-card/50")}>
-                <span aria-hidden className={cn("flex size-16 items-center justify-center rounded-full text-4xl", earned ? "bg-hue-soft" : "opacity-40 grayscale")}>
+              <li key={m.days} className={cn("flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center", !earned && "opacity-50 grayscale")}>
+                <span aria-hidden className="text-4xl">
                   {m.emoji}
                 </span>
-                <span className="font-bold">{m.name}</span>
-                <span className={cn("text-sm", earned ? "font-bold text-hue-ink" : "text-muted-foreground")}>{earned ? "Earned! 🎉" : `At ${m.days} days`}</span>
+                <span className="text-sm font-bold">{m.name}</span>
+                <span className="text-xs text-muted-foreground">{earned ? "Earned!" : `${m.days} days`}</span>
               </li>
             );
           })}

@@ -22,21 +22,19 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ComponentType, Suspense } from "react";
-import { HUES, type Hue } from "@/lib/hues";
 import type { RoleKey } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
-/** The patient's tabs also have an emoji and a hue: kids find "the yellow sun" before they read "Today". */
-type NavItem = { href: string; label: string; icon: LucideIcon; emoji?: string; hue?: Hue };
+type NavItem = { href: string; label: string; icon: LucideIcon };
 
 // Max 5 tabs for patient, family and volunteer (bottom bar). The first item is the role's home.
 export const NAV: Record<RoleKey, NavItem[]> = {
   patient: [
-    { href: "/patient", label: "Today", icon: Sun, emoji: "☀️", hue: "sun" },
-    { href: "/patient/connect", label: "Connect", icon: Heart, emoji: "💛", hue: "coral" },
-    { href: "/patient/play", label: "Play", icon: Puzzle, emoji: "🎨", hue: "mint" },
-    { href: "/patient/memories", label: "Memories", icon: Images, emoji: "📸", hue: "sky" },
-    { href: "/patient/me", label: "Me", icon: User, emoji: "🦖", hue: "lilac" },
+    { href: "/patient", label: "Today", icon: Sun },
+    { href: "/patient/connect", label: "Connect", icon: Heart },
+    { href: "/patient/play", label: "Play", icon: Puzzle },
+    { href: "/patient/memories", label: "Memories", icon: Images },
+    { href: "/patient/me", label: "Me", icon: User },
   ],
   family: [
     { href: "/family", label: "Feed", icon: Newspaper },
@@ -116,30 +114,19 @@ export const BottomTabs = withPathname(function BottomTabs({ role, className, pa
   return (
     <nav aria-label="Main" className={cn("fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur", className)}>
       <ul className="mx-auto flex max-w-xl">
-        {NAV[role].map(({ href, label, icon: Icon, emoji, hue }) => {
+        {NAV[role].map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           return (
-            <li key={href} className={cn("flex-1", hue && HUES[hue])}>
+            <li key={href} className="flex-1">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "group flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 font-bold text-muted-foreground",
-                  emoji ? "min-h-19 text-sm" : "min-h-16 text-xs",
-                )}
+                className="group flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-xs font-bold text-muted-foreground"
               >
-                {emoji ? (
-                  <span className={cn("flex h-10 w-16 items-center justify-center rounded-full text-[1.75rem] leading-none transition", active ? "bg-hue-soft ring-2 ring-hue" : "group-hover:bg-muted")}>
-                    <span aria-hidden className={cn(active && "animate-pop")}>
-                      {emoji}
-                    </span>
-                  </span>
-                ) : (
-                  <span className={cn("flex h-8 w-14 items-center justify-center rounded-full transition", active ? ACTIVE[role] : "group-hover:bg-muted")}>
-                    <Icon className="size-6" aria-hidden />
-                  </span>
-                )}
-                <span className={cn(active && (emoji ? "font-extrabold text-hue-ink" : "text-foreground"))}>{label}</span>
+                <span className={cn("flex h-8 w-14 items-center justify-center rounded-full transition", active ? ACTIVE[role] : "group-hover:bg-muted")}>
+                  <Icon className="size-6" aria-hidden />
+                </span>
+                <span className={cn(active && "text-foreground")}>{label}</span>
               </Link>
             </li>
           );
@@ -155,10 +142,10 @@ export const SideNav = withPathname(function SideNav({ role, compact, className,
   return (
     <nav aria-label="Main" className={className}>
       <ul className="flex flex-col gap-1.5">
-        {NAV[role].map(({ href, label, icon: Icon, emoji, hue }) => {
+        {NAV[role].map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           return (
-            <li key={href} className={cn(hue && HUES[hue])}>
+            <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
@@ -166,22 +153,12 @@ export const SideNav = withPathname(function SideNav({ role, compact, className,
                 title={compact ? label : undefined}
                 className={cn(
                   "flex items-center rounded-2xl font-bold transition",
-                  role === "patient" ? "min-h-22 flex-col justify-center gap-1 px-2 text-base" : "min-h-11 gap-3 px-3",
+                  role === "patient" ? "min-h-20 flex-col justify-center gap-1 px-2 text-sm" : "min-h-11 gap-3 px-3",
                   compact && role !== "patient" && "justify-center px-0",
-                  active
-                    ? emoji
-                      ? "bg-hue-soft font-extrabold text-hue-ink ring-2 ring-hue"
-                      : ACTIVE[role]
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  active ? ACTIVE[role] : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                {emoji ? (
-                  <span aria-hidden className={cn("text-4xl leading-none", active && "animate-pop")}>
-                    {emoji}
-                  </span>
-                ) : (
-                  <Icon className={role === "patient" ? "size-7" : "size-5"} aria-hidden />
-                )}
+                <Icon className={role === "patient" ? "size-7" : "size-5"} aria-hidden />
                 {!compact && <span>{label}</span>}
               </Link>
             </li>

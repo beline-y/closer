@@ -58,10 +58,6 @@
   --color-mood-3: var(--mood-3);
   --color-mood-4: var(--mood-4);
   --color-mood-5: var(--mood-5);
-  /* Patient side: the color of the current hue-* scope (see the hue utilities below) */
-  --color-hue: var(--hue);
-  --color-hue-soft: var(--hue-soft);
-  --color-hue-ink: var(--hue-ink);
   --color-presence: var(--presence);
   --color-alert: var(--alert);
   --color-alert-soft: var(--alert-soft);
@@ -123,13 +119,6 @@
   --mood-3: #8c877f;
   --mood-4: #eba200;
   --mood-5: #c25400;
-  /* Two more bright hues for the patient side (sun, coral and lilac reuse the role colors) */
-  --mint: oklch(0.8 0.13 165);
-  --mint-soft: oklch(0.95 0.045 165);
-  --mint-ink: oklch(0.45 0.09 170);
-  --sky: oklch(0.76 0.12 235);
-  --sky-soft: oklch(0.95 0.035 235);
-  --sky-ink: oklch(0.46 0.12 250);
   --presence: oklch(0.68 0.17 150);
   --alert: oklch(0.52 0.19 25);
   --alert-soft: oklch(0.95 0.04 25);
@@ -193,68 +182,6 @@
   --tap: 2.75rem;
 }
 
-/* Patient side: one bright, soft hue per screen and per kind of action, always next to an
-   emoji and a word (never color alone). A hue-* class opens a scope; inside it,
-   bg-hue-soft, text-hue-ink, ring-hue… use that hue. */
-@utility hue-sun {
-  --hue: var(--role-patient);
-  --hue-soft: var(--role-patient-soft);
-  --hue-ink: var(--role-patient-ink);
-}
-@utility hue-coral {
-  --hue: var(--role-family);
-  --hue-soft: var(--role-family-soft);
-  --hue-ink: var(--role-family-ink);
-}
-@utility hue-mint {
-  --hue: var(--mint);
-  --hue-soft: var(--mint-soft);
-  --hue-ink: var(--mint-ink);
-}
-@utility hue-sky {
-  --hue: var(--sky);
-  --hue-soft: var(--sky-soft);
-  --hue-ink: var(--sky-ink);
-}
-@utility hue-lilac {
-  --hue: var(--role-volunteer);
-  --hue-soft: var(--role-volunteer-soft);
-  --hue-ink: var(--role-volunteer-ink);
-}
-
-/* A chunky sticker edge in the current hue: says "tap me", lifts on hover, sinks when pressed. */
-@utility pressable {
-  --edge: color-mix(in oklab, var(--hue, oklch(0.86 0.03 70)) 80%, var(--hue-ink, oklch(0.6 0.03 60)));
-  box-shadow: 0 5px 0 0 var(--edge);
-  transition:
-    translate var(--dur-fast) ease-out,
-    box-shadow var(--dur-fast) ease-out;
-  &:hover:not(:disabled) {
-    translate: 0 -2px;
-    box-shadow: 0 7px 0 0 var(--edge);
-  }
-  &:active:not(:disabled) {
-    translate: 0 4px;
-    box-shadow: 0 1px 0 0 var(--edge);
-  }
-}
-
-/* Patient backdrop: soft sun, sky and mint glows that stay put while the page scrolls */
-@utility kid-backdrop {
-  &::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 100% 0%, var(--role-patient-soft), transparent 40%),
-      radial-gradient(circle at 0% 45%, var(--sky-soft), transparent 35%),
-      radial-gradient(circle at 90% 100%, var(--mint-soft), transparent 40%);
-  }
-}
-
-
 @keyframes pop {
   from { transform: scale(0.85); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -300,10 +227,6 @@
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
-  }
-  /* Thicker on the playful side, easy to follow with a keyboard or a switch */
-  [data-tone="playful"] :focus-visible {
-    @apply outline-3 outline-offset-3;
   }
   dialog::backdrop {
     background: oklch(0.25 0.03 50 / 45%);
