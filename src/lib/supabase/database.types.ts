@@ -366,6 +366,87 @@ export type Database = {
           },
         ]
       }
+      daily_wellbeing_reviews: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          attempts: number
+          completed_at: string | null
+          consent_at: string
+          evidence: Json
+          for_date: string
+          id: string
+          lease_token: string
+          level: string | null
+          model: string | null
+          patient_id: string
+          prompt_version: string | null
+          safeguarding_concern: boolean
+          source: string | null
+          started_at: string
+          status: string
+          suggested_action: string | null
+          summary: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempts?: number
+          completed_at?: string | null
+          consent_at: string
+          evidence?: Json
+          for_date: string
+          id?: string
+          lease_token?: string
+          level?: string | null
+          model?: string | null
+          patient_id: string
+          prompt_version?: string | null
+          safeguarding_concern?: boolean
+          source?: string | null
+          started_at?: string
+          status?: string
+          suggested_action?: string | null
+          summary?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempts?: number
+          completed_at?: string | null
+          consent_at?: string
+          evidence?: Json
+          for_date?: string
+          id?: string
+          lease_token?: string
+          level?: string | null
+          model?: string | null
+          patient_id?: string
+          prompt_version?: string | null
+          safeguarding_concern?: boolean
+          source?: string | null
+          started_at?: string
+          status?: string
+          suggested_action?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_wellbeing_reviews_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_wellbeing_reviews_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_ratings: {
         Row: {
           amount: Database["public"]["Enums"]["meal_amount"] | null
@@ -515,6 +596,83 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_prefs: {
+        Row: {
+          connection_enabled: boolean
+          user_id: string
+        }
+        Insert: {
+          connection_enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          connection_enabled?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_prefs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          feedback: string | null
+          for_date: string
+          id: string
+          kind: string
+          patient_id: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          feedback?: string | null
+          for_date: string
+          id?: string
+          kind: string
+          patient_id: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          feedback?: string | null
+          for_date?: string
+          id?: string
+          kind?: string
+          patient_id?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -785,17 +943,110 @@ export type Database = {
         }
         Relationships: []
       }
+      wellbeing_permissions: {
+        Row: {
+          consent_version: string
+          consented_by: string
+          enabled: boolean
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          consent_version?: string
+          consented_by: string
+          enabled?: boolean
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          consent_version?: string
+          consented_by?: string
+          enabled?: boolean
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wellbeing_permissions_consented_by_fkey"
+            columns: ["consented_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wellbeing_permissions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wellbeing_settings: {
+        Row: {
+          low_mood_streak: number
+          low_mood_threshold: number
+          no_checkin_days: number
+          patient_id: string
+        }
+        Insert: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          patient_id: string
+        }
+        Update: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wellbeing_settings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_wellbeing_review: {
+        Args: { p_review_id: string }
+        Returns: undefined
+      }
       activity_counts: {
         Args: { p_days?: number; p_patient_id: string }
         Returns: {
           completed: number
           local_date: string
         }[]
+      }
+      can_process_wellbeing: {
+        Args: { p_consent_at: string; p_patient_id: string }
+        Returns: boolean
+      }
+      claim_daily_review: {
+        Args: { p_for_date: string; p_patient_id: string }
+        Returns: {
+          review_id: string
+          token: string
+        }[]
+      }
+      complete_daily_review: {
+        Args: {
+          p_child_message: string
+          p_parent_message: string
+          p_result: Json
+          p_review_id: string
+          p_token: string
+        }
+        Returns: boolean
       }
       my_pending_challenges: {
         Args: never
@@ -815,6 +1066,10 @@ export type Database = {
           p_recipients?: string[]
         }
         Returns: string
+      }
+      set_wellbeing_consent: {
+        Args: { p_enabled: boolean; p_patient_id: string }
+        Returns: undefined
       }
     }
     Enums: {

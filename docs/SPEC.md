@@ -30,7 +30,7 @@ Guardian consent is required for minors, and one guardian is enough. Adults need
 - Nudges have no hourly or daily cap. There is a **cooldown per nudge type**, 10 minutes by default and editable by the care team per patient. The button shows the remaining time.
 - Alert defaults, editable per patient by the care team: 3 low moods (≤ 2) in a row, no check-in for 2 days, no family contact for 2 days.
 - Email: Resend (test mode while in dev). Web push comes after the MVP.
-- AI: Anthropic Claude, via a server-side route only (post-MVP).
+- AI: Mistral, server-side only, for opt-in daily wellbeing observations and personalized connection prompts. See [WELLBEING.md](WELLBEING.md). Care staff review support signals; AI does not diagnose.
 - Supabase region: US. Default patient timezone: `America/New_York`.
 - Patient devices are personal tablets, so there's no auto sign-out in the MVP.
 - **Demo access:** while all data is fictional, the landing page is a role picker (`DEMO_MODE=true` in every environment, production included). Real sign-in is tracked in issue #9.

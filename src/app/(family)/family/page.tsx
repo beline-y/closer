@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { WellbeingPanel } from "@/components/wellbeing/dashboard";
 import { FamilyFeed } from "@/components/family/family-feed";
 import { QuickActions } from "@/components/family/quick-actions";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -28,6 +29,7 @@ export default function FamilyFeedPage() {
           </Suspense>
         </div>
       </div>
+      <Suspense fallback={null}><WellbeingPanel role="family" /></Suspense>
     </>
   );
 }

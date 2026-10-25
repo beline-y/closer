@@ -89,8 +89,9 @@ export async function setCheckinReaction(checkinId: string, emoji: string): Prom
   const userId = claims?.claims.sub;
   if (!userId) return { ok: false, error: "Not signed in." };
 
-  const { data: existing } = await supabase.from("checkin_reactions").select("emoji").match({ checkin_id: checkinId, user_id: userId }).maybeSingle();
   const match = { checkin_id: checkinId, user_id: userId };
+  const { data: existing, error: readError } = await supabase.from("checkin_reactions").select("emoji").match(match).maybeSingle();
+  if (readError) return { ok: false, error: "Couldn't load your reaction." };
   const { error } = !existing
     ? await supabase.from("checkin_reactions").insert({ ...match, emoji })
     : existing.emoji === emoji

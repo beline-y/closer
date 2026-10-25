@@ -13,8 +13,6 @@ begin
   return new;
 end;
 $$;
-
 revoke all on function private.invite_challenge_partner() from public, anon, authenticated;
-
 create trigger activity_sessions_invite_partner after insert on public.activity_sessions
   for each row execute function private.invite_challenge_partner();

@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(24);
+select plan(27);
 
 create function pg_temp.act_as(p_user_id uuid) returns void language plpgsql as $$
 begin
@@ -53,8 +53,8 @@ select is((select mood from mood_checkins where patient_id = 'aaaaaaaa-aaaa-4aaa
 select pg_temp.act_as('22222222-2222-4222-8222-222222222222'); -- Emma
 select is((select count(*) from mood_checkins)::int, 14, 'Emma reads all of Leo''s check-ins');
 select is((select count(*) from checkin_photos)::int, 5, 'Emma reads Leo''s check-in photos');
-select is((select count(*) from storage.objects o where o.bucket_id = 'checkin-photos' and o.name in (select path from checkin_photos))::int, 5,
-  'Emma can open the photo files');
+select is((select count(*) from storage.objects o join checkin_photos p on p.path = o.name where o.bucket_id = 'checkin-photos')::int,
+  (select count(*) from checkin_photos)::int, 'Emma can open every linked photo file, even with extra test uploads');
 select throws_ok(
   $$insert into mood_checkins (patient_id, mood) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2)$$,
   '42501', null, 'Emma cannot write a check-in for Leo');
@@ -62,6 +62,18 @@ select lives_ok(
   $$insert into checkin_reactions (checkin_id, user_id, emoji)
     select id, '22222222-2222-4222-8222-222222222222', '💪' from mood_checkins where note = 'test'$$,
   'Emma reacts to a check-in');
+select lives_ok(
+  $$insert into checkin_reactions (checkin_id, user_id, emoji)
+    select id, '22222222-2222-4222-8222-222222222222', '🤗' from mood_checkins where note = 'test'
+    on conflict (checkin_id, user_id) do update set emoji = excluded.emoji$$,
+  'Emma can change her existing reaction');
+select is((select emoji from checkin_reactions r join mood_checkins c on c.id = r.checkin_id
+  where c.note = 'test' and r.user_id = '22222222-2222-4222-8222-222222222222'), '🤗',
+  'Changing a reaction keeps exactly one emoji per person');
+select throws_ok(
+  $$insert into checkin_reactions (checkin_id, user_id, emoji)
+    select id, '22222222-2222-4222-8222-222222222222', '❤️' from mood_checkins where note = 'test'$$,
+  '23505', null, 'A second simultaneous reaction from the same person is rejected');
 select pg_temp.reset_role();
 
 select pg_temp.act_as('33333333-3333-4333-8333-333333333333'); -- James

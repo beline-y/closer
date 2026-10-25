@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { setCheckinReaction } from "@/app/checkin-actions";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { REACTIONS } from "@/lib/checkin";
@@ -12,13 +12,15 @@ type Reactions = CheckInView["reactions"];
 const myEmoji = (reactions: Reactions, me: string) => reactions.find((r) => r.byUserIds.includes(me))?.emoji ?? null;
 
 // Family side: one reaction per person, tap another to change it, the same one to remove it.
+// Optimistic, then confirmed by the server; a failure is shown under the buttons.
 export function ReactionBar({ checkinId, reactions, me, onReact = setCheckinReaction }: {
   checkinId: string;
   reactions: Reactions;
   me: string;
-  onReact?: (id: string, emoji: string) => Promise<unknown>;
+  onReact?: (id: string, emoji: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [optimistic, choose] = useOptimistic(reactions, (state: Reactions, emoji: string) => {
     const current = myEmoji(state, me);
     const without = state
@@ -45,10 +47,13 @@ export function ReactionBar({ checkinId, reactions, me, onReact = setCheckinReac
             aria-checked={mine === emoji}
             aria-label={`Send ${label}${names ? `. Already from ${names}` : ""}`}
             title={names}
+            disabled={pending}
             onClick={() =>
               startTransition(async () => {
+                setError(null);
                 choose(emoji);
-                await onReact(checkinId, emoji);
+                const result = await onReact(checkinId, emoji);
+                if (!result.ok) setError(result.error ?? "Couldn't react.");
               })
             }
             className={cn("flex min-h-11 items-center gap-1 rounded-full px-3 text-xl transition active:scale-90", mine === emoji ? "bg-role-family-soft ring-2 ring-role-family" : "bg-card ring-1 ring-border")}
@@ -58,6 +63,11 @@ export function ReactionBar({ checkinId, reactions, me, onReact = setCheckinReac
           </button>
         );
       })}
+      {error && (
+        <p role="alert" className="w-full text-sm font-bold text-alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
