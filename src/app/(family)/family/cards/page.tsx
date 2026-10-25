@@ -12,7 +12,7 @@ export default function FamilyCardsPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-extrabold">Comfort cards 💌</h1>
+        <h1 className="text-3xl font-extrabold">Comfort cards</h1>
         <p className="text-lg text-muted-foreground">A sealed card waits for Leo until the right moment.</p>
       </header>
       <Suspense fallback={<p>Opening your card draft…</p>}><DraftWriter searchParams={searchParams} /></Suspense>

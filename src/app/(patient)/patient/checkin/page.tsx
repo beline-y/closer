@@ -25,7 +25,7 @@ async function CheckIn() {
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-4xl font-extrabold">{today ? "Edit today's check-in ✏️" : "Check in 😊"}</h1>
+        <h1 className="text-4xl font-extrabold">{today ? "Edit today's check-in" : "Check in"}</h1>
         <Link href="/patient" className="min-h-12 content-center rounded-full px-4 font-bold text-muted-foreground hover:bg-muted">
           Not now
         </Link>

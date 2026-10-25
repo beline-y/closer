@@ -4,14 +4,20 @@ import { ImagePlus } from "lucide-react";
 import { useState } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
 import { Modal } from "@/components/kit/modal";
+import { CloserIcon, REACTION_TONE } from "@/components/icons/closer-icon";
+import { MEMORY_TAG_ICONS, MemoryThumb } from "@/components/kit/memory-thumb";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { CAST, type CastId } from "@/lib/cast";
 import { relativeDay } from "@/lib/dates";
 import { type Memory, MEMORIES, MEMORY_TAGS, type MemoryTag } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
 
-const TAG_EMOJI: Record<MemoryTag, string> = { holiday: "🏖️", birthday: "🎂", pet: "🐾", school: "🏫", family: "👨‍👩‍👦", friends: "🤝", other: "✨" };
-const REACTIONS = ["❤️", "😂", "🥹", "⭐"];
+const REACTIONS = [
+  { kind: "heart", label: "a heart" },
+  { kind: "laugh", label: "a laugh" },
+  { kind: "hug", label: "a hug" },
+  { kind: "star", label: "a star" },
+] as const;
 
 // Shared album between Leo and his circle. The care team and volunteers never see it.
 // Saved for this visit only until the memories feature lands.
@@ -38,11 +44,15 @@ export function MemoriesAlbum({ viewer, big, fromActivities = [] }: { viewer: Ca
               aria-pressed={filter === t}
               onClick={() => setFilter(t)}
               className={cn(
-                "min-h-11 shrink-0 rounded-full px-4 font-bold capitalize transition",
+                "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 font-bold capitalize transition",
                 filter === t ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground",
               )}
             >
-              {t === "all" ? "All" : `${TAG_EMOJI[t]} ${t}`}
+              {t === "all" ? "All" : (
+                <>
+                  <CloserIcon name={MEMORY_TAG_ICONS[t]} /> {t}
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -56,7 +66,7 @@ export function MemoriesAlbum({ viewer, big, fromActivities = [] }: { viewer: Ca
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState emoji="📸" title="No memories here yet">
+        <EmptyState icon="make_snap" title="No memories here yet">
           Add a photo of a happy moment. Everyone in the family album will see it.
         </EmptyState>
       ) : (
@@ -72,7 +82,7 @@ export function MemoriesAlbum({ viewer, big, fromActivities = [] }: { viewer: Ca
                 <span className="flex flex-col gap-0.5 p-3">
                   <span className="line-clamp-2 font-bold">{m.caption}</span>
                   <span className="text-sm text-muted-foreground">
-                    {CAST[m.by].avatar} {CAST[m.by].name} · {relativeDay(m.sharedDaysAgo)}
+                    {CAST[m.by].name} · {relativeDay(m.sharedDaysAgo)}
                   </span>
                 </span>
               </button>
@@ -81,11 +91,11 @@ export function MemoriesAlbum({ viewer, big, fromActivities = [] }: { viewer: Ca
         </ul>
       )}
 
-      <Modal open={!!open} onClose={() => setOpenId(null)} title={open ? `${TAG_EMOJI[open.tag]} ${open.tag[0].toUpperCase()}${open.tag.slice(1)}` : ""}>
+      <Modal open={!!open} onClose={() => setOpenId(null)} title={open ? `${open.tag[0].toUpperCase()}${open.tag.slice(1)}` : ""}>
         {open && <MemoryDetail memory={open} viewer={viewer} onChange={(fn) => update(open.id, fn)} />}
       </Modal>
 
-      <Modal open={adding} onClose={() => setAdding(false)} title="Add a memory 📸">
+      <Modal open={adding} onClose={() => setAdding(false)} title="Add a memory">
         <AddMemoryForm
           viewer={viewer}
           onAdd={(m) => {
@@ -104,10 +114,8 @@ function MemoryPhoto({ memory, className }: { memory: Memory; className?: string
     return <img src={memory.photoUrl} alt={memory.caption} className={cn("w-full object-cover", className)} />;
   }
   return (
-    <span role="img" aria-label={memory.caption} className={cn("flex w-full items-center justify-center bg-gradient-to-br text-6xl", memory.gradient, className)}>
-      <span aria-hidden className="transition-transform group-hover:scale-110">
-        {memory.emoji}
-      </span>
+    <span role="img" aria-label={memory.caption} className={cn("flex w-full", className)}>
+      <MemoryThumb memory={memory} className="size-full" iconClassName="size-14 transition-transform group-hover:scale-110" />
     </span>
   );
 }
@@ -127,25 +135,25 @@ function MemoryDetail({ memory, viewer, onChange }: { memory: Memory; viewer: Ca
         </div>
       </div>
       <div role="group" aria-label="React" className="flex flex-wrap gap-2">
-        {REACTIONS.map((emoji) => {
-          const r = memory.reactions.find((x) => x.emoji === emoji);
+        {REACTIONS.map(({ kind, label }) => {
+          const r = memory.reactions.find((x) => x.kind === kind);
           const mine = !!r?.by.includes(viewer);
           return (
             <button
-              key={emoji}
+              key={kind}
               type="button"
               aria-pressed={mine}
-              aria-label={`React ${emoji}`}
+              aria-label={`Send ${label}`}
               onClick={() =>
                 onChange((m) => {
-                  const others = m.reactions.filter((x) => x.emoji !== emoji);
+                  const others = m.reactions.filter((x) => x.kind !== kind);
                   const by = mine ? (r?.by ?? []).filter((id) => id !== viewer) : [...(r?.by ?? []), viewer];
-                  return { ...m, reactions: by.length ? [...others, { emoji, by }] : others };
+                  return { ...m, reactions: by.length ? [...others, { kind, by }] : others };
                 })
               }
-              className={cn("flex min-h-12 items-center gap-1.5 rounded-full px-4 text-xl transition active:scale-95", mine ? "bg-role-family-soft ring-2 ring-role-family" : "bg-muted")}
+              className={cn("flex min-h-12 items-center gap-1.5 rounded-full px-4 transition active:scale-95", mine ? "bg-role-family-soft ring-2 ring-role-family" : "bg-muted")}
             >
-              {emoji}
+              <CloserIcon name={kind} className={cn("size-5", REACTION_TONE[kind])} />
               {r && <span className="text-base font-bold tabular-nums">{r.by.length}</span>}
             </button>
           );
@@ -199,7 +207,6 @@ function AddMemoryForm({ viewer, onAdd }: { viewer: CastId; onAdd: (m: Memory) =
           caption: caption.trim(),
           takenOn: takenOn ? new Date(`${takenOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recently",
           tag,
-          emoji: TAG_EMOJI[tag],
           gradient: "from-amber-100 to-pink-200",
           photoUrl,
           sharedDaysAgo: 0,
@@ -250,7 +257,7 @@ function AddMemoryForm({ viewer, onAdd }: { viewer: CastId; onAdd: (m: Memory) =
           <select id="tag" value={tag} onChange={(e) => setTag(e.target.value as MemoryTag)} className="min-h-12 rounded-xl border bg-background px-4 capitalize">
             {MEMORY_TAGS.map((t) => (
               <option key={t} value={t}>
-                {TAG_EMOJI[t]} {t}
+                {t}
               </option>
             ))}
           </select>

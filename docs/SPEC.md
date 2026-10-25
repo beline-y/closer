@@ -9,7 +9,7 @@ This is a **demo project**. All data is fictional. Real basic security is implem
 1. **Emotionally safe for the patient.** A patient never sees "0 replies", "seen but not answered" or a broken streak. Nudges always end on "Sent! ❤️".
 2. **Minimal data.** A patient record holds only a nickname, birth year, interests and timezone. No diagnosis, room number or last name. EXIF is stripped from photos before upload.
 3. **Security lives in the database.** Locks, sealed cards and visibility rules are enforced by RLS and SQL functions, not just hidden in the UI.
-4. **Usable by kids who read little.** Every action has an icon and a word. Tap targets are at least 56px, the font is large (Atkinson Hyperlegible), and mood uses emoji plus color plus a label.
+4. **Usable by kids who read little.** Every action has an icon and a word. Tap targets are at least 56px, the font is large (Atkinson Hyperlegible), and mood uses a face icon plus color plus a label. No emoji anywhere (they look different on every platform): one icon set (`CloserIcon`, lucide line icons in the palette) and five custom mood faces (`MoodFace`), reused for the food scale (Yuck, Not great, OK, Good, Loved it). The database stores keys (heart, hug, strong, laugh, star, call), never emoji characters.
 5. **Volunteers never see who a patient is.** No name, age, photo, avatar, unit, diagnosis, check-in or link to a patient profile. Patients reach volunteers only through anonymized, care-approved content, and only a patient can start a contact request. Enforced by RLS: volunteers have no access to patient tables at all.
 6. **Analytics later, at no extra cost.** A content-free `activity_events` log plus a mood time series let us add care team AI analysis later without changing the schema.
 
@@ -98,10 +98,10 @@ Demo cast, all fictional, same names in every role: **Leo** (patient, 9), **Emma
 **Shared:** landing with the demo role picker, demo banner with "Switch role" on every page, login, patient login (number pad), join with code, guardian consent, account (export, delete).
 
 **Patient** (phone and tablet; bottom tab bar on phone, side rail on tablet, same order; tabs Today · Connect · Play · Memories · Me):
-- Today: greeting, mood of the day (check-in, food score, reactions, streak), today's question (the card opens the full question screen, which has no tab of its own), who's thinking of you, one suggested activity.
-- Check-in: five emoji, then optional photo, today's menu dishes to rate (yuck to yum, how much), activities and note, then a celebration with the streak ("Connected for 12 days!", badges at 3, 7, 14, 30).
-- Connect: five nudge buttons with a cooldown ring, then a recipient picker, then "Sent! ❤️"; replies from family; sealed comfort cards to open (envelope stack, open animation, archive); the creations Leo shared, with the family's reactions, comments and revealed challenges.
-- Question (from Today): answer box with emoji chips; "🔒 Mom answered! Answer to see hers". After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
+- Today: no greeting. On top, "Who's thinking of you" as stories: one round avatar per person who sent something today (nudge reply, reaction, comment, comfort card, question answered), a colored ring while unseen, grey once seen. Tapping opens a full-screen story (tap right next, left previous, swipe down or X to close, progress bar for several items); opening marks items as seen (`story_seen`). Real data, live. Then mood of the day on one flat tinted area (`--surface-muted`, no border, no shadow, no inner card) with the streak, today's question, cards waiting and one suggested activity.
+- Check-in: five mood faces, then optional photo, today's menu dishes to rate (yuck to yum, how much), activities and note, then a celebration with the streak ("Connected for 12 days!", badges at 3, 7, 14, 30).
+- Connect: the five nudges in one compact row at the very top (56px circles, short label; the cooldown fills a ring around the icon with the time left under it), then a recipient picker and "Sent!"; then comfort cards and the family's replies; sealed comfort cards to open (envelope stack, open animation, archive); the creations Leo shared, with the family's reactions, comments and revealed challenges.
+- Question (from Today): answer box; "Mom answered! Answer to see hers" (lock icon). After answering: a volunteer card (answer + story) with "Ask Maya a question" and "I'd like to talk with Maya".
 - Play: today's theme at the top, "Continue" for unfinished activities (drafts saved, challenges waiting for family), the library by type (Draw, Make and snap, Quiz, Story time, Challenge with family). Results aren't kept here: after finishing, Leo chooses share with family, add to Memories, or keep for myself.
 - Activity: full-screen drawing (finger and stylus, colors, sizes, eraser, undo, clear), make and snap (steps then photo), quiz (5 questions, score), story (write or dictate, autosaved), challenge with family (both draw, reveal side by side).
 - Memories: the same album as the family.
@@ -153,12 +153,12 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `guardian_consents` | guardian_id, consent_version, scopes, granted_at, withdrawn_at | Guardian inserts and withdraws. Guardian and care team read. Never deleted. |
 | `mood_checkins` | local_date (set by the database, patient timezone), mood 1–5, activities[] (played, movie, drew, school, visit, treatment, rested, walk), activity_note, note ≤ 280 | Patient writes and edits today's only (until midnight). Family and care team read. Volunteers: none. Unique (patient, day). Realtime. |
 | `checkin_photos` | checkin_id (one photo per check-in), patient_id, path | **Patient and family only.** Storage bucket uses the same rule. Photos are resized (max 1600px) and re-encoded to WebP on the device, which strips EXIF and GPS. Realtime. |
-| `checkin_reactions` | checkin_id, user_id (one per person), emoji (❤️ 🤗 💪 😂) | Patient and family read; family and friends add, change and remove their own. Realtime. |
+| `checkin_reactions` | checkin_id, user_id (one per person), kind (heart, hug, strong, laugh; the old emoji column is kept in sync by a trigger until it is dropped) | Patient and family read; family and friends add, change and remove their own. Realtime. |
 | `care_units`, `care_unit_members` | name; unit_id, user_id. `patients.unit_id` | Members and the unit's patients and circles read. Written by seed or admin. |
 | `menu_items` | unit_id, menu_date, meal, dish_name, icon, position | Seeded weekly rotation for the demo (the care team's write policy stays for the post-demo upload). The unit's patients and their circle read. Volunteers: none. |
 | `meal_ratings` | checkin_id, menu_item_id, patient_id, liking 1–5, amount | Patient rates today's dishes of their unit only. Patient, circle and care team read. Realtime. |
 | `nudges` | patient_id, kind (miss_you, call_me, bored, proud, hug) | Created only by `send_nudge(kind, recipients)`: active patient only, per-type cooldown from `patient_settings`, recipients limited to the patient's family and friends (default: all). Patient and recipients read. No care team, no volunteers. Realtime. |
-| `nudge_recipients` | nudge_id, user_id, seen_at, reply_emoji (❤️ 📞 🤗 ⭐), reply_text ≤ 140, replied_at | Recipient reads and replies on their own row only. The patient reads every reply (never "no reply"). Realtime. |
+| `nudge_recipients` | nudge_id, user_id, seen_at, reply_kind (heart, call, hug, star; reply_emoji kept in sync), reply_text ≤ 140, replied_at | Recipient reads and replies on their own row only. The patient reads every reply (never "no reply"). Realtime. |
 | `comfort_cards` | patient_id, author_id, body ≤ 1000, color (sun, coral, sky, lilac), opened_at | Family and friends write for their patient; the author reads their own and can edit or take back while sealed. The patient sees sealed cards through `sealed_cards()` (who and color, never the text) and opens each once with `open_comfort_card()` (first date kept); opened cards are the archive. No care team, no volunteers. Realtime: the author sees "Leo opened your card" live. |
 | `question_bank` | text, source (curated / mistral), patient_id (generated ones only), min_age, max_age, tags | 60 curated questions shared by everyone (volunteers excepted); Mistral-generated ones belong to one patient's family. Written only through `next_question_ideas()` / `add_generated_questions()`. |
 | `question_suggestions` | patient_id, question_id, suggested_to, suggested_at | What a family already saw: never repeated until the pool runs out, then the oldest curated come back. Circle reads. |
@@ -167,6 +167,7 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `notifications` | user_id, kind, ref_id, read_at, emailed_at | Owner only. Delivered through Realtime. |
 | `notification_prefs` | user_id, email_enabled | Owner only. |
 | `app_minutes` | patient_id, local_date, minutes, last_seen_at | Written only by `log_app_minute()`: the patient's app pings once a minute while on screen, at most one minute per 50 s. Patient reads own. Care team gets daily totals only through `care_engagement()`. Time inside Closer, not device screen time. |
+| `story_seen` | user_id, item_key ("reply:<nudge>:<user>", "card:<id>"…), seen_at | Which stories the patient opened. Own rows only. |
 | `ai_summaries` | patient_id, kind (overview / report), payload, stored_at | The last AI reading per child, shown when the AI service is off. Care team of the child only. |
 | `activity_events` | patient_id, actor_kind, event_type | Append-only, no content, trigger-filled. |
 | `alert_acks` | alert_type, for_date, acked_by, note | Care team. |
@@ -178,17 +179,17 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | Table | Key columns | RLS |
 |---|---|---|
 | `memories` | patient_id, author_id, photo_path, caption ≤ 280, taken_on, tag (holiday, birthday, pet, school, family, friends, other) | Patient and circle read and add. Author edits and deletes. **No care team, no volunteer access.** |
-| `memory_reactions` | memory_id, user_id, emoji | Patient and circle. |
+| `memory_reactions` | memory_id, user_id, kind | Patient and circle. |
 | `memory_comments` | memory_id, user_id, body ≤ 200 | Patient and circle. Author deletes. |
 
 **Activities:**
 
 | Table | Key columns | RLS |
 |---|---|---|
-| `activities` | type (draw, make_snap, quiz, story, challenge), title, emoji, instructions, theme, steps[], quiz (jsonb), minutes | Everyone signed in except volunteers reads. Seeded library. |
+| `activities` | type (draw, make_snap, quiz, story, challenge), title, instructions, theme, steps[], quiz (jsonb), minutes | Everyone signed in except volunteers reads. Seeded library. |
 | `activity_sessions` | patient_id, activity_id, status (started, waiting_partner, completed), result_path, result_text, score, visibility (private/family), in_memories, partner_id, local_date | Patient owns. Circle reads only finished ones shared with family or in Memories. Care team and volunteers: none (`activity_counts()` gives the care team counts only). Realtime. |
 | `challenge_entries` | session_id, user_id, result_path, completed_at | Created empty for the partner when the challenge is sent. The partner reads and completes their own; patient and circle see it only once both are done. Realtime. |
-| `activity_reactions`, `activity_comments` | session_id, user_id, emoji (one per person) / body ≤ 200 | On shared results only. Circle reacts; patient and circle comment. Realtime. |
+| `activity_reactions`, `activity_comments` | session_id, user_id, kind (one per person) / body ≤ 200 | On shared results only. Circle reacts; patient and circle comment. Realtime. |
 
 **Volunteers.** Volunteers have **no SELECT** on `patients`, patient `profiles`, `patient_links`, `mood_checkins`, `journal_entries`, `memories`, `comfort_cards`, `nudges` or any patient-keyed table. Everything they can read lives in tables with **no `patient_id`**:
 

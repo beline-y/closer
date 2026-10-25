@@ -59,20 +59,20 @@ select throws_ok(
   $$insert into mood_checkins (patient_id, mood) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 2)$$,
   '42501', null, 'Emma cannot write a check-in for Leo');
 select lives_ok(
-  $$insert into checkin_reactions (checkin_id, user_id, emoji)
-    select id, '22222222-2222-4222-8222-222222222222', '💪' from mood_checkins where note = 'test'$$,
+  $$insert into checkin_reactions (checkin_id, user_id, kind)
+    select id, '22222222-2222-4222-8222-222222222222', 'strong' from mood_checkins where note = 'test'$$,
   'Emma reacts to a check-in');
 select lives_ok(
-  $$insert into checkin_reactions (checkin_id, user_id, emoji)
-    select id, '22222222-2222-4222-8222-222222222222', '🤗' from mood_checkins where note = 'test'
-    on conflict (checkin_id, user_id) do update set emoji = excluded.emoji$$,
+  $$insert into checkin_reactions (checkin_id, user_id, kind)
+    select id, '22222222-2222-4222-8222-222222222222', 'hug' from mood_checkins where note = 'test'
+    on conflict (checkin_id, user_id) do update set kind = excluded.kind$$,
   'Emma can change her existing reaction');
-select is((select emoji from checkin_reactions r join mood_checkins c on c.id = r.checkin_id
-  where c.note = 'test' and r.user_id = '22222222-2222-4222-8222-222222222222'), '🤗',
-  'Changing a reaction keeps exactly one emoji per person');
+select is((select kind from checkin_reactions r join mood_checkins c on c.id = r.checkin_id
+  where c.note = 'test' and r.user_id = '22222222-2222-4222-8222-222222222222'), 'hug',
+  'Changing a reaction keeps exactly one per person');
 select throws_ok(
-  $$insert into checkin_reactions (checkin_id, user_id, emoji)
-    select id, '22222222-2222-4222-8222-222222222222', '❤️' from mood_checkins where note = 'test'$$,
+  $$insert into checkin_reactions (checkin_id, user_id, kind)
+    select id, '22222222-2222-4222-8222-222222222222', 'heart' from mood_checkins where note = 'test'$$,
   '23505', null, 'A second simultaneous reaction from the same person is rejected');
 select pg_temp.reset_role();
 
@@ -93,8 +93,8 @@ select is((select count(*) from checkin_photos)::int, 0, 'Sarah cannot read phot
 select is((select count(*) from storage.objects where bucket_id = 'checkin-photos')::int, 0, 'Sarah cannot open photo files');
 select is((select count(*) from checkin_reactions)::int, 0, 'Sarah cannot read family reactions');
 select throws_ok(
-  $$insert into checkin_reactions (checkin_id, user_id, emoji)
-    select id, '44444444-4444-4444-8444-444444444444', '❤️' from mood_checkins limit 1$$,
+  $$insert into checkin_reactions (checkin_id, user_id, kind)
+    select id, '44444444-4444-4444-8444-444444444444', 'heart' from mood_checkins limit 1$$,
   '42501', null, 'Sarah cannot react');
 select pg_temp.reset_role();
 

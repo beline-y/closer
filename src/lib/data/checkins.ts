@@ -1,6 +1,6 @@
 import "server-only";
 import { castByUserId, type CastMember } from "@/lib/cast";
-import type { ActivityKind, MealAmount, MenuDish, RatedDish } from "@/lib/checkin";
+import type { ActivityKind, MealAmount, MenuDish, RatedDish, ReactionKey } from "@/lib/checkin";
 import { daysBetween, timeIn, todayIn } from "@/lib/dates";
 import type { MoodPoint, MoodValue } from "@/lib/mood";
 import { computeStreak, type Streak } from "@/lib/streak";
@@ -23,7 +23,7 @@ export type CheckInView = {
   note: string | null;
   photoUrl: string | null;
   photoPath: string | null;
-  reactions: { emoji: string; by: CastMember[]; byUserIds: string[] }[];
+  reactions: { kind: ReactionKey; by: CastMember[]; byUserIds: string[] }[];
 };
 
 const COLUMNS = "id, patient_id, local_date, mood, activities, activity_note, note, created_at";
@@ -72,9 +72,9 @@ export async function getCheckins(
 
   const [photos, reactions, ratings] = await Promise.all([
     withPhotos && ids.length ? supabase.from("checkin_photos").select("checkin_id, path").in("checkin_id", ids) : null,
-    withReactions && ids.length ? supabase.from("checkin_reactions").select("checkin_id, user_id, emoji").in("checkin_id", ids).order("created_at") : null,
+    withReactions && ids.length ? supabase.from("checkin_reactions").select("checkin_id, user_id, kind").in("checkin_id", ids).order("created_at") : null,
     ids.length
-      ? supabase.from("meal_ratings").select("checkin_id, liking, amount, menu_items(meal, dish_name, icon, position)").in("checkin_id", ids)
+      ? supabase.from("meal_ratings").select("checkin_id, liking, amount, menu_items(meal, dish_name, position)").in("checkin_id", ids)
       : null,
   ]);
 
@@ -88,7 +88,7 @@ export async function getCheckins(
     const photoPath = paths.find((p) => p.checkin_id === r.id)?.path ?? null;
     const mine = (reactions?.data ?? []).filter((x) => x.checkin_id === r.id);
     const grouped = new Map<string, string[]>();
-    mine.forEach((x) => grouped.set(x.emoji, [...(grouped.get(x.emoji) ?? []), x.user_id]));
+    mine.forEach((x) => x.kind && grouped.set(x.kind, [...(grouped.get(x.kind) ?? []), x.user_id]));
     return {
       id: r.id,
       patientId: r.patient_id,
@@ -98,14 +98,14 @@ export async function getCheckins(
       dishes: (ratings?.data ?? [])
         .filter((x) => x.checkin_id === r.id && x.menu_items)
         .sort((a, b) => MEAL_ORDER.indexOf(a.menu_items!.meal) - MEAL_ORDER.indexOf(b.menu_items!.meal) || a.menu_items!.position - b.menu_items!.position)
-        .map((x) => ({ meal: x.menu_items!.meal, dish: x.menu_items!.dish_name, icon: x.menu_items!.icon, liking: x.liking, amount: x.amount as MealAmount | null })),
+        .map((x) => ({ meal: x.menu_items!.meal, dish: x.menu_items!.dish_name, liking: x.liking, amount: x.amount as MealAmount | null })),
       activities: r.activities,
       activityNote: r.activity_note,
       note: r.note,
       photoPath,
       photoUrl: photoPath ? (urlByPath.get(photoPath) ?? null) : null,
-      reactions: [...grouped].map(([emoji, byUserIds]) => ({
-        emoji,
+      reactions: [...grouped].map(([kind, byUserIds]) => ({
+        kind: kind as ReactionKey,
         byUserIds,
         by: byUserIds.map(castByUserId).filter((m): m is CastMember => !!m),
       })),
@@ -121,12 +121,12 @@ export async function getTodayMenu(patientId: string, timezone: string, checkinI
   const { data: patient } = await supabase.from("patients").select("unit_id").eq("id", patientId).maybeSingle();
   if (!patient?.unit_id) return { dishes: [] as MenuDish[], ratings: [] as { menuItemId: string; liking: number | null; amount: MealAmount | null }[] };
   const [{ data: menu }, ratings] = await Promise.all([
-    supabase.from("menu_items").select("id, meal, dish_name, icon, position").eq("unit_id", patient.unit_id).eq("menu_date", todayIn(timezone)),
+    supabase.from("menu_items").select("id, meal, dish_name, position").eq("unit_id", patient.unit_id).eq("menu_date", todayIn(timezone)),
     checkinId ? supabase.from("meal_ratings").select("menu_item_id, liking, amount").eq("checkin_id", checkinId) : null,
   ]);
   return {
     dishes: (menu ?? [])
-      .map((m) => ({ id: m.id, meal: m.meal, dish: m.dish_name, icon: m.icon, position: m.position }))
+      .map((m) => ({ id: m.id, meal: m.meal, dish: m.dish_name, position: m.position }))
       .sort((a, b) => MEAL_ORDER.indexOf(a.meal) - MEAL_ORDER.indexOf(b.meal) || a.position - b.position),
     ratings: (ratings?.data ?? []).map((r) => ({ menuItemId: r.menu_item_id, liking: r.liking, amount: r.amount })),
   };

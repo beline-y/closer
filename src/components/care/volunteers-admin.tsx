@@ -1,7 +1,9 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
+import { CloserIcon } from "@/components/icons/closer-icon";
 import { EmptyState } from "@/components/kit/empty-state";
+import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { castByPatientId } from "@/lib/cast";
 import { relativeDay } from "@/lib/dates";
 import { CONTACT_REQUEST_LABELS, CONTACT_REQUESTS, type ContactRequestStatus, VOLUNTEER_ROSTER, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
@@ -86,15 +88,13 @@ export function VolunteersAdmin({
             return (
               <li key={id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
                 <div className="flex items-center gap-3">
-                  <span aria-hidden className="flex size-11 items-center justify-center rounded-full bg-role-volunteer-soft text-2xl">
-                    {v.avatar}
-                  </span>
+                  <PersonaAvatar person={{ name: v.firstName, role: "volunteer" }} size="md" decorative />
                   <div className="flex flex-col">
                     <span className="font-bold">{v.firstName}</span>
                     <span className="text-sm text-muted-foreground">{v.job}</span>
                   </div>
-                  <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-sm font-bold", active ? "bg-success-soft text-success" : "bg-alert-soft text-alert")}>
-                    {active ? "✓ Approved" : "⏸ Suspended"}
+                  <span className={cn("ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-bold", active ? "bg-success-soft text-success" : "bg-alert-soft text-alert")}>
+                    <CloserIcon name={active ? "check" : "pause"} /> {active ? "Approved" : "Suspended"}
                   </span>
                 </div>
                 <p className="line-clamp-2 text-sm text-muted-foreground">{v.story}</p>
@@ -130,7 +130,7 @@ export function VolunteersAdmin({
                   “<Masked text={a.masked} />”
                 </p>
                 {reviewed[a.id] ? (
-                  <p className="font-bold">{reviewed[a.id] === "shared" ? "✓ Shareable: volunteers can read it" : "Kept private"}</p>
+                  <p className="font-bold">{reviewed[a.id] === "shared" ? "Shareable: volunteers can read it" : "Kept private"}</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => setReviewed((r) => ({ ...r, [a.id]: "shared" }))} className="min-h-11 rounded-lg bg-role-care-ink px-4 font-bold text-white">
@@ -151,7 +151,7 @@ export function VolunteersAdmin({
         <div role="tabpanel" className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">Started by the patient only. After you, the guardian approves. The volunteer then gets the request with the note you write, never the patient&apos;s details.</p>
           {requests.length === 0 ? (
-            <EmptyState emoji="📭" title="No requests" />
+            <EmptyState icon="message" title="No requests" />
           ) : (
             <ul className="flex flex-col gap-3">
               {requests.map((r) => {
@@ -160,7 +160,7 @@ export function VolunteersAdmin({
                   <li key={r.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col">
                       <span className="font-bold">
-                        {castByPatientId(r.patientId)?.name} {castByPatientId(r.patientId)?.avatar} → {v.firstName} {v.avatar}
+                        {castByPatientId(r.patientId)?.name} to {v.firstName}
                       </span>
                       <span className="text-sm text-muted-foreground">
                         {r.reason} · {relativeDay(r.daysAgo)}

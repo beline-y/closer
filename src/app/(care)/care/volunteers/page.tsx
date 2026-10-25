@@ -46,5 +46,5 @@ async function Matches() {
   const patients = await getVisiblePatients();
   const board = await getMatchBoard(todayIn(patients[0]?.timezone ?? "America/New_York"));
   if (!board) return <AiOffline missing={missingAiSettings()} />;
-  return <VolunteerMatches board={board} kids={patients.map((p) => ({ id: p.id, avatar: p.member?.avatar ?? "🙂" }))} />;
+  return <VolunteerMatches board={board} />;
 }

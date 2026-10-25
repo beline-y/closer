@@ -15,15 +15,12 @@ import { getNudgeState, getRepliesForPatient } from "@/lib/data/nudges";
 
 export const metadata: Metadata = { title: "Connect · Closer" };
 
+// Nudges first, in one compact row; then the cards waiting, the replies, and the creations.
 export default function PatientConnectPage() {
   return (
     <>
-      <header className="flex flex-col gap-1">
-        <h1 className="text-4xl font-extrabold">Connect 💛</h1>
-        <p className="text-xl text-muted-foreground">Tap to tell your people.</p>
-      </header>
-
-      <Suspense fallback={<div className="min-h-64" />}>
+      <h1 className="sr-only">Connect</h1>
+      <Suspense fallback={<div className="min-h-24" />}>
         <Nudges />
       </Suspense>
 
@@ -32,9 +29,27 @@ export default function PatientConnectPage() {
       </Suspense>
 
       <Suspense fallback={null}>
+        <Replies />
+      </Suspense>
+
+      <Suspense fallback={null}>
         <SharedCreations />
       </Suspense>
     </>
+  );
+}
+
+// The five nudges with their real cooldown. Live: a cooldown change by the care team shows
+// up without reloading.
+async function Nudges() {
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const [circle, state] = await Promise.all([getVisibleCircle(), getNudgeState(patient.id)]);
+  return (
+    <section aria-label="Tell your people" className="flex flex-col gap-2">
+      <LiveRefresh channel={`patient-nudge-settings-${patient.id}`} watch={[{ table: "patient_settings", filter: `patient_id=eq.${patient.id}` }]} />
+      <NudgePanel circle={circle} cooldownMinutes={state.cooldownMinutes} lastSent={state.lastSent} serverNow={state.serverNow} />
+    </section>
   );
 }
 
@@ -45,12 +60,12 @@ async function Cards() {
   const [sealed, opened] = await Promise.all([getSealedCards(), getOpenedCards(patient.id, patient.timezone)]);
   return (
     <>
-      <section aria-labelledby="cards-title" className="flex flex-col gap-4">
-        <h2 id="cards-title" className="text-3xl font-extrabold">
-          Cards for you 💌
+      <section aria-labelledby="cards-title" className="flex flex-col gap-3">
+        <h2 id="cards-title" className="text-2xl font-extrabold">
+          Cards for you
         </h2>
         {sealed.length === 0 ? (
-          <EmptyState emoji="📬" title="No new cards right now">
+          <EmptyState icon="card" title="No new cards right now">
             When someone writes you a card, it will wait for you here.
           </EmptyState>
         ) : (
@@ -58,7 +73,7 @@ async function Cards() {
         )}
       </section>
       {opened.length > 0 && (
-        <section aria-labelledby="archive-title" className="flex flex-col gap-4">
+        <section aria-labelledby="archive-title" className="flex flex-col gap-3">
           <h2 id="archive-title" className="text-2xl font-extrabold">
             Cards you kept
           </h2>
@@ -75,27 +90,18 @@ async function Cards() {
   );
 }
 
-// Buttons with the real cooldown, then the family's replies. Live: replies and a cooldown
-// change by the care team show up without reloading.
-async function Nudges() {
+// The family's replies to Leo's nudges, live.
+async function Replies() {
   const patient = await getMyPatient();
   if (!patient) return null;
-  const [circle, state, replies] = await Promise.all([
-    getVisibleCircle(),
-    getNudgeState(patient.id),
-    getRepliesForPatient(patient.id, patient.timezone),
-  ]);
+  const replies = await getRepliesForPatient(patient.id, patient.timezone);
   return (
     <>
-      <LiveRefresh
-        channel={`patient-nudges-${patient.id}`}
-        watch={[{ table: "nudge_recipients" }, { table: "patient_settings", filter: `patient_id=eq.${patient.id}` }]}
-      />
-      <NudgePanel circle={circle} cooldownMinutes={state.cooldownMinutes} lastSent={state.lastSent} serverNow={state.serverNow} />
+      <LiveRefresh channel={`patient-nudges-${patient.id}`} watch={[{ table: "nudge_recipients" }]} />
       {replies.length > 0 && (
-        <section aria-labelledby="replies-title" className="flex flex-col gap-4">
-          <h2 id="replies-title" className="text-3xl font-extrabold">
-            Your people answered 💌
+        <section aria-labelledby="replies-title" className="flex flex-col gap-3">
+          <h2 id="replies-title" className="text-2xl font-extrabold">
+            Your people answered
           </h2>
           <NudgeReplies replies={replies.slice(0, 6)} />
         </section>
@@ -111,13 +117,13 @@ async function SharedCreations() {
   const shared = (await getResults(patient.id, patient.timezone, { days: 14, sharedOnly: true })).filter((r) => r.reactions.length || r.comments.length || (r.activity.type === "challenge" && r.partnerEntry));
   if (shared.length === 0) return null;
   return (
-    <section aria-labelledby="creations-title" className="flex flex-col gap-4">
+    <section aria-labelledby="creations-title" className="flex flex-col gap-3">
       <LiveRefresh
         channel={`patient-shared-${patient.id}`}
         watch={[{ table: "activity_reactions" }, { table: "activity_comments" }, { table: "challenge_entries" }]}
       />
-      <h2 id="creations-title" className="text-3xl font-extrabold">
-        Your creations with your family 🎨
+      <h2 id="creations-title" className="text-2xl font-extrabold">
+        Your creations with your family
       </h2>
       <ul className="grid gap-4 md:grid-cols-2">
         {shared.map((r) => (

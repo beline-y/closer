@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { CastMember } from "@/lib/cast";
 import { cn } from "@/lib/utils";
 import { PersonaAvatar } from "./persona-avatar";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 export const CARD_COLORS = {
   sun: "bg-role-patient-soft",
@@ -64,8 +65,8 @@ export function RevealCard({
             opening && "[transform:rotateX(180deg)]",
           )}
         />
-        <span aria-hidden className={cn("absolute top-[38%] text-4xl transition", opening && "scale-0")}>
-          💌
+        <span aria-hidden className={cn("absolute top-[38%] text-role-family-ink transition", opening && "scale-0")}>
+          <CloserIcon name="heart" className="size-9 fill-current" />
         </span>
         <span className="relative flex items-center gap-2 font-heading text-lg font-extrabold">
           <PersonaAvatar person={from} size="sm" decorative />

@@ -1,5 +1,6 @@
 // The nurse's daily round and the AI summary, shared by the care tab and its server actions.
 // Values match the AI module's data contract (ml/closer_ai/contract.py).
+import type { IconName } from "@/components/icons/closer-icon";
 
 export const WARD_MEALS = [
   { value: "lunch", label: "Lunch" },
@@ -150,10 +151,10 @@ export type AiOverview = {
 };
 
 // Status is never color alone: an icon character, a word and a color token.
-export const LEVELS: Record<AiLevel, { label: string; icon: string; className: string; color: string }> = {
-  stable: { label: "Doing okay", icon: "✓", className: "bg-success-soft text-success", color: "var(--success)" },
-  fragile: { label: "Fragile", icon: "◐", className: "bg-role-patient-soft text-role-patient-ink", color: "var(--role-patient)" },
-  distress: { label: "Needs support", icon: "⚠", className: "bg-alert-soft text-alert", color: "var(--alert)" },
+export const LEVELS: Record<AiLevel, { label: string; icon: IconName; className: string; color: string }> = {
+  stable: { label: "Doing okay", icon: "check", className: "bg-success-soft text-success", color: "var(--success)" },
+  fragile: { label: "Fragile", icon: "half", className: "bg-role-patient-soft text-role-patient-ink", color: "var(--role-patient)" },
+  distress: { label: "Needs support", icon: "alert", className: "bg-alert-soft text-alert", color: "var(--alert)" },
 };
 
 export const PRIORITY_LABELS: Record<AlertPriority, string> = {

@@ -70,7 +70,7 @@ export function DrawingCanvas({ theme, onDone, onCancel, doneLabel = "I'm done!"
         <button type="button" onClick={onCancel} aria-label="Stop drawing" className="flex size-12 items-center justify-center rounded-full hover:bg-muted">
           <X className="size-6" aria-hidden />
         </button>
-        {theme && <p className="min-w-0 flex-1 truncate text-center font-heading text-lg font-extrabold">🎨 {theme}</p>}
+        {theme && <p className="min-w-0 flex-1 truncate text-center font-heading text-lg font-extrabold">{theme}</p>}
         <button
           type="button"
           disabled={count === 0 || saving}

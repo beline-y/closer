@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { sendNudge } from "@/app/nudge-actions";
-import { BigActionButton } from "@/components/kit/big-action-button";
+import { CloserIcon } from "@/components/icons/closer-icon";
 import { Modal } from "@/components/kit/modal";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import type { CastMember } from "@/lib/cast";
@@ -16,8 +16,17 @@ type Props = {
   serverNow: string;
 };
 
-// Five big nudge buttons -> pick who -> "Sent! ❤️". Each type then rests for the
-// cooldown set by the care team (enforced by the database, shown here as a ring).
+const RING_R = 30;
+const RING_C = 2 * Math.PI * RING_R;
+
+function timeLeft(ms: number) {
+  const s = Math.ceil(ms / 1000);
+  return s >= 60 ? `${Math.ceil(s / 60)} min` : `${s} s`;
+}
+
+// Five round nudge buttons in one row -> pick who -> "Sent!". Each type then rests for the
+// cooldown set by the care team (enforced by the database): a ring fills back around the
+// icon, with the time left under it.
 export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Props) {
   const cooldownMs = cooldownMinutes * 60_000;
   // Device clocks can be off: count from the server's "now".
@@ -62,33 +71,69 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <ul aria-label="Send a nudge" className="grid grid-cols-5 gap-1">
         {NUDGE_KINDS.map((k) => {
           const ms = left(k.kind);
+          const cooling = ms > 0;
+          // The ring fills back up as the cooldown runs out.
+          const filled = cooling && cooldownMs ? 1 - ms / cooldownMs : 1;
           return (
-            <BigActionButton
-              key={k.kind}
-              emoji={k.emoji}
-              label={k.label}
-              cooldown={cooldownMs ? ms / cooldownMs : 0}
-              disabled={ms > 0 || circle.length === 0}
-              hint={ms > 0 ? `Sent! Again in ${Math.ceil(ms / 60_000)} min` : undefined}
-              onClick={() => {
-                setSent(false);
-                setError(null);
-                setPicking(k.kind);
-              }}
-            />
+            <li key={k.kind} className="flex flex-col items-center gap-1">
+              <button
+                type="button"
+                aria-label={cooling ? `${k.label}. Sent! Again in ${timeLeft(ms)}` : k.label}
+                disabled={cooling || circle.length === 0}
+                onClick={() => {
+                  setSent(false);
+                  setError(null);
+                  setPicking(k.kind);
+                }}
+                className="relative flex size-16 items-center justify-center rounded-full transition active:scale-90 disabled:cursor-not-allowed"
+              >
+                <svg aria-hidden viewBox="0 0 64 64" className="absolute inset-0 size-full -rotate-90">
+                  <circle cx="32" cy="32" r={RING_R} fill="none" strokeWidth="3" className="stroke-border" />
+                  {cooling && (
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r={RING_R}
+                      fill="none"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeDasharray={RING_C}
+                      strokeDashoffset={RING_C * (1 - filled)}
+                      className="stroke-role-patient-ink transition-[stroke-dashoffset] duration-1000 ease-linear"
+                    />
+                  )}
+                </svg>
+                <span
+                  className={cn(
+                    "flex size-14 items-center justify-center rounded-full",
+                    cooling ? "bg-muted text-muted-foreground" : "bg-role-patient-soft text-role-patient-ink shadow-sm",
+                  )}
+                >
+                  <CloserIcon name={k.icon} className="size-7" />
+                </span>
+              </button>
+              <span className="text-center text-sm leading-tight font-bold">{k.short}</span>
+              {cooling && (
+                <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
+                  {timeLeft(ms)}
+                </span>
+              )}
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      <Modal open={picking !== null} onClose={() => setPicking(null)} title={sent ? "Sent! ❤️" : `${kind?.emoji ?? ""} ${kind?.label ?? ""}`}>
+      <Modal
+        open={picking !== null}
+        onClose={() => setPicking(null)}
+        title={sent ? "Sent!" : (kind?.label ?? "")}
+      >
         {sent ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <span aria-hidden className="animate-heart text-8xl">
-              ❤️
-            </span>
+            <CloserIcon name="heart" className="size-24 animate-heart text-role-family" strokeWidth={1.5} />
             <p className="text-xl font-bold">Your people got it.</p>
             <button type="button" onClick={() => setPicking(null)} className="min-h-14 w-full rounded-2xl bg-role-patient text-lg font-extrabold">
               Yay!
@@ -96,7 +141,9 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
           </div>
         ) : (
           <div className="flex flex-col gap-5">
-            <p className="text-lg">Who should get it?</p>
+            <p className="flex items-center gap-2 text-lg">
+              {kind && <CloserIcon name={kind.icon} className="size-6 text-role-patient-ink" />} Who should get it?
+            </p>
             <ul className="flex flex-wrap gap-3">
               {circle.map((m) => {
                 const on = to.includes(m.userId!);
@@ -113,7 +160,7 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
                     >
                       <PersonaAvatar person={m} size="lg" decorative />
                       {m.relationship === "Mom" || m.relationship === "Dad" ? m.relationship : m.name}
-                      <span aria-hidden>{on ? "✅" : "➕"}</span>
+                      <CloserIcon name={on ? "check" : "plus"} className={on ? "text-success" : "text-muted-foreground"} />
                     </button>
                   </li>
                 );
@@ -130,7 +177,7 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
               onClick={send}
               className="min-h-14 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
             >
-              {sending ? "Sending…" : `Send ${kind?.emoji ?? ""}`}
+              {sending ? "Sending…" : "Send"}
             </button>
           </div>
         )}

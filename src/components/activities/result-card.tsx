@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { commentOnResult, reactToResult } from "@/app/activity-actions";
+import { CloserIcon, type IconName } from "@/components/icons/closer-icon";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { ReactionBar, ReactionList } from "@/components/reaction-bar";
 import { ACTIVITY_TYPES } from "@/lib/activities";
 import { CAST } from "@/lib/cast";
+import type { ReactionKey } from "@/lib/checkin";
 import type { ActivityResult } from "@/lib/data/activities";
 import { relativeDay } from "@/lib/dates";
 
@@ -19,27 +21,35 @@ export function ResultCard({ result, viewer, me }: { result: ActivityResult; vie
   const type = ACTIVITY_TYPES[result.activity.type];
   const shared = result.status === "completed" && (result.visibility === "family" || result.inMemories);
   const grouped = Object.values(
-    result.reactions.reduce<Record<string, { emoji: string; by: typeof result.reactions[number]["by"][]; byUserIds: string[] }>>((acc, r) => {
-      acc[r.emoji] ??= { emoji: r.emoji, by: [], byUserIds: [] };
-      acc[r.emoji].by.push(r.by);
-      acc[r.emoji].byUserIds.push(r.userId);
+    result.reactions.reduce<Partial<Record<ReactionKey, { kind: ReactionKey; by: typeof result.reactions[number]["by"][]; byUserIds: string[] }>>>((acc, r) => {
+      const g = (acc[r.kind] ??= { kind: r.kind, by: [], byUserIds: [] });
+      g.by.push(r.by);
+      g.byUserIds.push(r.userId);
       return acc;
     }, {}),
-  );
+  ).filter((g) => g !== undefined);
+  const status: { icon: IconName; label: string } =
+    result.status === "waiting_partner"
+      ? { icon: "lock", label: `Waiting for ${result.partner ? who(result.partner) : "your partner"}` }
+      : result.visibility === "family"
+        ? { icon: "heart", label: "Shared" }
+        : result.inMemories
+          ? { icon: "memory", label: "In Memories" }
+          : { icon: "lock", label: "Only you" };
 
   return (
     <article className="flex flex-col gap-3 overflow-hidden rounded-3xl bg-card shadow-sm ring-1 ring-border">
       <header className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
-        <p className="font-bold">
-          <span aria-hidden>{result.activity.emoji} </span>
+        <p className="flex flex-wrap items-center gap-x-1.5 font-bold">
+          <CloserIcon name={type.icon} className="text-role-patient-ink" />
           {result.activity.title}
           <span className="ml-2 text-sm font-normal text-muted-foreground">
             {type.label} · {relativeDay(result.daysAgo)}
           </span>
         </p>
         {viewer === "patient" && (
-          <span className="rounded-full bg-muted px-3 py-1 text-sm font-bold">
-            {result.status === "waiting_partner" ? `🔒 Waiting for ${result.partner ? who(result.partner) : "your partner"}` : result.visibility === "family" ? "💛 Shared" : result.inMemories ? "📸 In Memories" : "🔒 Only you"}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-bold">
+            <CloserIcon name={status.icon} /> {status.label}
           </span>
         )}
       </header>
@@ -68,8 +78,12 @@ export function ResultCard({ result, viewer, me }: { result: ActivityResult; vie
             <img src={result.imageUrl} alt={result.activity.theme ?? result.activity.title} className="max-h-80 w-full bg-muted object-contain" loading="lazy" />
           )}
           {result.score !== null && (
-            <p className="px-4 text-2xl font-extrabold">
-              <span aria-hidden>{"⭐".repeat(result.score)} </span>
+            <p className="flex items-center gap-2 px-4 text-2xl font-extrabold">
+              <span aria-hidden className="flex text-mood-4">
+                {Array.from({ length: result.score }, (_, i) => (
+                  <CloserIcon key={i} name="star" className="size-6 fill-current" />
+                ))}
+              </span>
               {result.score} / {result.scoreTotal}
             </p>
           )}

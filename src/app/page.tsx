@@ -4,16 +4,16 @@ import { DemoAIGuide } from "@/components/demo-ai-guide";
 import { buttonVariants } from "@/components/ui/button";
 import { isDemoMode } from "@/lib/demo-mode";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand";
 
 export default function Home() {
   const demo = isDemoMode();
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-4 py-12 sm:px-6 sm:py-16">
       <header className="flex flex-col items-center gap-3 text-center">
-        <span className="text-5xl" aria-hidden>
-          💛
-        </span>
-        <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl">Closer</h1>
+        <h1>
+          <BrandLogo priority className="h-16 sm:h-20" />
+        </h1>
         <p className="max-w-md text-lg text-muted-foreground">
           Stay close to the people you love, even from a hospital bed.
         </p>

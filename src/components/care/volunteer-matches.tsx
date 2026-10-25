@@ -5,6 +5,9 @@ import { type ReactNode, useState, useTransition } from "react";
 import { rateVolunteerVisit, suggestVolunteer } from "@/app/care-ai-actions";
 import type { ActionResult } from "@/app/checkin-actions";
 import { LevelBadge } from "@/components/care/ai-summary";
+import { CloserIcon } from "@/components/icons/closer-icon";
+import { MoodFace } from "@/components/icons/mood-face";
+import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { StatTile } from "@/components/kit/stat-tile";
 import { daysBetween, relativeDay } from "@/lib/dates";
 import { CONTACT_REQUEST_LABELS, type RosterVolunteer, VOLUNTEER_ROSTER } from "@/lib/demo-fixtures";
@@ -22,7 +25,6 @@ const REASON_ICONS: Record<keyof typeof NEED_REASONS, ReactNode> = {
   request_in_progress: <Clock className="size-3.5" aria-hidden />,
 };
 
-export type MatchKid = { id: string; avatar: string };
 
 function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -49,7 +51,13 @@ function FitBadge({ fit }: { fit: Fit }) {
   const f = FITS[fit];
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-bold whitespace-nowrap", f.className)}>
-      {f.stars > 0 && <span aria-hidden>{"★".repeat(f.stars)}</span>}
+      {f.stars > 0 && (
+        <span aria-hidden className="flex">
+          {Array.from({ length: f.stars }, (_, i) => (
+            <CloserIcon key={i} name="star" className="size-3.5 fill-current" />
+          ))}
+        </span>
+      )}
       {f.label}
     </span>
   );
@@ -57,9 +65,7 @@ function FitBadge({ fit }: { fit: Fit }) {
 
 function VolunteerAvatar({ v, large }: { v: RosterVolunteer; large?: boolean }) {
   return (
-    <span aria-hidden className={cn("flex shrink-0 items-center justify-center rounded-full bg-role-volunteer-soft", large ? "size-12 text-3xl ring-2 ring-role-volunteer" : "size-9 text-xl")}>
-      {v.avatar}
-    </span>
+    <PersonaAvatar person={{ name: v.firstName, role: "volunteer" }} size={large ? "lg" : "sm"} decorative />
   );
 }
 
@@ -71,8 +77,7 @@ function ErrorLine({ error }: { error: string | null }) {
   ) : null;
 }
 
-export function VolunteerMatches({ board, kids }: { board: MatchBoard; kids: MatchKid[] }) {
-  const avatars = new Map(kids.map((k) => [k.id, k.avatar]));
+export function VolunteerMatches({ board }: { board: MatchBoard }) {
   const loads = new Map(board.volunteers.map((l) => [l.volunteer_id, l]));
   const offered = board.volunteers.reduce((n, l) => n + l.slots, 0);
   const left = board.volunteers.reduce((n, l) => n + Math.max(0, l.slots - l.held - l.proposed), 0);
@@ -107,11 +112,11 @@ export function VolunteerMatches({ board, kids }: { board: MatchBoard; kids: Mat
         <StatTile label="Visits rated" value={board.rated_visits} hint="Each rating sharpens the next suggestions" />
       </div>
 
-      <RateVisits board={board} avatars={avatars} />
+      <RateVisits board={board} />
 
       <ol aria-label="Children, most isolated first" className="flex flex-col gap-4">
         {board.children.map((c) => (
-          <ChildCard key={c.patient_id} child={c} avatar={avatars.get(c.patient_id)} loads={loads} today={board.today} />
+          <ChildCard key={c.patient_id} child={c} loads={loads} today={board.today} />
         ))}
       </ol>
 
@@ -121,15 +126,13 @@ export function VolunteerMatches({ board, kids }: { board: MatchBoard; kids: Mat
   );
 }
 
-function ChildCard({ child, avatar, loads, today }: { child: ChildMatch; avatar?: string; loads: Map<string, VolunteerLoad>; today: string }) {
+function ChildCard({ child, loads, today }: { child: ChildMatch; loads: Map<string, VolunteerLoad>; today: string }) {
   const reasons = child.reasons.filter((r): r is keyof typeof NEED_REASONS => r in NEED_REASONS);
   return (
     <li className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-full bg-role-patient-soft text-2xl">
-            {avatar ?? "🙂"}
-          </span>
+          <PersonaAvatar person={{ name: child.nickname, role: "patient" }} size="md" decorative />
           <div className="flex min-w-0 flex-col">
             <h3 className="font-bold">
               {child.nickname} <span className="font-normal text-muted-foreground">{child.age} years</span>
@@ -308,7 +311,7 @@ function AlternativeRow({ child, option }: { child: ChildMatch; option: MatchOpt
 
 type RateItem = { child: ChildMatch; volunteerId: string; localDate: string; outcome: VisitOutcome | null };
 
-function RateVisits({ board, avatars }: { board: MatchBoard; avatars: Map<string, string> }) {
+function RateVisits({ board }: { board: MatchBoard }) {
   const items: RateItem[] = board.children.flatMap((c) => [
     ...c.to_rate.map((r) => ({ child: c, volunteerId: r.volunteer_id, localDate: r.local_date, outcome: null })),
     ...c.rated.map((r) => ({ child: c, volunteerId: r.volunteer_id, localDate: r.local_date, outcome: r.outcome })),
@@ -324,14 +327,14 @@ function RateVisits({ board, avatars }: { board: MatchBoard; avatars: Map<string
       </div>
       <ul className="flex flex-col gap-2">
         {items.map((item) => (
-          <RateRow key={`${item.child.patient_id}-${item.volunteerId}-${item.localDate}`} item={item} avatar={avatars.get(item.child.patient_id)} today={board.today} />
+          <RateRow key={`${item.child.patient_id}-${item.volunteerId}-${item.localDate}`} item={item} today={board.today} />
         ))}
       </ul>
     </section>
   );
 }
 
-function RateRow({ item, avatar, today }: { item: RateItem; avatar?: string; today: string }) {
+function RateRow({ item, today }: { item: RateItem; today: string }) {
   const { pending, error, run } = useAction();
   const v = ROSTER.get(item.volunteerId);
   const name = v?.firstName ?? item.volunteerId;
@@ -340,12 +343,12 @@ function RateRow({ item, avatar, today }: { item: RateItem; avatar?: string; tod
     <li className="flex flex-col gap-2 rounded-lg bg-muted/60 px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="font-bold">
-          <span aria-hidden>{avatar}</span> {item.child.nickname} met <span aria-hidden>{v?.avatar}</span> {name}
+          {item.child.nickname} met {name}
           <span className="font-normal text-muted-foreground"> · {relativeDay(daysBetween(today, item.localDate))}</span>
         </span>
         {rated ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1 text-sm font-bold">
-            <span aria-hidden>{rated.emoji}</span> {rated.label}
+            <MoodFace value={rated.face} /> {rated.label}
           </span>
         ) : (
           <div role="group" aria-label={`How did ${item.child.nickname}'s visit with ${name} go?`} className="flex flex-wrap gap-2">
@@ -357,7 +360,7 @@ function RateRow({ item, avatar, today }: { item: RateItem; avatar?: string; tod
                 onClick={() => run(() => rateVolunteerVisit(item.child.patient_id, item.volunteerId, item.localDate, o.value))}
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border bg-card px-3 font-bold hover:bg-muted disabled:opacity-60"
               >
-                <span aria-hidden>{o.emoji}</span> {o.label}
+                <MoodFace value={o.face} /> {o.label}
               </button>
             ))}
           </div>

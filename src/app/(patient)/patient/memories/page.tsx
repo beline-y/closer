@@ -11,7 +11,7 @@ export default function PatientMemoriesPage() {
   return (
     <>
       <header className="flex flex-col gap-1">
-        <h1 className="text-4xl font-extrabold">Memories 📸</h1>
+        <h1 className="text-4xl font-extrabold">Memories</h1>
         <p className="text-xl text-muted-foreground">Happy moments with your family.</p>
       </header>
       <Suspense fallback={<MemoriesAlbum viewer="leo" big />}>

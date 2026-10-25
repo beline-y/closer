@@ -20,8 +20,8 @@ export async function sendNudge(kind: NudgeKind, recipients: string[]): Promise<
 }
 
 // A family member answers a nudge sent to them (RLS: only their own row).
-export async function replyToNudge(nudgeId: string, emoji: string, text: string): Promise<NudgeResult> {
-  const reply = QUICK_REPLIES.find((r) => r.emoji === emoji);
+export async function replyToNudge(nudgeId: string, kind: string, text: string): Promise<NudgeResult> {
+  const reply = QUICK_REPLIES.find((r) => r.key === kind);
   if (!reply) return { ok: false, error: "Pick a reply." };
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -30,7 +30,7 @@ export async function replyToNudge(nudgeId: string, emoji: string, text: string)
   const now = new Date().toISOString();
   const { error, count } = await supabase
     .from("nudge_recipients")
-    .update({ reply_emoji: reply.emoji, reply_text: text.trim().slice(0, 140) || reply.text, replied_at: now, seen_at: now }, { count: "exact" })
+    .update({ reply_kind: reply.key, reply_text: text.trim().slice(0, 140) || reply.text, replied_at: now, seen_at: now }, { count: "exact" })
     .match({ nudge_id: nudgeId, user_id: userId });
   if (error || !count) return { ok: false, error: "Couldn't send your reply." };
   refresh();

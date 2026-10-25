@@ -145,24 +145,20 @@ update public.patients set unit_id = 'f0000000-0000-4000-8000-000000000001'
 -- months ahead, so Leo always has today's dishes to rate. Menu upload from a photo is
 -- post-demo. position 0 = main dish, 1 = dessert.
 -- ---------------------------------------------------------------------------
-insert into public.menu_items (unit_id, menu_date, meal, dish_name, icon, position, created_by)
-select 'f0000000-0000-4000-8000-000000000001', day, x.meal::public.meal_kind, x.dish, x.icon, x.pos,
+insert into public.menu_items (unit_id, menu_date, meal, dish_name, position, created_by)
+select 'f0000000-0000-4000-8000-000000000001', day, x.meal::public.meal_kind, x.dish, x.pos,
        '44444444-4444-4444-8444-444444444444'
 from generate_series(-14, 180) as g
 cross join lateral (select (now() at time zone 'America/New_York')::date + g as day) as d
 cross join lateral (select extract(isodow from d.day)::int as w) as wd
 cross join lateral (values
-  ('breakfast', (array['Oatmeal with banana', 'Yogurt and berries', 'Pancakes', 'Toast and jam', 'Scrambled eggs', 'Cereal and milk', 'French toast'])[wd.w],
-                (array['🥣', '🫐', '🥞', '🍞', '🍳', '🥛', '🍞'])[wd.w], 0),
-  ('lunch', (array['Pasta with tomato sauce', 'Chicken and rice', 'Veggie soup', 'Fish sticks and peas', 'Turkey sandwich', 'Mac and cheese', 'Pizza slice'])[wd.w],
-            (array['🍝', '🍗', '🥣', '🐟', '🥪', '🧀', '🍕'])[wd.w], 0),
-  ('lunch', (array['Apple compote', 'Chocolate pudding'])[wd.w % 2 + 1], (array['🍎', '🍮'])[wd.w % 2 + 1], 1),
-  ('dinner', (array['Chicken soup', 'Pizza night', 'Rice and veggies', 'Meatballs and mash', 'Tacos', 'Shepherd''s pie', 'Pasta bake'])[wd.w],
-             (array['🍲', '🍕', '🍚', '🥔', '🌮', '🥧', '🍝'])[wd.w], 0),
-  ('dinner', (array['Fruit salad', 'Ice cream'])[wd.w % 2 + 1], (array['🍓', '🍨'])[wd.w % 2 + 1], 1),
-  ('snack', (array['Apple slices', 'Banana', 'Crackers and cheese', 'Muffin', 'Apple slices', 'Banana', 'Muffin'])[wd.w],
-            (array['🍎', '🍌', '🧀', '🧁', '🍎', '🍌', '🧁'])[wd.w], 0)
-) as x(meal, dish, icon, pos);
+  ('breakfast', (array['Oatmeal with banana', 'Yogurt and berries', 'Pancakes', 'Toast and jam', 'Scrambled eggs', 'Cereal and milk', 'French toast'])[wd.w], 0),
+  ('lunch', (array['Pasta with tomato sauce', 'Chicken and rice', 'Veggie soup', 'Fish sticks and peas', 'Turkey sandwich', 'Mac and cheese', 'Pizza slice'])[wd.w], 0),
+  ('lunch', (array['Apple compote', 'Chocolate pudding'])[wd.w % 2 + 1], 1),
+  ('dinner', (array['Chicken soup', 'Pizza night', 'Rice and veggies', 'Meatballs and mash', 'Tacos', 'Shepherd''s pie', 'Pasta bake'])[wd.w], 0),
+  ('dinner', (array['Fruit salad', 'Ice cream'])[wd.w % 2 + 1], 1),
+  ('snack', (array['Apple slices', 'Banana', 'Crackers and cheese', 'Muffin', 'Apple slices', 'Banana', 'Muffin'])[wd.w], 0)
+) as x(meal, dish, pos);
 
 -- ---------------------------------------------------------------------------
 -- Mood check-ins: Leo's last two weeks (days relative to today, New York time).
@@ -242,26 +238,26 @@ join public.menu_items m
 -- Emma, James and Noah react to Leo's week (one reaction each per check-in), a few
 -- hours after it. With the nudges, cards, answers and visits below, the family is in
 -- touch every day but one (9 days ago, a quiet day): care_engagement() counts it all.
-insert into public.checkin_reactions (checkin_id, user_id, emoji, created_at)
-select c.id, r.user_id, r.emoji, c.created_at + interval '3 hours'
+insert into public.checkin_reactions (checkin_id, user_id, kind, created_at)
+select c.id, r.user_id, r.kind, c.created_at + interval '3 hours'
 from (values
-  (13, '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
-  (11, '33333333-3333-4333-8333-333333333333'::uuid, '🤗'),
-  (7,  '22222222-2222-4222-8222-222222222222'::uuid, '💪'),
-  (12, '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
-  (10, '22222222-2222-4222-8222-222222222222'::uuid, '🤗'),
-  (10, '33333333-3333-4333-8333-333333333333'::uuid, '🤗'),
-  (8,  '77777777-7777-4777-8777-777777777777'::uuid, '💪'),
-  (8,  '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
-  (6,  '33333333-3333-4333-8333-333333333333'::uuid, '❤️'),
-  (6,  '22222222-2222-4222-8222-222222222222'::uuid, '😂'),
-  (4,  '77777777-7777-4777-8777-777777777777'::uuid, '💪'),
-  (3,  '22222222-2222-4222-8222-222222222222'::uuid, '🤗'),
-  (2,  '33333333-3333-4333-8333-333333333333'::uuid, '❤️'),
-  (1,  '77777777-7777-4777-8777-777777777777'::uuid, '😂'),
-  (1,  '22222222-2222-4222-8222-222222222222'::uuid, '❤️'),
-  (1,  '33333333-3333-4333-8333-333333333333'::uuid, '💪')
-) as r(days_ago, user_id, emoji)
+  (13, '22222222-2222-4222-8222-222222222222'::uuid, 'heart'),
+  (11, '33333333-3333-4333-8333-333333333333'::uuid, 'hug'),
+  (7,  '22222222-2222-4222-8222-222222222222'::uuid, 'strong'),
+  (12, '22222222-2222-4222-8222-222222222222'::uuid, 'heart'),
+  (10, '22222222-2222-4222-8222-222222222222'::uuid, 'hug'),
+  (10, '33333333-3333-4333-8333-333333333333'::uuid, 'hug'),
+  (8,  '77777777-7777-4777-8777-777777777777'::uuid, 'strong'),
+  (8,  '22222222-2222-4222-8222-222222222222'::uuid, 'heart'),
+  (6,  '33333333-3333-4333-8333-333333333333'::uuid, 'heart'),
+  (6,  '22222222-2222-4222-8222-222222222222'::uuid, 'laugh'),
+  (4,  '77777777-7777-4777-8777-777777777777'::uuid, 'strong'),
+  (3,  '22222222-2222-4222-8222-222222222222'::uuid, 'hug'),
+  (2,  '33333333-3333-4333-8333-333333333333'::uuid, 'heart'),
+  (1,  '77777777-7777-4777-8777-777777777777'::uuid, 'laugh'),
+  (1,  '22222222-2222-4222-8222-222222222222'::uuid, 'heart'),
+  (1,  '33333333-3333-4333-8333-333333333333'::uuid, 'strong')
+) as r(days_ago, user_id, kind)
 join public.mood_checkins c
   on c.patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
  and c.local_date = (now() at time zone 'America/New_York')::date - r.days_ago;
@@ -302,24 +298,24 @@ insert into demo_nudge_ids
 select 6, id from public.nudges
 where patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and created_at > now() - interval '3 hours';
 
-insert into public.nudge_recipients (nudge_id, user_id, seen_at, reply_emoji, reply_text, replied_at)
+insert into public.nudge_recipients (nudge_id, user_id, seen_at, reply_kind, reply_text, replied_at)
 select n.id, r.user_id,
-       case when r.reply_emoji is not null then nu.created_at + r.after end,
-       r.reply_emoji, r.reply_text,
-       case when r.reply_emoji is not null then nu.created_at + r.after end
+       case when r.reply_kind is not null then nu.created_at + r.after end,
+       r.reply_kind, r.reply_text,
+       case when r.reply_kind is not null then nu.created_at + r.after end
 from (values
-  (1, '22222222-2222-4222-8222-222222222222'::uuid, '❤️', 'Coming tonight with your blanket!', interval '4 minutes'),
-  (1, '33333333-3333-4333-8333-333333333333'::uuid, '🤗', null, interval '20 minutes'),
-  (2, '77777777-7777-4777-8777-777777777777'::uuid, '📞', 'Calling after school!', interval '2 hours'),
-  (3, '22222222-2222-4222-8222-222222222222'::uuid, '🤗', 'The biggest hug in the world', interval '3 minutes'),
-  (3, '33333333-3333-4333-8333-333333333333'::uuid, '🤗', null, interval '15 minutes'),
-  (4, '22222222-2222-4222-8222-222222222222'::uuid, '⭐', 'So proud of you, champ!', interval '6 minutes'),
-  (4, '33333333-3333-4333-8333-333333333333'::uuid, '⭐', null, interval '9 minutes'),
-  (4, '77777777-7777-4777-8777-777777777777'::uuid, '⭐', 'You rock!!', interval '40 minutes'),
-  (5, '77777777-7777-4777-8777-777777777777'::uuid, '📞', 'Calling in 5!', interval '2 minutes'),
+  (1, '22222222-2222-4222-8222-222222222222'::uuid, 'heart', 'Coming tonight with your blanket!', interval '4 minutes'),
+  (1, '33333333-3333-4333-8333-333333333333'::uuid, 'hug', null, interval '20 minutes'),
+  (2, '77777777-7777-4777-8777-777777777777'::uuid, 'call', 'Calling after school!', interval '2 hours'),
+  (3, '22222222-2222-4222-8222-222222222222'::uuid, 'hug', 'The biggest hug in the world', interval '3 minutes'),
+  (3, '33333333-3333-4333-8333-333333333333'::uuid, 'hug', null, interval '15 minutes'),
+  (4, '22222222-2222-4222-8222-222222222222'::uuid, 'star', 'So proud of you, champ!', interval '6 minutes'),
+  (4, '33333333-3333-4333-8333-333333333333'::uuid, 'star', null, interval '9 minutes'),
+  (4, '77777777-7777-4777-8777-777777777777'::uuid, 'star', 'You rock!!', interval '40 minutes'),
+  (5, '77777777-7777-4777-8777-777777777777'::uuid, 'call', 'Calling in 5!', interval '2 minutes'),
   (6, '22222222-2222-4222-8222-222222222222'::uuid, null, null, null),
-  (6, '33333333-3333-4333-8333-333333333333'::uuid, '❤️', 'Love you buddy, see you Saturday', interval '12 minutes')
-) as r(ref, user_id, reply_emoji, reply_text, after)
+  (6, '33333333-3333-4333-8333-333333333333'::uuid, 'heart', 'Love you buddy, see you Saturday', interval '12 minutes')
+) as r(ref, user_id, reply_kind, reply_text, after)
 join demo_nudge_ids n on n.ref = r.ref
 join public.nudges nu on nu.id = n.id;
 
@@ -332,40 +328,40 @@ drop table demo_nudge_ids;
 -- ---------------------------------------------------------------------------
 delete from public.activities where id::text like 'a0000000-0000-4000-8000-%';
 
-insert into public.activities (id, type, title, emoji, instructions, theme, steps, quiz, minutes) values
-  ('a0000000-0000-4000-8000-000000000001', 'draw', 'My dream house', '🏡', 'What rooms would it have? A slide? A secret room?', 'Draw your dream house', '{}', null, 15),
-  ('a0000000-0000-4000-8000-000000000002', 'draw', 'Under the sea', '🐠', 'Fish, whales, coral, a treasure chest… fill the ocean!', 'Draw the ocean and everything living in it', '{}', null, 15),
-  ('a0000000-0000-4000-8000-000000000003', 'draw', 'My superhero self', '🦸', 'What is your superpower? What does your costume look like?', 'Draw yourself as a superhero', '{}', null, 15),
-  ('a0000000-0000-4000-8000-000000000004', 'draw', 'Dinosaur picnic', '🦕', 'What do dinosaurs bring to a picnic?', 'Draw dinosaurs having a picnic', '{}', null, 15),
-  ('a0000000-0000-4000-8000-000000000005', 'make_snap', 'Paper crown', '👑', 'Make a crown fit for a king or queen, then show it off.', null,
+insert into public.activities (id, type, title, instructions, theme, steps, quiz, minutes) values
+  ('a0000000-0000-4000-8000-000000000001', 'draw', 'My dream house', 'What rooms would it have? A slide? A secret room?', 'Draw your dream house', '{}', null, 15),
+  ('a0000000-0000-4000-8000-000000000002', 'draw', 'Under the sea', 'Fish, whales, coral, a treasure chest… fill the ocean!', 'Draw the ocean and everything living in it', '{}', null, 15),
+  ('a0000000-0000-4000-8000-000000000003', 'draw', 'My superhero self', 'What is your superpower? What does your costume look like?', 'Draw yourself as a superhero', '{}', null, 15),
+  ('a0000000-0000-4000-8000-000000000004', 'draw', 'Dinosaur picnic', 'What do dinosaurs bring to a picnic?', 'Draw dinosaurs having a picnic', '{}', null, 15),
+  ('a0000000-0000-4000-8000-000000000005', 'make_snap', 'Paper crown', 'Make a crown fit for a king or queen, then show it off.', null,
     '{"Fold a sheet of paper in half the long way","Cut zigzags along the top edge","Tape the ends so it fits your head","Decorate it with colors or stickers","Put it on and snap a photo!"}', null, 20),
-  ('a0000000-0000-4000-8000-000000000006', 'make_snap', 'Origami frog', '🐸', 'A paper frog that really jumps.', null,
+  ('a0000000-0000-4000-8000-000000000006', 'make_snap', 'Origami frog', 'A paper frog that really jumps.', null,
     '{"Start with a square of paper","Fold it in half to make a triangle","Fold the corners up to make front legs","Fold the bottom up and back to make the spring","Press its back and watch it jump, then snap it!"}', null, 15),
-  ('a0000000-0000-4000-8000-000000000007', 'make_snap', 'Coloring mandala', '🌀', 'Ask a nurse for a coloring sheet, or draw circles inside circles.', null,
+  ('a0000000-0000-4000-8000-000000000007', 'make_snap', 'Coloring mandala', 'Ask a nurse for a coloring sheet, or draw circles inside circles.', null,
     '{"Get a coloring sheet or draw big circles","Pick 3 favorite colors","Color from the middle out","Snap your masterpiece!"}', null, 20),
-  ('a0000000-0000-4000-8000-000000000008', 'quiz', 'Animal quiz', '🦁', 'Five questions about amazing animals.', null, '{}',
+  ('a0000000-0000-4000-8000-000000000008', 'quiz', 'Animal quiz', 'Five questions about amazing animals.', null, '{}',
     '[{"q":"Which animal is the biggest in the world?","options":["Elephant","Blue whale","Giraffe","Shark"],"answer":1,"fact":"A blue whale''s heart is as big as a small car!"},
       {"q":"How many legs does a spider have?","options":["6","8","10","12"],"answer":1,"fact":"Spiders are not insects: insects have 6 legs."},
       {"q":"Which animal can sleep standing up?","options":["Horse","Cat","Dog","Rabbit"],"answer":0,"fact":"Horses lock their legs so they don''t fall over."},
       {"q":"What do pandas mostly eat?","options":["Fish","Bamboo","Bananas","Grass"],"answer":1,"fact":"A panda can eat for 12 hours a day!"},
       {"q":"Which bird can fly backwards?","options":["Eagle","Penguin","Hummingbird","Owl"],"answer":2,"fact":"Hummingbirds flap their wings up to 80 times a second."}]', 5),
-  ('a0000000-0000-4000-8000-000000000009', 'quiz', 'Space quiz', '🚀', 'Five questions about planets and stars.', null, '{}',
+  ('a0000000-0000-4000-8000-000000000009', 'quiz', 'Space quiz', 'Five questions about planets and stars.', null, '{}',
     '[{"q":"Which planet is closest to the Sun?","options":["Venus","Mars","Mercury","Earth"],"answer":2,"fact":"A year on Mercury is only 88 days."},
       {"q":"What is the Sun?","options":["A planet","A star","A moon","A comet"],"answer":1,"fact":"The Sun is a star, the closest one to us."},
       {"q":"Which planet has big rings?","options":["Saturn","Mars","Earth","Mercury"],"answer":0,"fact":"Saturn''s rings are made of ice and rock."},
       {"q":"Who was the first person on the Moon?","options":["Neil Armstrong","Buzz Lightyear","Yuri Gagarin","Sally Ride"],"answer":0,"fact":"It happened in 1969!"},
       {"q":"What color is Mars?","options":["Blue","Green","Red","Purple"],"answer":2,"fact":"Mars is red because of rusty dust."}]', 5),
-  ('a0000000-0000-4000-8000-00000000000a', 'quiz', 'Sports quiz', '⚽', 'Five questions about sports.', null, '{}',
+  ('a0000000-0000-4000-8000-00000000000a', 'quiz', 'Sports quiz', 'Five questions about sports.', null, '{}',
     '[{"q":"How many players does a soccer team have on the field?","options":["9","10","11","12"],"answer":2,"fact":"That includes the goalkeeper."},
       {"q":"In which sport do you do a slam dunk?","options":["Tennis","Basketball","Golf","Swimming"],"answer":1,"fact":"The hoop is 10 feet high."},
       {"q":"What do you call 3 strikes in a row in bowling?","options":["A turkey","A chicken","A goose","A duck"],"answer":0,"fact":"Nobody knows exactly why!"},
       {"q":"How often are the Summer Olympics held?","options":["Every year","Every 2 years","Every 4 years","Every 10 years"],"answer":2,"fact":"The first modern Olympics were in 1896."},
       {"q":"Which sport uses a shuttlecock?","options":["Badminton","Hockey","Rugby","Baseball"],"answer":0,"fact":"A shuttlecock can fly over 300 km/h!"}]', 5),
-  ('a0000000-0000-4000-8000-00000000000b', 'story', 'The dragon who was afraid of the dark', '🐉', 'Write or say your story. There is no wrong answer!', 'A dragon who was afraid of the dark', '{}', null, 15),
-  ('a0000000-0000-4000-8000-00000000000c', 'story', 'A robot looking for a friend', '🤖', 'Where does the robot look? Who does it meet?', 'A robot looking for a friend', '{}', null, 15),
-  ('a0000000-0000-4000-8000-00000000000d', 'story', 'The flying bicycle', '🚲', 'Where would you fly first?', 'One morning, your bicycle could fly…', '{}', null, 15),
-  ('a0000000-0000-4000-8000-00000000000e', 'challenge', 'Our next holiday', '🏖️', 'You and someone from your family both draw it. You see each other''s drawings when you''re both done!', 'Draw where we''ll go on our next holiday', '{}', null, 15),
-  ('a0000000-0000-4000-8000-00000000000f', 'challenge', 'Our dream pet', '🐾', 'Both draw the pet you''d love to have together. Reveal at the end!', 'Draw our dream pet', '{}', null, 15);
+  ('a0000000-0000-4000-8000-00000000000b', 'story', 'The dragon who was afraid of the dark', 'Write or say your story. There is no wrong answer!', 'A dragon who was afraid of the dark', '{}', null, 15),
+  ('a0000000-0000-4000-8000-00000000000c', 'story', 'A robot looking for a friend', 'Where does the robot look? Who does it meet?', 'A robot looking for a friend', '{}', null, 15),
+  ('a0000000-0000-4000-8000-00000000000d', 'story', 'The flying bicycle', 'Where would you fly first?', 'One morning, your bicycle could fly…', '{}', null, 15),
+  ('a0000000-0000-4000-8000-00000000000e', 'challenge', 'Our next holiday', 'You and someone from your family both draw it. You see each other''s drawings when you''re both done!', 'Draw where we''ll go on our next holiday', '{}', null, 15),
+  ('a0000000-0000-4000-8000-00000000000f', 'challenge', 'Our dream pet', 'Both draw the pet you''d love to have together. Reveal at the end!', 'Draw our dream pet', '{}', null, 15);
 
 insert into public.activity_sessions (id, patient_id, activity_id, status, result_path, result_text, score, score_total, visibility, in_memories, partner_id, local_date, completed_at, created_at)
 select s.id::uuid, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', s.activity::uuid, 'completed', s.path, s.text, s.score, s.total,
@@ -390,25 +386,25 @@ values ('b0000000-0000-4000-8000-000000000006', '22222222-2222-4222-8222-2222222
         'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/b0000000-0000-4000-8000-000000000006/partner.webp',
         (((now() at time zone 'America/New_York')::date - 2) + time '20:45') at time zone 'America/New_York');
 
-insert into public.activity_reactions (session_id, user_id, emoji, created_at)
-select r.session::uuid, r.user_id::uuid, r.emoji, s.completed_at + interval '1 hour'
+insert into public.activity_reactions (session_id, user_id, kind, created_at)
+select r.session::uuid, r.user_id::uuid, r.kind, s.completed_at + interval '1 hour'
 from (values
-  ('b0000000-0000-4000-8000-000000000001', '22222222-2222-4222-8222-222222222222', '❤️'),
-  ('b0000000-0000-4000-8000-000000000001', '77777777-7777-4777-8777-777777777777', '😂'),
-  ('b0000000-0000-4000-8000-000000000003', '33333333-3333-4333-8333-333333333333', '💪'),
-  ('b0000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222222', '🤗'),
-  ('b0000000-0000-4000-8000-000000000004', '33333333-3333-4333-8333-333333333333', '❤️'),
-  ('b0000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222222', '❤️'),
-  ('b0000000-0000-4000-8000-000000000006', '33333333-3333-4333-8333-333333333333', '❤️')
-) as r(session, user_id, emoji)
+  ('b0000000-0000-4000-8000-000000000001', '22222222-2222-4222-8222-222222222222', 'heart'),
+  ('b0000000-0000-4000-8000-000000000001', '77777777-7777-4777-8777-777777777777', 'laugh'),
+  ('b0000000-0000-4000-8000-000000000003', '33333333-3333-4333-8333-333333333333', 'strong'),
+  ('b0000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222222', 'hug'),
+  ('b0000000-0000-4000-8000-000000000004', '33333333-3333-4333-8333-333333333333', 'heart'),
+  ('b0000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222222', 'heart'),
+  ('b0000000-0000-4000-8000-000000000006', '33333333-3333-4333-8333-333333333333', 'heart')
+) as r(session, user_id, kind)
 join public.activity_sessions s on s.id = r.session::uuid;
 
 insert into public.activity_comments (session_id, user_id, body, created_at)
 select c.session::uuid, c.user_id::uuid, c.body, now() - c.ago
 from (values
   ('b0000000-0000-4000-8000-000000000001', '77777777-7777-4777-8777-777777777777', 'I want to dive with you!', interval '20 hours'),
-  ('b0000000-0000-4000-8000-000000000003', '33333333-3333-4333-8333-333333333333', 'Future astronaut! 🚀', interval '5 days 20 hours'),
-  ('b0000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222222', 'My king! 👑', interval '3 days 22 hours'),
+  ('b0000000-0000-4000-8000-000000000003', '33333333-3333-4333-8333-333333333333', 'Future astronaut!', interval '5 days 20 hours'),
+  ('b0000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222222', 'My king!', interval '3 days 22 hours'),
   ('b0000000-0000-4000-8000-000000000004', '11111111-1111-4111-8111-111111111111', 'Thank you Mom', interval '3 days 21 hours'),
   ('b0000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222222', 'I want to read the next chapter!', interval '2 days 20 hours')
 ) as c(session, user_id, body, ago);
@@ -453,7 +449,7 @@ insert into public.question_answers (daily_question_id, user_id, body, created_a
 select d.id, a.user_id::uuid, a.body, case when a.days_ago = 0 then pg_temp.today_ago(a.ago) else now() - a.ago end
 from (values
   (0, '33333333-3333-4333-8333-333333333333', 'Singing on stage at my cousin''s wedding. My knees were shaking!', interval '3 hours'),
-  (1, '11111111-1111-4111-8111-111111111111', 'A baby dinosaur. A small one, so it fits in my room 🦖', interval '1 day 2 hours'),
+  (1, '11111111-1111-4111-8111-111111111111', 'A baby dinosaur. A small one, so it fits in my room', interval '1 day 2 hours'),
   (1, '22222222-2222-4222-8222-222222222222', 'A sea turtle, so we could swim together at the beach.', interval '1 day 4 hours'),
   (2, '11111111-1111-4111-8111-111111111111', 'Breathing underwater to visit the whale sharks', interval '2 days 3 hours'),
   (2, '33333333-3333-4333-8333-333333333333', 'Teleporting, so I could be in your room in one second.', interval '2 days 5 hours')

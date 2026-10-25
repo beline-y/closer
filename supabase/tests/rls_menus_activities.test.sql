@@ -25,8 +25,8 @@ $$;
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('44444444-4444-4444-8444-444444444444'); -- Sarah
 select lives_ok(
-  $$insert into menu_items (unit_id, menu_date, meal, dish_name, icon, created_by)
-    values ('f0000000-0000-4000-8000-000000000001', current_date + 1, 'lunch', 'Test lasagna', '🍝', '44444444-4444-4444-8444-444444444444')$$,
+  $$insert into menu_items (unit_id, menu_date, meal, dish_name, created_by)
+    values ('f0000000-0000-4000-8000-000000000001', current_date + 1, 'lunch', 'Test lasagna', '44444444-4444-4444-8444-444444444444')$$,
   'Sarah adds a dish to her unit''s menu');
 select pg_temp.reset_role();
 
@@ -71,22 +71,22 @@ select pg_temp.reset_role();
 -- Reactions: one per person per check-in, changeable; care team cannot react
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('22222222-2222-4222-8222-222222222222'); -- Emma
-select lives_ok($$insert into checkin_reactions (checkin_id, user_id, emoji) select id, '22222222-2222-4222-8222-222222222222', '❤️' from mood_checkins where note = 'rls test'$$,
+select lives_ok($$insert into checkin_reactions (checkin_id, user_id, kind) select id, '22222222-2222-4222-8222-222222222222', 'heart' from mood_checkins where note = 'rls test'$$,
   'Emma reacts to Leo''s mood');
-select throws_ok($$insert into checkin_reactions (checkin_id, user_id, emoji) select id, '22222222-2222-4222-8222-222222222222', '🤗' from mood_checkins where note = 'rls test'$$,
+select throws_ok($$insert into checkin_reactions (checkin_id, user_id, kind) select id, '22222222-2222-4222-8222-222222222222', 'hug' from mood_checkins where note = 'rls test'$$,
   '23505', null, 'Only one reaction per person');
-update checkin_reactions set emoji = '🤗' where user_id = '22222222-2222-4222-8222-222222222222' and checkin_id = (select id from mood_checkins where note = 'rls test');
-select is((select emoji from checkin_reactions where user_id = '22222222-2222-4222-8222-222222222222' and checkin_id = (select id from mood_checkins where note = 'rls test')), '🤗',
+update checkin_reactions set kind = 'hug' where user_id = '22222222-2222-4222-8222-222222222222' and checkin_id = (select id from mood_checkins where note = 'rls test');
+select is((select kind from checkin_reactions where user_id = '22222222-2222-4222-8222-222222222222' and checkin_id = (select id from mood_checkins where note = 'rls test')), 'hug',
   'Emma changes her reaction');
 select pg_temp.reset_role();
 
 select pg_temp.act_as('33333333-3333-4333-8333-333333333333'); -- James
-select throws_ok($$insert into checkin_reactions (checkin_id, user_id, emoji) select id, '33333333-3333-4333-8333-333333333333', '⭐' from mood_checkins where note = 'rls test'$$,
+select throws_ok($$insert into checkin_reactions (checkin_id, user_id, kind) select id, '33333333-3333-4333-8333-333333333333', 'star' from mood_checkins where note = 'rls test'$$,
   '23514', null, 'Only heart, hug, strong and laugh');
 select pg_temp.reset_role();
 
 select pg_temp.act_as('44444444-4444-4444-8444-444444444444'); -- Sarah
-select throws_ok($$insert into checkin_reactions (checkin_id, user_id, emoji) select id, '44444444-4444-4444-8444-444444444444', '❤️' from mood_checkins where note = 'rls test'$$,
+select throws_ok($$insert into checkin_reactions (checkin_id, user_id, kind) select id, '44444444-4444-4444-8444-444444444444', 'heart' from mood_checkins where note = 'rls test'$$,
   '42501', null, 'Sarah cannot react');
 select pg_temp.reset_role();
 

@@ -5,10 +5,10 @@
 // - after a longer break, the streak restarts with "Welcome back!", never "you lost it"
 
 export const MILESTONES = [
-  { days: 3, emoji: "🌱", name: "Little sprout" },
-  { days: 7, emoji: "⭐", name: "Star week" },
-  { days: 14, emoji: "🏅", name: "Two-week hero" },
-  { days: 30, emoji: "🏆", name: "Champion" },
+  { days: 3, icon: "sprout", name: "Little sprout" },
+  { days: 7, icon: "star", name: "Star week" },
+  { days: 14, icon: "medal", name: "Two-week hero" },
+  { days: 30, icon: "trophy", name: "Champion" },
 ] as const;
 
 export type Milestone = (typeof MILESTONES)[number];

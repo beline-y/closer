@@ -6,6 +6,7 @@ import { StatTile } from "@/components/kit/stat-tile";
 import { relativeDay } from "@/lib/dates";
 import { DRAWING_FEELINGS, type DrawingItem, type DrawingsView as View, feelingOf } from "@/lib/drawings";
 import { cn } from "@/lib/utils";
+import { CloserIcon } from "@/components/icons/closer-icon";
 
 // How a child's drawings change: what is drawn and the colors used, against the child's own
 // usual drawings. Never an interpretation of the child's psychology.
@@ -35,7 +36,7 @@ function DrawingCard({ d }: { d: DrawingItem }) {
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-bold">{relativeDay(d.days_ago)}</span>
           <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold", feeling.className)}>
-            <span aria-hidden>{feeling.icon}</span> {feeling.label}
+            <CloserIcon name={feeling.icon} /> {feeling.label}
           </span>
         </div>
         <p className="text-sm leading-relaxed text-pretty">{d.description || "Colors only: Claude did not read this drawing."}</p>
@@ -52,8 +53,8 @@ function DrawingCard({ d }: { d: DrawingItem }) {
             </Chip>
           )}
           {d.family && <Chip>Family</Chip>}
-          {d.smiling_faces > 0 && <Chip>☺ {d.smiling_faces} smiling</Chip>}
-          {d.sad_faces > 0 && <Chip tone="alert">☹ {d.sad_faces} sad</Chip>}
+          {d.smiling_faces > 0 && <Chip><CloserIcon name="happy" /> {d.smiling_faces} smiling</Chip>}
+          {d.sad_faces > 0 && <Chip tone="alert"><CloserIcon name="sad" /> {d.sad_faces} sad</Chip>}
           {setting && <Chip>{setting} {d.setting[0].toUpperCase() + d.setting.slice(1)}</Chip>}
           {d.sun && (
             <Chip>
@@ -79,7 +80,7 @@ export function DrawingsView({ view, nickname }: { view: View; nickname: string 
   const usual = view.usual;
   if (view.drawings.length === 0) {
     return (
-      <EmptyState emoji="🖍️" title="No drawing yet">
+      <EmptyState icon="draw" title="No drawing yet">
         Add a photo of {nickname}&apos;s drawing above. Its colors and what it shows will be followed over time.
       </EmptyState>
     );
