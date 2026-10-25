@@ -96,18 +96,21 @@ export type Database = {
         Row: {
           created_at: string
           emoji: string
+          kind: string
           session_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           emoji: string
+          kind: string
           session_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           emoji?: string
+          kind?: string
           session_id?: string
           user_id?: string
         }
@@ -393,18 +396,21 @@ export type Database = {
           checkin_id: string
           created_at: string
           emoji: string
+          kind: string
           user_id: string
         }
         Insert: {
           checkin_id: string
           created_at?: string
           emoji: string
+          kind: string
           user_id: string
         }
         Update: {
           checkin_id?: string
           created_at?: string
           emoji?: string
+          kind?: string
           user_id?: string
         }
         Relationships: [
@@ -824,6 +830,7 @@ export type Database = {
           nudge_id: string
           replied_at: string | null
           reply_emoji: string | null
+          reply_kind: string | null
           reply_text: string | null
           seen_at: string | null
           user_id: string
@@ -832,6 +839,7 @@ export type Database = {
           nudge_id: string
           replied_at?: string | null
           reply_emoji?: string | null
+          reply_kind?: string | null
           reply_text?: string | null
           seen_at?: string | null
           user_id: string
@@ -840,6 +848,7 @@ export type Database = {
           nudge_id?: string
           replied_at?: string | null
           reply_emoji?: string | null
+          reply_kind?: string | null
           reply_text?: string | null
           seen_at?: string | null
           user_id?: string
@@ -1205,6 +1214,32 @@ export type Database = {
           {
             foreignKeyName: "question_suggestions_suggested_to_fkey"
             columns: ["suggested_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_seen: {
+        Row: {
+          item_key: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          item_key: string
+          seen_at?: string
+          user_id?: string
+        }
+        Update: {
+          item_key?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_seen_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
