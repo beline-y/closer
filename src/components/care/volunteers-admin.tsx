@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
 import { castByPatientId } from "@/lib/cast";
 import { relativeDay } from "@/lib/dates";
-import { ANSWERS_TO_REVIEW, CONTACT_REQUEST_LABELS, CONTACT_REQUESTS, type ContactRequestStatus, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { CONTACT_REQUEST_LABELS, CONTACT_REQUESTS, type ContactRequestStatus, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
 import { ApplicantMessages } from "@/components/care/applicant-messages";
 import { needsAttention, type VolunteerSubmission } from "@/lib/volunteer-submissions";
@@ -30,13 +30,16 @@ function Masked({ text }: { text: string }) {
 
 // Applicant messages persist through Supabase. The other tabs retain their
 // existing visit-only examples for approvals, patient answers and contacts.
-export function VolunteersAdmin({ submissions = [], loadError }: { submissions?: VolunteerSubmission[]; loadError?: string }) {
+/** Answers Leo chose to share, masked by the database (answers_to_review()). */
+export type AnswerToReview = { id: string; patientId: string; question: string; masked: string; daysAgo: number };
+
+export function VolunteersAdmin({ submissions = [], loadError, answers = [] }: { submissions?: VolunteerSubmission[]; loadError?: string; answers?: AnswerToReview[] }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Volunteers");
   const [status, setStatus] = useState<Record<string, "approved" | "suspended">>({ maya: "approved", daniel: "approved" });
   const [reviewed, setReviewed] = useState<Record<string, "shared" | "private">>({});
   const [requests, setRequests] = useState(CONTACT_REQUESTS);
   const setRequest = (id: string, s: ContactRequestStatus) => setRequests((all) => all.map((r) => (r.id === id ? { ...r, status: s } : r)));
-  const toReview = ANSWERS_TO_REVIEW.filter((a) => !reviewed[a.id]).length;
+  const toReview = answers.filter((a) => !reviewed[a.id]).length;
   const pending = requests.filter((r) => r.status === "pending_care").length;
 
   return (
@@ -102,7 +105,8 @@ export function VolunteersAdmin({ submissions = [], loadError }: { submissions?:
             Only answers the patient chose to share. The privacy filter already masked names, places, emails and phone numbers. Volunteers see the approved text only, without the patient.
           </p>
           <ul className="flex flex-col gap-3">
-            {ANSWERS_TO_REVIEW.map((a) => (
+            {answers.length === 0 && <li className="text-muted-foreground">No shared answer to review. Leo&apos;s answers stay private unless he shares one.</li>}
+            {answers.map((a) => (
               <li key={a.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
                 <p className="text-sm text-muted-foreground">
                   {castByPatientId(a.patientId)?.name} · {a.question} · {relativeDay(a.daysAgo)}

@@ -67,14 +67,6 @@ export const COMFORT_CARDS: ComfortCard[] = [
 // ---------------------------------------------------------------------------
 // Question of the day (care team never sees answers)
 // ---------------------------------------------------------------------------
-export const TODAY_QUESTION = {
-  text: "What is the bravest thing you ever did?",
-  emojiChips: ["🦁", "🌊", "🎢", "💉", "🏊"],
-  /** Dad already answered; Leo and Emma haven't yet (same story on both sides). */
-  answers: {
-    james: "Singing on stage at my cousin's wedding. My knees were shaking!",
-  } as Partial<Record<CastId, string>>,
-};
 
 // ---------------------------------------------------------------------------
 // Memories (patient + circle only)
@@ -182,7 +174,7 @@ export const VOLUNTEER_POOL: PoolQuestion[] = [
 
 /** Volunteer answers to the question of the day (shown to patients after they answer) */
 export const VOLUNTEER_ANSWERS: Record<string, { volunteer: "maya" | "daniel"; body: string }[]> = {
-  [TODAY_QUESTION.text]: [
+  "What is the bravest thing you ever did?": [
     { volunteer: "maya", body: "My first night dive! It was pitch dark, but then the plankton started glowing all around me like underwater stars." },
     { volunteer: "daniel", body: "Landing a plane in a big storm, with 200 people counting on me. I breathed slowly and followed my training." },
   ],
@@ -239,8 +231,4 @@ export const VOLUNTEER_REQUESTS: Record<"maya" | "daniel", { id: string; status:
   ],
 };
 
-/** Patient answers waiting for care review, already masked by the privacy filter */
-export const ANSWERS_TO_REVIEW = [
-  { id: "ar-1", patientId: PATIENT_IDS.leo, question: "What is the bravest thing you ever did?", masked: "I let the nurse [name] take blood and I didn't cry. Then [name] brought me to [place] for ice cream.", daysAgo: 0 },
-];
 

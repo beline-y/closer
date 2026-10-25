@@ -410,3 +410,34 @@ insert into public.comfort_cards (patient_id, author_id, body, color, opened_at,
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '22222222-2222-4222-8222-222222222222',
    'Remember: you are stronger than you think, and you''re never alone. Mom',
    'lilac', now() - interval '5 days', now() - interval '6 days');
+
+-- ---------------------------------------------------------------------------
+-- Question of the day: today's is "the bravest thing", already answered by James
+-- (so Leo and Emma see "Dad answered! Answer to see it"). Earlier days were
+-- answered by Leo and Emma.
+-- ---------------------------------------------------------------------------
+insert into public.question_bank (text, source, min_age, max_age, tags)
+values ('What is the bravest thing you ever did?', 'curated', 5, 17, '{feelings}')
+on conflict do nothing;
+
+insert into public.daily_questions (patient_id, local_date, question_id)
+select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', (now() at time zone 'America/New_York')::date - q.days_ago, b.id
+from (values
+  (0, 'What is the bravest thing you ever did?'),
+  (1, 'If you could have any animal as a pet, what would it be?'),
+  (2, 'What superpower would you choose, and why?')
+) as q(days_ago, text)
+join public.question_bank b on b.text = q.text and b.source = 'curated';
+
+insert into public.question_answers (daily_question_id, user_id, body, created_at)
+select d.id, a.user_id::uuid, a.body, now() - a.ago
+from (values
+  (0, '33333333-3333-4333-8333-333333333333', 'Singing on stage at my cousin''s wedding. My knees were shaking!', interval '3 hours'),
+  (1, '11111111-1111-4111-8111-111111111111', 'A baby dinosaur. A small one, so it fits in my room 🦖', interval '1 day 2 hours'),
+  (1, '22222222-2222-4222-8222-222222222222', 'A sea turtle, so we could swim together at the beach.', interval '1 day 4 hours'),
+  (2, '11111111-1111-4111-8111-111111111111', 'Breathing underwater to visit the whale sharks', interval '2 days 3 hours'),
+  (2, '33333333-3333-4333-8333-333333333333', 'Teleporting, so I could be in your room in one second.', interval '2 days 5 hours')
+) as a(days_ago, user_id, body, ago)
+join public.daily_questions d
+  on d.patient_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+ and d.local_date = (now() at time zone 'America/New_York')::date - a.days_ago;
