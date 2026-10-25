@@ -96,21 +96,21 @@ export type Database = {
         Row: {
           created_at: string
           emoji: string
-          kind: string
+          kind: string | null
           session_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          emoji: string
-          kind: string
+          emoji?: string
+          kind?: string | null
           session_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           emoji?: string
-          kind?: string
+          kind?: string | null
           session_id?: string
           user_id?: string
         }
@@ -396,21 +396,21 @@ export type Database = {
           checkin_id: string
           created_at: string
           emoji: string
-          kind: string
+          kind: string | null
           user_id: string
         }
         Insert: {
           checkin_id: string
           created_at?: string
-          emoji: string
-          kind: string
+          emoji?: string
+          kind?: string | null
           user_id: string
         }
         Update: {
           checkin_id?: string
           created_at?: string
           emoji?: string
-          kind?: string
+          kind?: string | null
           user_id?: string
         }
         Relationships: [
