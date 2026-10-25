@@ -5,6 +5,8 @@ import { readFile, readdir } from "node:fs/promises";
 export async function testDatabase() {
   const db = new PGlite();
   await db.exec(`
+    -- Fixtures use UTC patients; don't inherit the developer machine's date.
+    set time zone 'UTC';
     create role anon;
     create role authenticated;
     create role service_role bypassrls;

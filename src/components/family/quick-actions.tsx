@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { QuestionIdeas } from "@/components/question-flow";
+import { QuestionIdeas } from "@/components/question-ideas";
 import { cn } from "@/lib/utils";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const ACTIONS = [
   { href: "/family", emoji: "💛", label: "Reply to Leo" },
@@ -28,7 +29,8 @@ export function QuickActions({ className }: { className?: string }) {
           </li>
         ))}
       </ul>
-      <QuestionIdeas className="hidden lg:block" />
+      <QuestionIdeas />
+      {isDemoMode() && <a href="#ai-notification-demo" className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-role-family-soft px-4 font-bold text-role-family-ink">🔔 Try AI notification demo</a>}
     </section>
   );
 }

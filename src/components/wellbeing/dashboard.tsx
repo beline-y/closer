@@ -2,6 +2,9 @@ import { Bell, ShieldCheck } from "lucide-react";
 import { loadWellbeingDashboard } from "@/lib/wellbeing/dashboard";
 import { acknowledgeReview, notificationFeedback, saveConsent, saveNotificationPrefs } from "@/lib/wellbeing/actions";
 import { ActionForm, LiveNotifications } from "./controls";
+import { isDemoMode } from "@/lib/demo-mode";
+import { demoInvitationRole } from "@/lib/wellbeing/demo-access";
+import { DemoInvitation } from "./demo-invitation";
 
 const inputClass = "min-h-14 w-full rounded-xl border border-border bg-background px-4 py-3 text-base focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/30";
 const panelClass = "rounded-3xl border border-border bg-card p-5 sm:p-7";
@@ -35,6 +38,9 @@ export async function WellbeingPanel({ role }: { role: "patient" | "family" | "c
   </aside>;
   return <section className="flex flex-col gap-5" aria-label={isChild ? "Little moments together" : "Daily wellbeing and connection"}>
     <LiveNotifications userId={data.userId} />
+    {/* The AI demo is for the guardian side only: no AI on the patient's screens, and a child never triggers an AI request. */}
+    {role === "family" && isDemoMode() && data.patients.filter((p) => demoInvitationRole(data.userId, p.id, role) === role).map((p) =>
+      <DemoInvitation key={`${data.userId}:${p.id}`} patientId={p.id} name={p.nickname} role={role} />)}
     {isChild && <p className="rounded-2xl bg-role-patient-soft p-4 text-lg">Need help now? Tell a trusted grown-up or your care team.</p>}
       <section aria-labelledby="inbox-heading" className="flex flex-col gap-4">
         <h2 id="inbox-heading" className="flex items-center gap-3 text-2xl font-extrabold"><Bell className="size-6 text-primary" aria-hidden /> {isChild ? "A little invitation for you" : role === "care" ? "Support inbox" : "Your daily invitations"}</h2>
