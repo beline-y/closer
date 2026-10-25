@@ -411,6 +411,45 @@ export type Database = {
           },
         ]
       }
+      daily_questions: {
+        Row: {
+          created_at: string
+          id: string
+          local_date: string
+          patient_id: string
+          question_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          local_date: string
+          patient_id: string
+          question_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          local_date?: string
+          patient_id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_questions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_wellbeing_reviews: {
         Row: {
           acknowledged_at: string | null
@@ -988,6 +1027,48 @@ export type Database = {
         }
         Relationships: []
       }
+      question_answers: {
+        Row: {
+          body: string
+          created_at: string
+          daily_question_id: string
+          id: string
+          share_with_volunteers: boolean
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          daily_question_id: string
+          id?: string
+          share_with_volunteers?: boolean
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          daily_question_id?: string
+          id?: string
+          share_with_volunteers?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_answers_daily_question_id_fkey"
+            columns: ["daily_question_id"]
+            isOneToOne: false
+            referencedRelation: "daily_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_bank: {
         Row: {
           created_at: string
@@ -1235,6 +1316,16 @@ export type Database = {
         Args: { p_patient_id: string; p_questions: string[] }
         Returns: number
       }
+      answers_to_review: {
+        Args: never
+        Returns: {
+          answer_id: string
+          created_at: string
+          masked: string
+          patient_id: string
+          question: string
+        }[]
+      }
       can_process_wellbeing: {
         Args: { p_consent_at: string; p_patient_id: string }
         Returns: boolean
@@ -1313,6 +1404,15 @@ export type Database = {
       set_wellbeing_consent: {
         Args: { p_enabled: boolean; p_patient_id: string }
         Returns: undefined
+      }
+      todays_question: {
+        Args: { p_patient_id: string }
+        Returns: {
+          answered_by: string[]
+          id: string
+          local_date: string
+          text: string
+        }[]
       }
     }
     Enums: {
