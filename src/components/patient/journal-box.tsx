@@ -14,13 +14,13 @@ export function JournalBox() {
         setSaved(text.trim());
         setText("");
       }}
-      className="flex flex-col gap-3 rounded-3xl bg-role-patient-soft p-4"
+      className="hue-lilac flex flex-col gap-3 rounded-3xl bg-hue-soft p-4"
     >
       <label htmlFor="journal" className="text-lg font-bold">
         How was your day?
       </label>
       <textarea id="journal" value={text} onChange={(e) => setText(e.target.value)} rows={3} className="rounded-2xl border bg-card p-3 text-lg" placeholder="Only you can read it 🔒" />
-      <button type="submit" disabled={!text.trim()} className="min-h-14 rounded-2xl bg-role-patient text-lg font-extrabold disabled:opacity-50">
+      <button type="submit" disabled={!text.trim()} className="hue-sun pressable min-h-14 rounded-2xl bg-hue text-lg font-extrabold disabled:opacity-50">
         Save
       </button>
       {saved && (

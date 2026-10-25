@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { answerTodayQuestion } from "@/app/question-actions";
 import { Modal } from "@/components/kit/modal";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
+import { ReadAloud } from "@/components/kit/read-aloud";
 import { VolunteerCard } from "@/components/kit/volunteer-card";
 import { QuestionIdeas } from "@/components/question-ideas";
 import { CAST, type CastMember } from "@/lib/cast";
@@ -30,8 +31,11 @@ export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isL
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-4 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border sm:p-6">
-        <p className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</p>
+      <section className="hue-lilac flex flex-col gap-4 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</p>
+          {isLeo && <ReadAloud text={question.text} />}
+        </div>
         <h2 className="text-3xl font-extrabold sm:text-4xl">{question.text}</h2>
         {!answer && question.answeredBy.length > 0 && (
           <p className="text-lg">
@@ -111,7 +115,7 @@ export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isL
               Volunteers can read it (without my name)
             </label>
           )}
-          <button type="submit" disabled={!draft.trim() || sending} className={cn("min-h-14 rounded-2xl text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50", accent)}>
+          <button type="submit" disabled={!draft.trim() || sending} className={cn("min-h-14 rounded-2xl text-xl font-extrabold disabled:opacity-50", isLeo ? "hue-sun pressable" : "shadow-sm transition active:scale-[0.98]", accent)}>
             {sending ? "Sending…" : "Send my answer"}
           </button>
           {error && <p role="alert" className="font-bold text-alert">{error}</p>}
