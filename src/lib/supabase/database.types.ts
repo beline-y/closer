@@ -14,69 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      volunteer_submissions: {
-        Row: {
-          id: string
-          volunteer_id: string
-          volunteer_name: string
-          kind: string
-          context_key: string
-          context_label: string
-          body: string
-          screening_state: string
-          categories: string[]
-          explanation: string
-          evidence: string[]
-          model: string | null
-          prompt_version: string
-          status: string
-          reviewed_by: string | null
-          reviewed_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id: string
-          volunteer_id: string
-          volunteer_name: string
-          kind: string
-          context_key: string
-          context_label: string
-          body: string
-          screening_state: string
-          categories?: string[]
-          explanation: string
-          evidence?: string[]
-          model?: string | null
-          prompt_version?: string
-          status?: string
-          reviewed_by?: string | null
-          reviewed_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          volunteer_id?: string
-          volunteer_name?: string
-          kind?: string
-          context_key?: string
-          context_label?: string
-          body?: string
-          screening_state?: string
-          categories?: string[]
-          explanation?: string
-          evidence?: string[]
-          model?: string | null
-          prompt_version?: string
-          status?: string
-          reviewed_by?: string | null
-          reviewed_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          { foreignKeyName: "volunteer_submissions_volunteer_id_fkey"; columns: ["volunteer_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
-          { foreignKeyName: "volunteer_submissions_reviewed_by_fkey"; columns: ["reviewed_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
-        ]
-      }
       activities: {
         Row: {
           created_at: string
@@ -1135,6 +1072,81 @@ export type Database = {
           },
         ]
       }
+      volunteer_submissions: {
+        Row: {
+          body: string
+          categories: string[]
+          context_key: string
+          context_label: string
+          created_at: string
+          evidence: string[]
+          explanation: string
+          id: string
+          kind: string
+          model: string | null
+          prompt_version: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screening_state: string
+          status: string
+          volunteer_id: string
+          volunteer_name: string
+        }
+        Insert: {
+          body: string
+          categories?: string[]
+          context_key: string
+          context_label: string
+          created_at?: string
+          evidence?: string[]
+          explanation: string
+          id: string
+          kind: string
+          model?: string | null
+          prompt_version?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screening_state: string
+          status?: string
+          volunteer_id: string
+          volunteer_name: string
+        }
+        Update: {
+          body?: string
+          categories?: string[]
+          context_key?: string
+          context_label?: string
+          created_at?: string
+          evidence?: string[]
+          explanation?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          prompt_version?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screening_state?: string
+          status?: string
+          volunteer_id?: string
+          volunteer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_submissions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_submissions_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wellbeing_permissions: {
         Row: {
           consent_version: string
@@ -1208,7 +1220,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      review_volunteer_submission: { Args: { p_id: string; p_decision: string }; Returns: boolean }
       acknowledge_wellbeing_review: {
         Args: { p_review_id: string }
         Returns: undefined
@@ -1278,6 +1289,10 @@ export type Database = {
           id: string
           opened_at: string
         }[]
+      }
+      review_volunteer_submission: {
+        Args: { p_decision: string; p_id: string }
+        Returns: boolean
       }
       sealed_cards: {
         Args: never
