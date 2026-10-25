@@ -11,6 +11,7 @@ import { milestoneDays } from "@/lib/streak";
 import { getVisiblePatients } from "@/lib/data/circle";
 import { getMyNudges } from "@/lib/data/nudges";
 import { getMyCards } from "@/lib/data/cards";
+import { getTodayQuestion } from "@/lib/data/daily-question";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Feed · Closer" };
@@ -41,7 +42,7 @@ async function Feed() {
   const [{ data: claims }, patients] = await Promise.all([supabase.auth.getClaims(), getVisiblePatients()]);
   const leo = patients[0];
   const me = claims?.claims.sub ?? "";
-  const [checkins, nudges, results, challenges, dates, myCards] = leo
+  const [checkins, nudges, results, challenges, dates, myCards, question] = leo
     ? await Promise.all([
         getCheckins(leo.id, leo.timezone, { days: 7, withPhotos: true, withReactions: true }),
         getMyNudges(me, leo.timezone),
@@ -49,8 +50,9 @@ async function Feed() {
         getMyPendingChallenges(),
         getCheckinDates(leo.id),
         getMyCards(me, leo.id, leo.timezone),
+        getTodayQuestion(leo.id),
       ])
-    : [[], [], [], [], [], []];
+    : [[], [], [], [], [], [], null];
   const openedCards = myCards.filter((c) => c.openedDaysAgo !== null && c.openedDaysAgo < 7);
   const today = leo ? todayIn(leo.timezone) : "";
   const milestones = milestoneDays(dates)
@@ -74,7 +76,7 @@ async function Feed() {
           ]}
         />
       )}
-      <FamilyFeed checkins={checkins} nudges={nudges} results={results} challenges={challenges} milestones={milestones} openedCards={openedCards} me={me} />
+      <FamilyFeed checkins={checkins} nudges={nudges} results={results} challenges={challenges} milestones={milestones} openedCards={openedCards} question={question} me={me} />
     </>
   );
 }

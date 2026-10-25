@@ -160,8 +160,8 @@ These are `security definer` SQL functions in the `private` schema with `search_
 | `comfort_cards` | patient_id, author_id, body ≤ 1000, color (sun, coral, sky, lilac), opened_at | Family and friends write for their patient; the author reads their own and can edit or take back while sealed. The patient sees sealed cards through `sealed_cards()` (who and color, never the text) and opens each once with `open_comfort_card()` (first date kept); opened cards are the archive. No care team, no volunteers. Realtime: the author sees "Leo opened your card" live. |
 | `question_bank` | text, source (curated / mistral), patient_id (generated ones only), min_age, max_age, tags | 60 curated questions shared by everyone (volunteers excepted); Mistral-generated ones belong to one patient's family. Written only through `next_question_ideas()` / `add_generated_questions()`. |
 | `question_suggestions` | patient_id, question_id, suggested_to, suggested_at | What a family already saw: never repeated until the pool runs out, then the oldest curated come back. Circle reads. |
-| `daily_questions` | patient_id, local_date, text, source | Patient and family read. |
-| `question_answers` | question_id, user_id, body ≤ 500 | Read your own; others' only after you've answered. No care team access. |
+| `daily_questions` | patient_id, local_date, question_id (from `question_bank`) | One per patient per day, created by `todays_question()` (curated questions not used before). Patient and circle read. |
+| `question_answers` | daily_question_id, user_id, body ≤ 500, share_with_volunteers (patient only, off by default) | Read your own; others' only once you answered (live reveal via Realtime). No care team, no volunteers: the care team gets only shared answers, names masked, through `answers_to_review()`. |
 | `notifications` | user_id, kind, ref_id, read_at, emailed_at | Owner only. Delivered through Realtime. |
 | `notification_prefs` | user_id, email_enabled | Owner only. |
 | `app_sessions` | user_id, patient_id, started_at, last_seen_at | Patient only (60s heartbeat). Care team gets daily totals only. Time inside Closer, not device screen time. |

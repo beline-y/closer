@@ -13,7 +13,8 @@ import { getRepliesForPatient, getThinkingOfYouToday } from "@/lib/data/nudges";
 import { NudgeReplies } from "@/components/nudge-replies";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { relativeDay } from "@/lib/dates";
-import { MEMORIES, TODAY_QUESTION } from "@/lib/demo-fixtures";
+import { MEMORIES } from "@/lib/demo-fixtures";
+import { getTodayQuestion } from "@/lib/data/daily-question";
 import { getSealedCards } from "@/lib/data/cards";
 import { getActivities } from "@/lib/data/activities";
 import { todayIn } from "@/lib/dates";
@@ -44,14 +45,9 @@ export default function PatientTodayPage() {
           <TodayCheckIn />
         </Suspense>
 
-        <Link
-          href="/patient/question"
-          className="flex flex-col gap-3 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5"
-        >
-          <span className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</span>
-          <span className="font-heading text-2xl font-extrabold">{TODAY_QUESTION.text}</span>
-          <span className="text-lg">🔒 Dad answered! Answer to see his.</span>
-        </Link>
+        <Suspense fallback={<div className="min-h-40 rounded-3xl bg-role-volunteer-soft" />}>
+          <TodayQuestionCard />
+        </Suspense>
 
         <Suspense fallback={null}>
           <CardsWaiting />
@@ -223,6 +219,24 @@ async function CardsWaiting() {
           {sealed} {sealed === 1 ? "card" : "cards"} for you
         </span>
         <span className="text-lg text-muted-foreground">Open them when you want</span>
+      </span>
+    </Link>
+  );
+}
+
+// Today's question: opens the full question screen. Says who answered, never what.
+async function TodayQuestionCard() {
+  const patient = await getMyPatient();
+  if (!patient) return null;
+  const q = await getTodayQuestion(patient.id);
+  if (!q) return null;
+  const who = q.answeredBy.map((m) => (m.relationship === "Mom" || m.relationship === "Dad" ? m.relationship : m.name));
+  return (
+    <Link href="/patient/question" className="flex flex-col gap-3 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border transition hover:-translate-y-0.5">
+      <span className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</span>
+      <span className="font-heading text-2xl font-extrabold">{q.text}</span>
+      <span className="text-lg">
+        {q.myAnswer ? "✅ You answered. See everyone's answers ▶" : who.length ? `🔒 ${who.join(" and ")} answered! Answer to see it.` : "Be the first to answer ▶"}
       </span>
     </Link>
   );

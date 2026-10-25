@@ -13,7 +13,8 @@ import type { CheckInView } from "@/lib/data/checkins";
 import type { Milestone } from "@/lib/streak";
 import type { MyNudge } from "@/lib/data/nudges";
 import { relativeDay } from "@/lib/dates";
-import { MEMORIES, TODAY_QUESTION, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { MEMORIES, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import type { TodayQuestion } from "@/lib/data/daily-question";
 import type { Card } from "@/lib/data/cards";
 import { nudgeKind, QUICK_REPLIES } from "@/lib/nudges";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,7 @@ import { cn } from "@/lib/utils";
 // stay pinned on top. The volunteer request, memories and cards are still placeholder data.
 type PendingChallenge = { session_id: string; title: string; emoji: string; theme: string | null };
 
-export function FamilyFeed({ checkins, nudges, results, challenges, milestones, openedCards, me }: {
+export function FamilyFeed({ checkins, nudges, results, challenges, milestones, openedCards, question, me }: {
   checkins: CheckInView[];
   nudges: MyNudge[];
   results: ActivityResult[];
@@ -30,6 +31,7 @@ export function FamilyFeed({ checkins, nudges, results, challenges, milestones, 
   milestones: { daysAgo: number; milestone: Milestone }[];
   /** My cards Leo opened this week (live) */
   openedCards: Card[];
+  question: TodayQuestion | null;
   me: string;
 }) {
   const pending = nudges.filter((n) => !n.reply);
@@ -71,12 +73,14 @@ export function FamilyFeed({ checkins, nudges, results, challenges, milestones, 
         </p>
       )}
 
-      <Link href="/family/question" className="flex items-center gap-3 rounded-2xl bg-role-volunteer-soft px-4 py-3 font-bold text-role-volunteer-ink transition hover:-translate-y-0.5">
-        <span aria-hidden className="text-2xl">
-          ⏳
-        </span>
-        Dad answered today&apos;s question. Answer to see it: “{TODAY_QUESTION.text}”
-      </Link>
+      {question && !question.myAnswer && (
+        <Link href="/family/question" className="flex items-center gap-3 rounded-2xl bg-role-volunteer-soft px-4 py-3 font-bold text-role-volunteer-ink transition hover:-translate-y-0.5">
+          <span aria-hidden className="text-2xl">
+            ⏳
+          </span>
+          {question.answeredBy.length ? `${question.answeredBy.map((m) => m.name).join(" and ")} answered today's question. Answer to see it:` : "Today's question is waiting for you:"} “{question.text}”
+        </Link>
+      )}
 
       {checkins.length === 0 && results.length === 0 && (
         <p className="rounded-2xl bg-muted px-4 py-3 text-muted-foreground">Leo hasn&apos;t checked in this week yet. You&apos;ll see it here as soon as he does 💛</p>

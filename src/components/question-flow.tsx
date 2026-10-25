@@ -1,36 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { answerTodayQuestion } from "@/app/question-actions";
 import { Modal } from "@/components/kit/modal";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { VolunteerCard } from "@/components/kit/volunteer-card";
 import { QuestionIdeas } from "@/components/question-ideas";
-import { CAST, type CastId } from "@/lib/cast";
-import { TODAY_QUESTION, VOLUNTEER_ANSWERS, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { CAST, type CastMember } from "@/lib/cast";
+import type { TodayQuestion } from "@/lib/data/daily-question";
+import { VOLUNTEER_ANSWERS, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
 
-type Viewer = "leo" | "emma";
+const EMOJI_CHIPS = ["🦁", "🌊", "🎢", "💛", "😂"];
 
-// Question of the day with the lock: you see the others' answers only after answering.
-// On Leo's side, answering also unlocks a volunteer card (answer + story).
-export function QuestionFlow({ viewer }: { viewer: Viewer }) {
+// Question of the day with the lock: the database shows you the others' answers only once
+// you answered (and live when they answer after you). On Leo's side, answering also
+// unlocks a volunteer card. Leo's answer stays private unless he ticks "Volunteers can read it".
+export function QuestionFlow({ question, isLeo }: { question: TodayQuestion; isLeo: boolean }) {
   const [draft, setDraft] = useState("");
-  const [answer, setAnswer] = useState<string | null>(null);
   const [shareWithVolunteers, setShareWithVolunteers] = useState(false);
-  const isLeo = viewer === "leo";
-  const others = (Object.entries(TODAY_QUESTION.answers) as [CastId, string][]).filter(([id]) => id !== viewer);
-  const waitingFor: CastId[] = isLeo ? ["emma"] : ["leo"];
-  const nameFor = (id: CastId) => (isLeo && CAST[id].relationship ? CAST[id].relationship! : CAST[id].name);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, startSending] = useTransition();
+  const viewer = isLeo ? CAST.leo : CAST.emma;
+  const answer = question.myAnswer?.body ?? null;
+  const nameFor = (m: CastMember) => (isLeo && (m.relationship === "Mom" || m.relationship === "Dad") ? m.relationship : m.name);
+  // A gentle "hasn't answered yet": Mom on Leo's side, Leo on the family side.
+  const waitingFor = (isLeo ? [CAST.emma] : [CAST.leo]).filter((m) => !question.answers.some((a) => a.by.id === m.id));
   const accent = isLeo ? "bg-role-patient" : "bg-role-family-ink text-white";
 
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4 rounded-3xl bg-role-volunteer-soft p-5 shadow-sm ring-1 ring-border sm:p-6">
         <p className="text-sm font-bold text-role-volunteer-ink">❓ Today&apos;s question</p>
-        <h2 className="text-3xl font-extrabold sm:text-4xl">{TODAY_QUESTION.text}</h2>
-        {!answer && others.length > 0 && (
+        <h2 className="text-3xl font-extrabold sm:text-4xl">{question.text}</h2>
+        {!answer && question.answeredBy.length > 0 && (
           <p className="text-lg">
-            🔒 {others.map(([id]) => nameFor(id)).join(" and ")} answered! Answer to see {others.length === 1 ? "the answer" : "their answers"}.
+            🔒 {question.answeredBy.map(nameFor).join(" and ")} answered! Answer to see {question.answeredBy.length === 1 ? "the answer" : "their answers"}.
           </p>
         )}
       </section>
@@ -43,28 +48,35 @@ export function QuestionFlow({ viewer }: { viewer: Viewer }) {
           {/* One column, same gap everywhere, every bubble full width and top-aligned. */}
           <ul className="flex flex-col gap-3">
             <li>
-              <AnswerBubble who={CAST[viewer]} label="You" body={answer} />
+              <AnswerBubble who={viewer} label="You" body={answer} />
             </li>
-            {others.map(([id, body]) => (
-              <li key={id}>
-                <AnswerBubble who={CAST[id]} label={nameFor(id)} body={body} />
+            {question.answers.map((a) => (
+              <li key={a.by.id}>
+                <AnswerBubble who={a.by} label={nameFor(a.by)} body={a.body} />
               </li>
             ))}
-            {waitingFor.map((id) => (
-              <li key={id}>
-                <AnswerBubble who={CAST[id]} label={nameFor(id)} waiting />
+            {waitingFor.map((m) => (
+              <li key={m.id}>
+                <AnswerBubble who={m} label={nameFor(m)} waiting />
               </li>
             ))}
           </ul>
-          {isLeo && shareWithVolunteers && (
-            <p className="text-sm text-muted-foreground">Sarah will check your answer first. Volunteers never see your name.</p>
+          {isLeo && (
+            <p className="text-sm text-muted-foreground">
+              {question.myAnswer?.shared ? "🔒 Sarah will check your answer first. Volunteers never see your name." : "🔒 Only your family can read your answer."}
+            </p>
           )}
         </section>
       ) : (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (draft.trim()) setAnswer(draft.trim());
+            if (!draft.trim()) return;
+            setError(null);
+            startSending(async () => {
+              const r = await answerTodayQuestion(question.id, draft, shareWithVolunteers);
+              if (!r.ok) setError(r.error);
+            });
           }}
           className="flex flex-col gap-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border"
         >
@@ -72,7 +84,7 @@ export function QuestionFlow({ viewer }: { viewer: Viewer }) {
             Your answer
           </label>
           <div className="flex flex-wrap gap-2" aria-label="Add an emoji">
-            {TODAY_QUESTION.emojiChips.map((e) => (
+            {EMOJI_CHIPS.map((e) => (
               <button
                 key={e}
                 type="button"
@@ -99,19 +111,20 @@ export function QuestionFlow({ viewer }: { viewer: Viewer }) {
               Volunteers can read it (without my name)
             </label>
           )}
-          <button type="submit" disabled={!draft.trim()} className={cn("min-h-14 rounded-2xl text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50", accent)}>
-            Send my answer
+          <button type="submit" disabled={!draft.trim() || sending} className={cn("min-h-14 rounded-2xl text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50", accent)}>
+            {sending ? "Sending…" : "Send my answer"}
           </button>
+          {error && <p role="alert" className="font-bold text-alert">{error}</p>}
         </form>
       )}
 
-      {isLeo && answer && <VolunteerUnlock />}
+      {isLeo && answer && <VolunteerUnlock questionText={question.text} />}
       {!isLeo && <QuestionIdeas />}
     </div>
   );
 }
 
-function AnswerBubble({ who, label, body, waiting }: { who: (typeof CAST)[CastId]; label: string; body?: string; waiting?: boolean }) {
+function AnswerBubble({ who, label, body, waiting }: { who: CastMember; label: string; body?: string; waiting?: boolean }) {
   return (
     <div className="flex animate-rise items-start gap-3">
       <PersonaAvatar person={who} size="md" decorative className={cn(waiting && "opacity-50")} />
@@ -129,8 +142,8 @@ function AnswerBubble({ who, label, body, waiting }: { who: (typeof CAST)[CastId
 }
 
 // After answering: a volunteer's answer to the same question + their story.
-function VolunteerUnlock() {
-  const answers = VOLUNTEER_ANSWERS[TODAY_QUESTION.text] ?? [];
+function VolunteerUnlock({ questionText }: { questionText: string }) {
+  const answers = VOLUNTEER_ANSWERS[questionText] ?? [];
   const [index, setIndex] = useState(0);
   const [dialog, setDialog] = useState<"ask" | "talk" | null>(null);
   const [done, setDone] = useState<"ask" | "talk" | null>(null);
