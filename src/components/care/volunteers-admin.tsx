@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { EmptyState } from "@/components/kit/empty-state";
 import { castByPatientId } from "@/lib/cast";
 import { relativeDay } from "@/lib/dates";
-import { CONTACT_REQUEST_LABELS, CONTACT_REQUESTS, type ContactRequestStatus, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
+import { CONTACT_REQUEST_LABELS, CONTACT_REQUESTS, type ContactRequestStatus, VOLUNTEER_ROSTER, VOLUNTEER_STORIES } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
 import { ApplicantMessages } from "@/components/care/applicant-messages";
 import { needsAttention, type VolunteerSubmission } from "@/lib/volunteer-submissions";
 
-const TABS = ["Volunteers", "Applicant messages", "Answers to review", "Contact requests"] as const;
+const TABS = ["Volunteers", "Matches", "Applicant messages", "Answers to review", "Contact requests"] as const;
 
 // Highlights what the privacy filter masked, so the reviewer sees it at a glance.
 function Masked({ text }: { text: string }) {
@@ -33,9 +33,20 @@ function Masked({ text }: { text: string }) {
 /** Answers Leo chose to share, masked by the database (answers_to_review()). */
 export type AnswerToReview = { id: string; patientId: string; question: string; masked: string; daysAgo: number };
 
-export function VolunteersAdmin({ submissions = [], loadError, answers = [] }: { submissions?: VolunteerSubmission[]; loadError?: string; answers?: AnswerToReview[] }) {
+export function VolunteersAdmin({
+  submissions = [],
+  loadError,
+  answers = [],
+  matches,
+}: {
+  submissions?: VolunteerSubmission[];
+  loadError?: string;
+  answers?: AnswerToReview[];
+  /** The AI matching board, rendered on the server */
+  matches?: ReactNode;
+}) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Volunteers");
-  const [status, setStatus] = useState<Record<string, "approved" | "suspended">>({ maya: "approved", daniel: "approved" });
+  const [status, setStatus] = useState<Record<string, "approved" | "suspended">>(() => Object.fromEntries(VOLUNTEER_ROSTER.map((v) => [v.id, "approved"])));
   const [reviewed, setReviewed] = useState<Record<string, "shared" | "private">>({});
   const [requests, setRequests] = useState(CONTACT_REQUESTS);
   const setRequest = (id: string, s: ContactRequestStatus) => setRequests((all) => all.map((r) => (r.id === id ? { ...r, status: s } : r)));
@@ -65,11 +76,12 @@ export function VolunteersAdmin({ submissions = [], loadError, answers = [] }: {
 
       {loadError && tab !== "Applicant messages" && <p role="alert" className="text-sm font-bold text-alert">{loadError}</p>}
       {tab === "Applicant messages" && <section role="tabpanel"><ApplicantMessages submissions={submissions} loadError={loadError} /></section>}
+      {tab === "Matches" && <section role="tabpanel">{matches}</section>}
 
       {tab === "Volunteers" && (
         <ul role="tabpanel" className="grid gap-3 md:grid-cols-2">
-          {(["maya", "daniel"] as const).map((id) => {
-            const v = VOLUNTEER_STORIES[id];
+          {VOLUNTEER_ROSTER.map((v) => {
+            const id = v.id;
             const active = status[id] === "approved";
             return (
               <li key={id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
@@ -86,6 +98,9 @@ export function VolunteersAdmin({ submissions = [], loadError, answers = [] }: {
                   </span>
                 </div>
                 <p className="line-clamp-2 text-sm text-muted-foreground">{v.story}</p>
+                <p className="text-sm">
+                  Offers {v.slotsPerWeek} {v.slotsPerWeek === 1 ? "visit" : "visits"} a week · usually ages {v.ages[0]} to {v.ages[1]}
+                </p>
                 <button
                   type="button"
                   onClick={() => setStatus((s) => ({ ...s, [id]: active ? "suspended" : "approved" }))}

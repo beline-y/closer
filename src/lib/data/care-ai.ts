@@ -1,8 +1,10 @@
 import "server-only";
 import type { MealAmount, RatedDish } from "@/lib/checkin";
 import type { CheckInView } from "@/lib/data/checkins";
-import type { VisiblePatient } from "@/lib/data/circle";
+import { getVisiblePatients, type VisiblePatient } from "@/lib/data/circle";
+import { CONTACT_REQUESTS, VOLUNTEER_ROSTER } from "@/lib/demo-fixtures";
 import type { DrawingsView } from "@/lib/drawings";
+import type { MatchBoard, VisitOutcome } from "@/lib/matching";
 import type { AiOverview, AiReport, NurseRoundInput, WardMenu } from "@/lib/nurse-round";
 import { createClient } from "@/lib/supabase/server";
 
@@ -142,4 +144,63 @@ export async function getWardMenu(day: string): Promise<WardMenu | null> {
 
 export async function saveWardMenu(day: string, menu: WardMenu): Promise<WardMenu | null> {
   return call<WardMenu>("PUT", `/v1/menu/${day}`, menu);
+}
+
+// Volunteer matching. The children this care team member follows (RLS), with their age and interests
+// only: never check-ins, notes or anything medical. The roster and the contact requests are still
+// demo fixtures (docs/VOLUNTEER_SCREENING.md).
+async function matchingPayload(today: string) {
+  const patients = await getVisiblePatients();
+  const known = await profiles(patients.map((p) => p.id));
+  const visible = new Set(patients.map((p) => p.id));
+  return {
+    today,
+    patients: patients.map((p) => ({
+      id: p.id,
+      nickname: p.nickname,
+      birth_year: p.birthYear,
+      interests: known.get(p.id)?.interests ?? [],
+      has_family: known.get(p.id)?.hasFamily ?? true,
+    })),
+    volunteers: VOLUNTEER_ROSTER.map((v) => ({
+      id: v.id,
+      first_name: v.firstName,
+      job: v.job,
+      story: v.story,
+      passions: v.passions,
+      dreams: v.dreams,
+      fun_fact: v.funFact,
+      languages: v.languages,
+      slots: v.slotsPerWeek,
+      ages: v.ages,
+    })),
+    requests: CONTACT_REQUESTS.filter((r) => visible.has(r.patientId)).map((r) => ({
+      patient_id: r.patientId,
+      volunteer_id: r.volunteer,
+      status: r.status,
+      local_date: dayBefore(today, r.daysAgo),
+    })),
+  };
+}
+
+/** This week's suggested volunteer for every child, the alternatives and the visits to rate. */
+export async function getMatchBoard(today: string): Promise<MatchBoard | null> {
+  if (!aiConfigured()) return null;
+  return call<MatchBoard>("POST", "/v1/matching", await matchingPayload(today));
+}
+
+export async function saveVolunteerSuggestion(today: string, patientId: string, volunteerId: string, suggestedBy: string | null): Promise<MatchBoard | null> {
+  if (!aiConfigured()) return null;
+  return call<MatchBoard>("POST", "/v1/matching/suggestions", {
+    ...(await matchingPayload(today)),
+    suggestion: { patient_id: patientId, volunteer_id: volunteerId, suggested_by: suggestedBy },
+  });
+}
+
+export async function saveVisitRating(today: string, patientId: string, volunteerId: string, localDate: string, outcome: VisitOutcome, ratedBy: string | null): Promise<MatchBoard | null> {
+  if (!aiConfigured()) return null;
+  return call<MatchBoard>("POST", "/v1/matching/visits", {
+    ...(await matchingPayload(today)),
+    visit: { patient_id: patientId, volunteer_id: volunteerId, local_date: localDate, outcome, rated_by: ratedBy },
+  });
 }

@@ -256,7 +256,38 @@ measured before the nurse's round was added; `python -m closer_ai evaluate` rege
 - **The shield's rules are a starting point**, reviewed with the psychologist; Claude's second reading covers
   indirect phrasings they miss.
 
-## 12. Code map
+## 12. Volunteer matching: a contextual bandit
+
+A second, smaller decision problem (`matching.py`): which volunteer to suggest to each child this week. It is a
+**combinatorial contextual bandit**: each week the care team suggests pairs, and the nurse's rating of a visit,
+$r \in \{0, 0.5, 1\}$ (hard, okay, went well), is the reward.
+
+- **Context.** For a child $c$ and a volunteer $v$, $x_{cv}$ = (1, affinity, shared interests, age fit, how their
+  earlier visits went), then a one-hot of $v$. The affinity is Claude's reading of the child's age and interests next
+  to the volunteer's public story: strong 1, good 0.66, some 0.33, none 0.
+- **Model.** Bayesian linear regression $r = \theta^\top x + \varepsilon$, $\varepsilon \sim \mathcal N(0, 0.3^2)$.
+  The prior says what we believe before any visit: affinity matters most, and each volunteer's own effect is centered
+  on zero ($\sigma = 0.15$). Conjugate updates, refit on every request:
+
+$$
+\Sigma = \left(\Sigma_0^{-1} + X^\top X / \sigma^2\right)^{-1}, \qquad \mu = \Sigma\left(\Sigma_0^{-1}\mu_0 + X^\top r / \sigma^2\right)
+$$
+
+- **Exploration.** Pairs are scored by an upper confidence bound (LinUCB, Li et al. 2010),
+  $s_{cv} = \mu^\top x_{cv} + \kappa \sqrt{x_{cv}^\top \Sigma\, x_{cv}}$ with $\kappa = 0.5$. Unlike Thompson sampling it
+  is deterministic, so the board does not reshuffle on reload, and a volunteer with few rated visits keeps the benefit
+  of the doubt.
+- **Assignment.** Need weights $w_c$: 1, plus 1 with no family linked, plus $1 - P(\text{stable})$ from the assessor,
+  plus 0.3 with no recent volunteer visit, minus 0.5 with a request in progress. Maximize $\sum w_c\, s_{cv}$ with at
+  most one suggestion per child and each volunteer's free visits as capacity: the Hungarian algorithm on a matrix with
+  one column per free visit, plus a "no suggestion" column per child worth $0.5\, w_c$, so a weak match is not forced.
+- **Safety.** It only suggests. The child asks, the care team and the guardian approve, volunteers see nothing.
+
+In simulation (`matching.simulate`: 10 children, 8 volunteers offering 2 visits a week, a hidden volunteer effect
+drawn from $\mathcal N(0, 0.2^2)$), learning lifts the chance that a visit goes well over weeks 9 to 16 from 69%
+(affinity alone) to 75%, on 10 seeds out of 10.
+
+## 13. Code map
 
 | File | Role |
 |---|---|
@@ -271,3 +302,4 @@ measured before the nurse's round was added; `python -m closer_ai evaluate` rege
 | `policy/distill.py` | VIPER |
 | `evaluate.py`, `report.py` | Cohorts, metrics, paired bootstrap, CVaR, the report |
 | `pipeline.py` | The evening job: the same pieces on real data |
+| `matching.py` | The volunteer matching: affinity, Bayesian LinUCB, need weights, the Hungarian assignment |
