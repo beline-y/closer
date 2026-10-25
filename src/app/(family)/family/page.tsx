@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { WellbeingPanel } from "@/components/wellbeing/dashboard";
 import { FamilyFeed } from "@/components/family/family-feed";
 import { QuickActions } from "@/components/family/quick-actions";
 import { LiveRefresh } from "@/components/live-refresh";
 import { getCheckins } from "@/lib/data/checkins";
 import { getVisiblePatients } from "@/lib/data/circle";
+import { getMyNudges } from "@/lib/data/nudges";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Feed · Closer" };
@@ -24,6 +26,7 @@ export default function FamilyFeedPage() {
           </Suspense>
         </div>
       </div>
+      <Suspense fallback={null}><WellbeingPanel role="family" /></Suspense>
     </>
   );
 }
@@ -33,7 +36,10 @@ async function Feed() {
   const supabase = await createClient();
   const [{ data: claims }, patients] = await Promise.all([supabase.auth.getClaims(), getVisiblePatients()]);
   const leo = patients[0];
-  const checkins = leo ? await getCheckins(leo.id, leo.timezone, { days: 7, withPhotos: true, withReactions: true }) : [];
+  const me = claims?.claims.sub ?? "";
+  const [checkins, nudges] = leo
+    ? await Promise.all([getCheckins(leo.id, leo.timezone, { days: 7, withPhotos: true, withReactions: true }), getMyNudges(me, leo.timezone)])
+    : [[], []];
   return (
     <>
       {leo && (
@@ -43,10 +49,11 @@ async function Feed() {
             { table: "mood_checkins", filter: `patient_id=eq.${leo.id}` },
             { table: "checkin_photos", filter: `patient_id=eq.${leo.id}` },
             { table: "checkin_reactions" },
+            { table: "nudge_recipients", filter: `user_id=eq.${me}` },
           ]}
         />
       )}
-      <FamilyFeed checkins={checkins} me={claims?.claims.sub ?? ""} />
+      <FamilyFeed checkins={checkins} nudges={nudges} me={me} />
     </>
   );
 }

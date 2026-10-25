@@ -14,10 +14,11 @@ import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import { aiConfigured, getAiReport } from "@/lib/data/care-ai";
 import { type CheckInView, getCheckins, moodSeries } from "@/lib/data/checkins";
 import { getVisiblePatient, type VisiblePatient } from "@/lib/data/circle";
+import { getThresholds } from "@/lib/data/nudges";
 import { activitySummary, mealSummary } from "@/lib/checkin";
 import { relativeDay, timeIn, todayIn } from "@/lib/dates";
 import { roundFromSaved } from "@/lib/nurse-round";
-import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS } from "@/lib/demo-fixtures";
+import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS, DEFAULT_THRESHOLDS } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Patient · Closer" };
 
@@ -42,7 +43,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
 
   const alerts = CARE_ALERTS.filter((a) => a.patientId === id);
   // No photos, no reactions: the care team reads mood, activity, meal and note only.
-  const checkins = await getCheckins(id, patient.timezone, { days: 30 });
+  const [checkins, thresholds] = await Promise.all([getCheckins(id, patient.timezone, { days: 30 }), getThresholds(id)]);
   const metrics = CARE_METRICS[id];
   const age = patient.birthYear ? new Date().getFullYear() - patient.birthYear : null;
 
@@ -114,7 +115,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
             <Lock className="size-4" aria-hidden /> Photos, cards, question answers, memories and the private journal are never shown to the care team.
           </p>
         </section>
-        <ThresholdsForm title={`Thresholds for ${patient.nickname}`} />
+        <ThresholdsForm title={`Thresholds for ${patient.nickname}`} patientId={id} initial={thresholds ?? DEFAULT_THRESHOLDS} />
       </div>
     </>
   );

@@ -119,6 +119,7 @@ Rules:
 |---|---|
 | `npm run dev` | Local dev server (optional) |
 | `npm run check` | Lint + typecheck. Run it before every commit. |
+| `npm test` | Wellbeing logic, mocked Mistral, and SQL/RLS checks in an in-memory Postgres engine. No shared database access. |
 | `npm run build` | Production build (CI also runs this) |
 | `npm run db:push` | Apply new migrations to the dev project |
 | `npm run db:seed` | Apply migrations + seed data + seed photos |
@@ -155,3 +156,16 @@ docs/SPEC.md               product spec
 - Never use real patient data, anywhere.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the team workflow and [GIT_GUIDE.md](GIT_GUIDE.md) for a Git cheat sheet.
+
+## Daily wellbeing and personalized prompts
+
+Patient, family and care dashboards now include shared check-ins, opt-in Mistral reviews,
+recipient-specific in-app notifications, feedback and care acknowledgement. Guardians (or adult
+patients) must enable processing first. All data remains fictional.
+
+Setup, scheduler behavior, model limits and the contextual-bandit decision are documented in
+[docs/WELLBEING.md](docs/WELLBEING.md). The new migration must be applied through the coordinated
+shared-database workflow before these features can be used. Nothing is deployed automatically.
+
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) maps the verified GitHub, Supabase and Vercel connections,
+the live-versus-fixture feature boundaries, and the checks needed before deployment.

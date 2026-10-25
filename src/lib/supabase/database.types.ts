@@ -14,6 +14,283 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          instructions: string | null
+          minutes: number
+          quiz: Json | null
+          steps: string[]
+          theme: string | null
+          title: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          instructions?: string | null
+          minutes?: number
+          quiz?: Json | null
+          steps?: string[]
+          theme?: string | null
+          title: string
+          type: Database["public"]["Enums"]["activity_type"]
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          instructions?: string | null
+          minutes?: number
+          quiz?: Json | null
+          steps?: string[]
+          theme?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["activity_type"]
+        }
+        Relationships: []
+      }
+      activity_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_comments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "activity_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_reactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "activity_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_sessions: {
+        Row: {
+          activity_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          in_memories: boolean
+          local_date: string
+          partner_id: string | null
+          patient_id: string
+          result_path: string | null
+          result_text: string | null
+          score: number | null
+          score_total: number | null
+          status: Database["public"]["Enums"]["activity_status"]
+          visibility: Database["public"]["Enums"]["activity_visibility"]
+        }
+        Insert: {
+          activity_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          in_memories?: boolean
+          local_date?: string
+          partner_id?: string | null
+          patient_id: string
+          result_path?: string | null
+          result_text?: string | null
+          score?: number | null
+          score_total?: number | null
+          status?: Database["public"]["Enums"]["activity_status"]
+          visibility?: Database["public"]["Enums"]["activity_visibility"]
+        }
+        Update: {
+          activity_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          in_memories?: boolean
+          local_date?: string
+          partner_id?: string | null
+          patient_id?: string
+          result_path?: string | null
+          result_text?: string | null
+          score?: number | null
+          score_total?: number | null
+          status?: Database["public"]["Enums"]["activity_status"]
+          visibility?: Database["public"]["Enums"]["activity_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_sessions_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_sessions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_sessions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_unit_members: {
+        Row: {
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_unit_members_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "care_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_unit_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_units: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      challenge_entries: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          result_path: string | null
+          result_text: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          result_path?: string | null
+          result_text?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          result_path?: string | null
+          result_text?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "activity_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkin_photos: {
         Row: {
           checkin_id: string
@@ -89,6 +366,187 @@ export type Database = {
           },
         ]
       }
+      daily_wellbeing_reviews: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          attempts: number
+          completed_at: string | null
+          consent_at: string
+          evidence: Json
+          for_date: string
+          id: string
+          lease_token: string
+          level: string | null
+          model: string | null
+          patient_id: string
+          prompt_version: string | null
+          safeguarding_concern: boolean
+          source: string | null
+          started_at: string
+          status: string
+          suggested_action: string | null
+          summary: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempts?: number
+          completed_at?: string | null
+          consent_at: string
+          evidence?: Json
+          for_date: string
+          id?: string
+          lease_token?: string
+          level?: string | null
+          model?: string | null
+          patient_id: string
+          prompt_version?: string | null
+          safeguarding_concern?: boolean
+          source?: string | null
+          started_at?: string
+          status?: string
+          suggested_action?: string | null
+          summary?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          attempts?: number
+          completed_at?: string | null
+          consent_at?: string
+          evidence?: Json
+          for_date?: string
+          id?: string
+          lease_token?: string
+          level?: string | null
+          model?: string | null
+          patient_id?: string
+          prompt_version?: string | null
+          safeguarding_concern?: boolean
+          source?: string | null
+          started_at?: string
+          status?: string
+          suggested_action?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_wellbeing_reviews_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_wellbeing_reviews_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_ratings: {
+        Row: {
+          amount: Database["public"]["Enums"]["meal_amount"] | null
+          checkin_id: string
+          created_at: string
+          liking: number | null
+          menu_item_id: string
+          patient_id: string
+        }
+        Insert: {
+          amount?: Database["public"]["Enums"]["meal_amount"] | null
+          checkin_id: string
+          created_at?: string
+          liking?: number | null
+          menu_item_id: string
+          patient_id: string
+        }
+        Update: {
+          amount?: Database["public"]["Enums"]["meal_amount"] | null
+          checkin_id?: string
+          created_at?: string
+          liking?: number | null
+          menu_item_id?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_ratings_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "mood_checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_ratings_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_ratings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dish_name: string
+          icon: string
+          id: string
+          meal: Database["public"]["Enums"]["meal_kind"]
+          menu_date: string
+          position: number
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dish_name: string
+          icon?: string
+          id?: string
+          meal: Database["public"]["Enums"]["meal_kind"]
+          menu_date: string
+          position?: number
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dish_name?: string
+          icon?: string
+          id?: string
+          meal?: Database["public"]["Enums"]["meal_kind"]
+          menu_date?: string
+          position?: number
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "care_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mood_checkins: {
         Row: {
           activities: Database["public"]["Enums"]["activity_kind"][]
@@ -135,6 +593,154 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "mood_checkins_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_prefs: {
+        Row: {
+          connection_enabled: boolean
+          user_id: string
+        }
+        Insert: {
+          connection_enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          connection_enabled?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_prefs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          feedback: string | null
+          for_date: string
+          id: string
+          kind: string
+          patient_id: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          feedback?: string | null
+          for_date: string
+          id?: string
+          kind: string
+          patient_id: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          feedback?: string | null
+          for_date?: string
+          id?: string
+          kind?: string
+          patient_id?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nudge_recipients: {
+        Row: {
+          nudge_id: string
+          replied_at: string | null
+          reply_emoji: string | null
+          reply_text: string | null
+          seen_at: string | null
+          user_id: string
+        }
+        Insert: {
+          nudge_id: string
+          replied_at?: string | null
+          reply_emoji?: string | null
+          reply_text?: string | null
+          seen_at?: string | null
+          user_id: string
+        }
+        Update: {
+          nudge_id?: string
+          replied_at?: string | null
+          reply_emoji?: string | null
+          reply_text?: string | null
+          seen_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nudge_recipients_nudge_id_fkey"
+            columns: ["nudge_id"]
+            isOneToOne: false
+            referencedRelation: "nudges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nudge_recipients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nudges: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["nudge_kind"]
+          patient_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["nudge_kind"]
+          patient_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["nudge_kind"]
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nudges_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
@@ -206,6 +812,54 @@ export type Database = {
           },
         ]
       }
+      patient_settings: {
+        Row: {
+          low_mood_streak: number
+          low_mood_threshold: number
+          no_checkin_days: number
+          no_family_contact_days: number
+          nudge_cooldown_minutes: number
+          patient_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          no_family_contact_days?: number
+          nudge_cooldown_minutes?: number
+          patient_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          no_family_contact_days?: number
+          nudge_cooldown_minutes?: number
+          patient_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_settings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_year: number | null
@@ -218,6 +872,7 @@ export type Database = {
           nickname: string
           status: Database["public"]["Enums"]["patient_status"]
           timezone: string
+          unit_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -232,6 +887,7 @@ export type Database = {
           nickname: string
           status?: Database["public"]["Enums"]["patient_status"]
           timezone?: string
+          unit_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -246,10 +902,19 @@ export type Database = {
           nickname?: string
           status?: Database["public"]["Enums"]["patient_status"]
           timezone?: string
+          unit_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "care_units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -278,12 +943,134 @@ export type Database = {
         }
         Relationships: []
       }
+      wellbeing_permissions: {
+        Row: {
+          consent_version: string
+          consented_by: string
+          enabled: boolean
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          consent_version?: string
+          consented_by: string
+          enabled?: boolean
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          consent_version?: string
+          consented_by?: string
+          enabled?: boolean
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wellbeing_permissions_consented_by_fkey"
+            columns: ["consented_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wellbeing_permissions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wellbeing_settings: {
+        Row: {
+          low_mood_streak: number
+          low_mood_threshold: number
+          no_checkin_days: number
+          patient_id: string
+        }
+        Insert: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          patient_id: string
+        }
+        Update: {
+          low_mood_streak?: number
+          low_mood_threshold?: number
+          no_checkin_days?: number
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wellbeing_settings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      acknowledge_wellbeing_review: {
+        Args: { p_review_id: string }
+        Returns: undefined
+      }
+      activity_counts: {
+        Args: { p_days?: number; p_patient_id: string }
+        Returns: {
+          completed: number
+          local_date: string
+        }[]
+      }
+      can_process_wellbeing: {
+        Args: { p_consent_at: string; p_patient_id: string }
+        Returns: boolean
+      }
+      claim_daily_review: {
+        Args: { p_for_date: string; p_patient_id: string }
+        Returns: {
+          review_id: string
+          token: string
+        }[]
+      }
+      complete_daily_review: {
+        Args: {
+          p_child_message: string
+          p_parent_message: string
+          p_result: Json
+          p_review_id: string
+          p_token: string
+        }
+        Returns: boolean
+      }
+      my_pending_challenges: {
+        Args: never
+        Returns: {
+          activity_id: string
+          created_at: string
+          emoji: string
+          patient_id: string
+          session_id: string
+          theme: string
+          title: string
+        }[]
+      }
+      send_nudge: {
+        Args: {
+          p_kind: Database["public"]["Enums"]["nudge_kind"]
+          p_recipients?: string[]
+        }
+        Returns: string
+      }
+      set_wellbeing_consent: {
+        Args: { p_enabled: boolean; p_patient_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_type: "patient" | "family" | "care_team" | "volunteer"
@@ -296,10 +1083,14 @@ export type Database = {
         | "treatment"
         | "rested"
         | "walk"
+      activity_status: "started" | "waiting_partner" | "completed"
+      activity_type: "draw" | "make_snap" | "quiz" | "story" | "challenge"
+      activity_visibility: "private" | "family"
       link_role: "care_team" | "family" | "friend" | "volunteer"
       link_status: "pending" | "active" | "revoked"
       meal_amount: "all" | "half" | "a_little"
       meal_kind: "breakfast" | "lunch" | "dinner" | "snack"
+      nudge_kind: "miss_you" | "call_me" | "bored" | "proud" | "hug"
       patient_status: "pending_consent" | "active" | "discharged"
     }
     CompositeTypes: {
@@ -439,10 +1230,14 @@ export const Constants = {
         "rested",
         "walk",
       ],
+      activity_status: ["started", "waiting_partner", "completed"],
+      activity_type: ["draw", "make_snap", "quiz", "story", "challenge"],
+      activity_visibility: ["private", "family"],
       link_role: ["care_team", "family", "friend", "volunteer"],
       link_status: ["pending", "active", "revoked"],
       meal_amount: ["all", "half", "a_little"],
       meal_kind: ["breakfast", "lunch", "dinner", "snack"],
+      nudge_kind: ["miss_you", "call_me", "bored", "proud", "hug"],
       patient_status: ["pending_consent", "active", "discharged"],
     },
   },

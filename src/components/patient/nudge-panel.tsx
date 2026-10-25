@@ -1,49 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { sendNudge } from "@/app/nudge-actions";
 import { BigActionButton } from "@/components/kit/big-action-button";
 import { Modal } from "@/components/kit/modal";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
-import { type CastId, LEO_CIRCLE } from "@/lib/cast";
-import { DEFAULT_THRESHOLDS, NUDGE_KINDS, type NudgeKind } from "@/lib/demo-fixtures";
+import type { CastMember } from "@/lib/cast";
+import { NUDGE_KINDS, type NudgeKind } from "@/lib/nudges";
 import { cn } from "@/lib/utils";
 
-const COOLDOWN_MS = DEFAULT_THRESHOLDS.nudgeCooldownMinutes * 60_000;
+type Props = {
+  circle: CastMember[];
+  cooldownMinutes: number;
+  lastSent: Partial<Record<NudgeKind, string>>;
+  serverNow: string;
+};
 
-// Five big nudge buttons -> pick who -> "Sent! ❤️". Each type then rests for 10 minutes.
-// Saved for this visit only until the nudges feature lands.
-export function NudgePanel() {
-  const [sentAt, setSentAt] = useState<Partial<Record<NudgeKind, number>>>({});
-  const [now, setNow] = useState(0);
+// Five big nudge buttons -> pick who -> "Sent! ❤️". Each type then rests for the
+// cooldown set by the care team (enforced by the database, shown here as a ring).
+export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Props) {
+  const cooldownMs = cooldownMinutes * 60_000;
+  // Device clocks can be off: count from the server's "now".
+  const [skew] = useState(() => Date.parse(serverNow) - Date.now());
+  const [now, setNow] = useState(() => Date.parse(serverNow));
+  const [justSent, setJustSent] = useState<Partial<Record<NudgeKind, number>>>({});
   const [picking, setPicking] = useState<NudgeKind | null>(null);
-  const [to, setTo] = useState<CastId[]>(LEO_CIRCLE.map((m) => m.id));
+  const [to, setTo] = useState<string[]>(circle.map((m) => m.userId!));
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, startSending] = useTransition();
 
-  const coolingDown = Object.values(sentAt).some((t) => t && now - t < COOLDOWN_MS);
+  const sentAt = (k: NudgeKind) => Math.max(justSent[k] ?? 0, lastSent[k] ? Date.parse(lastSent[k]!) : 0);
+  const left = (k: NudgeKind) => Math.max(0, cooldownMs - (now - sentAt(k)));
+  const anyCooling = NUDGE_KINDS.some((k) => left(k.kind) > 0);
+
   useEffect(() => {
-    if (!coolingDown) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    if (!anyCooling) return;
+    const id = setInterval(() => setNow(Date.now() + skew), 1000);
     return () => clearInterval(id);
-  }, [coolingDown]);
+  }, [anyCooling, skew]);
 
   const kind = NUDGE_KINDS.find((k) => k.kind === picking);
+
+  function send() {
+    if (!picking) return;
+    setError(null);
+    startSending(async () => {
+      const result = await sendNudge(picking, to);
+      if (result.ok) {
+        setJustSent((s) => ({ ...s, [picking]: Date.now() + skew }));
+        setSent(true);
+      } else if (result.availableAt) {
+        // Already sent recently (another device?): still a happy ending for the child.
+        setJustSent((s) => ({ ...s, [picking]: Date.parse(result.availableAt!) - cooldownMs }));
+        setSent(true);
+      } else {
+        setError(result.error);
+      }
+    });
+  }
 
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         {NUDGE_KINDS.map((k) => {
-          const left = sentAt[k.kind] ? Math.max(0, COOLDOWN_MS - (now - sentAt[k.kind]!)) : 0;
-          const minutes = Math.ceil(left / 60_000);
+          const ms = left(k.kind);
           return (
             <BigActionButton
               key={k.kind}
               emoji={k.emoji}
               label={k.label}
-              cooldown={left / COOLDOWN_MS}
-              disabled={left > 0}
-              hint={left > 0 ? `Sent! Again in ${minutes} min` : undefined}
+              cooldown={cooldownMs ? ms / cooldownMs : 0}
+              disabled={ms > 0 || circle.length === 0}
+              hint={ms > 0 ? `Sent! Again in ${Math.ceil(ms / 60_000)} min` : undefined}
               onClick={() => {
                 setSent(false);
+                setError(null);
                 setPicking(k.kind);
               }}
             />
@@ -66,14 +98,14 @@ export function NudgePanel() {
           <div className="flex flex-col gap-5">
             <p className="text-lg">Who should get it?</p>
             <ul className="flex flex-wrap gap-3">
-              {LEO_CIRCLE.map((m) => {
-                const on = to.includes(m.id);
+              {circle.map((m) => {
+                const on = to.includes(m.userId!);
                 return (
                   <li key={m.id}>
                     <button
                       type="button"
                       aria-pressed={on}
-                      onClick={() => setTo((t) => (on ? t.filter((id) => id !== m.id) : [...t, m.id]))}
+                      onClick={() => setTo((t) => (on ? t.filter((id) => id !== m.userId) : [...t, m.userId!]))}
                       className={cn(
                         "flex min-h-14 flex-col items-center gap-1 rounded-2xl border-2 px-4 py-2 font-bold transition",
                         on ? "border-role-patient bg-role-patient-soft" : "border-transparent bg-muted opacity-70",
@@ -87,18 +119,18 @@ export function NudgePanel() {
                 );
               })}
             </ul>
+            {error && (
+              <p role="alert" className="rounded-2xl bg-alert-soft px-4 py-3 font-bold text-alert">
+                {error}
+              </p>
+            )}
             <button
               type="button"
-              disabled={to.length === 0}
-              onClick={() => {
-                const t = Date.now();
-                setSentAt((s) => ({ ...s, [picking!]: t }));
-                setNow(t);
-                setSent(true);
-              }}
+              disabled={to.length === 0 || sending}
+              onClick={send}
               className="min-h-14 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
             >
-              Send {kind?.emoji}
+              {sending ? "Sending…" : `Send ${kind?.emoji ?? ""}`}
             </button>
           </div>
         )}
