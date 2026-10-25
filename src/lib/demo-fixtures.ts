@@ -190,7 +190,7 @@ export const VOLUNTEER_ANSWERS: Record<string, { volunteer: "maya" | "daniel"; b
 
 /** Care-approved, masked patient answers. No patient id, ever. */
 export const SHARED_ANSWERS = [
-  { id: "sa-1", question: "What is the bravest thing you ever did?", body: "When I had my first test here I was scared but I squeezed [name]'s hand and counted to ten.", daysAgo: 1 },
+  { id: "sa-1", question: "What is the bravest thing you ever did?", body: "When I had my first test here I was scared, but I held a loved one's hand and counted to ten.", daysAgo: 1 },
   { id: "sa-2", question: "What did you want to be when you were a kid?", body: "I want to be a scientist who swims with whale sharks.", daysAgo: 4 },
 ];
 
@@ -241,6 +241,6 @@ export const VOLUNTEER_REQUESTS: Record<"maya" | "daniel", { id: string; status:
 
 /** Patient answers waiting for care review, already masked by the privacy filter */
 export const ANSWERS_TO_REVIEW = [
-  { id: "ar-1", patientId: PATIENT_IDS.leo, question: "What is the bravest thing you ever did?", masked: "I let the nurse [name] take blood and I didn't cry. Then [name] brought me to [place] for ice cream.", daysAgo: 0 },
+  { id: "ar-1", patientId: PATIENT_IDS.leo, question: "What is the bravest thing you ever did?", masked: "I let a nurse take blood and I didn't cry. Then someone from my family took me out for ice cream.", daysAgo: 0 },
 ];
 
