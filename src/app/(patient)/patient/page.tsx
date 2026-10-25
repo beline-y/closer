@@ -14,7 +14,6 @@ import { NudgeReplies } from "@/components/nudge-replies";
 import { getVisibleCircle } from "@/lib/data/circle";
 import { relativeDay } from "@/lib/dates";
 import { COMFORT_CARDS, MEMORIES, TODAY_QUESTION } from "@/lib/demo-fixtures";
-import { isDemoMode } from "@/lib/demo-mode";
 import { getActivities } from "@/lib/data/activities";
 import { todayIn } from "@/lib/dates";
 
@@ -29,7 +28,6 @@ export default function PatientTodayPage() {
       <header className="flex flex-col gap-1">
         <h1 className="text-4xl font-extrabold sm:text-5xl">Hi Leo! 👋</h1>
         <p className="text-xl text-muted-foreground">Your people are thinking of you.</p>
-        {isDemoMode() && <a href="#ai-notification-demo" className="mt-3 flex min-h-14 items-center justify-center gap-2 self-start rounded-2xl bg-role-patient-soft px-5 text-lg font-bold">✨ Try my AI invitation</a>}
       </header>
 
       <section aria-labelledby="thinking-title" className="flex flex-col gap-3">
