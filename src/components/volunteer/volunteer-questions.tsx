@@ -1,24 +1,24 @@
 "use client";
 
-import { Camera } from "lucide-react";
 import { useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { relativeDay } from "@/lib/dates";
 import { type PoolQuestion, SHARED_ANSWERS, VOLUNTEER_POOL } from "@/lib/demo-fixtures";
 import { cn } from "@/lib/utils";
+import { MyVolunteerMessages, VolunteerMessageForm } from "@/components/volunteer/message-form";
+import type { VolunteerSubmission } from "@/lib/volunteer-submissions";
 
-// Maya's questions. Everything here is anonymous by construction: the pool and the
-// shared answers come from tables with no patient id. Saved for this visit only.
-export function VolunteerQuestions({ me }: { me: "maya" | "daniel" }) {
+// The anonymous question pool and shared examples remain fixtures. New volunteer
+// answers are persisted privately for screening and care review.
+export function VolunteerQuestions({ me, submissions = [] }: { me: "maya" | "daniel"; submissions?: VolunteerSubmission[] }) {
   const [answering, setAnswering] = useState<PoolQuestion | null>(null);
-  const [answered, setAnswered] = useState<string[]>([]);
-  const [body, setBody] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState<VolunteerSubmission[]>([]);
+  const messages = [...submitted, ...submissions.filter((s) => !submitted.some((n) => n.id === s.id))];
   const fromKids = VOLUNTEER_POOL.filter((q) => q.source === "patient" && (!q.forVolunteer || q.forVolunteer === me));
   const inspiring = VOLUNTEER_POOL.filter((q) => q.source === "bank");
 
   const item = (q: PoolQuestion) => {
-    const done = answered.includes(q.id);
+    const done = messages.some((s) => s.context_key === q.id && s.status !== "rejected");
     return (
       <li key={q.id} className="flex flex-col gap-3 rounded-3xl bg-card p-4 shadow-sm ring-1 ring-border sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
@@ -33,13 +33,11 @@ export function VolunteerQuestions({ me }: { me: "maya" | "daniel" }) {
           type="button"
           disabled={done}
           onClick={() => {
-            setBody("");
-            setPhoto(null);
             setAnswering(q);
           }}
           className={cn("min-h-12 shrink-0 rounded-full px-5 font-bold", done ? "bg-success-soft text-success" : "bg-role-volunteer-ink text-white")}
         >
-          {done ? "✓ Answered" : "Answer"}
+          {done ? "✓ Submitted to care team" : "Answer"}
         </button>
       </li>
     );
@@ -81,33 +79,11 @@ export function VolunteerQuestions({ me }: { me: "maya" | "daniel" }) {
         </ul>
       </section>
 
+      <div className="lg:col-span-2"><MyVolunteerMessages submissions={messages} /></div>
       <Modal open={!!answering} onClose={() => setAnswering(null)} title="Your answer">
-        {answering && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!body.trim()) return;
-              setAnswered((a) => [...a, answering.id]);
-              setAnswering(null);
-            }}
-            className="flex flex-col gap-4"
-          >
-            <p className="text-lg font-bold">{answering.text}</p>
-            <label htmlFor="vol-answer" className="sr-only">
-              Your answer
-            </label>
-            <textarea id="vol-answer" value={body} onChange={(e) => setBody(e.target.value)} rows={5} maxLength={1000} placeholder="Tell your story in simple words…" className="rounded-2xl border bg-background p-4 text-lg" />
-            <label className="flex min-h-12 cursor-pointer items-center gap-2 self-start rounded-full bg-muted px-4 font-bold">
-              <Camera className="size-5" aria-hidden />
-              {photo ? `Photo: ${photo}` : "Add a photo (optional)"}
-              <input type="file" accept="image/*" className="sr-only" onChange={(e) => setPhoto(e.target.files?.[0]?.name ?? null)} />
-            </label>
-            <p className="text-sm text-muted-foreground">No faces of other people in photos. Your answer is shown with your story card.</p>
-            <button type="submit" disabled={!body.trim()} className="min-h-14 rounded-2xl bg-role-volunteer-ink text-lg font-extrabold text-white disabled:opacity-50">
-              Publish my answer
-            </button>
-          </form>
-        )}
+        {answering && <VolunteerMessageForm key={answering.id} kind="question_answer" contextKey={answering.id} label={answering.text} onSubmitted={(s) => {
+          setSubmitted((all) => [s, ...all]); setAnswering(null);
+        }} />}
       </Modal>
     </div>
   );
