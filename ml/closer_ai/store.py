@@ -2,7 +2,8 @@
 
 One file holds the signals the AI may read, the care context, the nurse's daily round
 and the ward's menu, and what the AI writes back (assessments, alerts and the
-psychologist's review of each alert). It mirrors the data contract in contract.py.
+psychologist's review of each alert), plus the volunteer suggestions and rated visits of the
+matching. It mirrors the data contract in contract.py.
 Comfort cards, question answers and photos are never stored. Drawing images are not stored
 either: every drawing keeps a reading (colors and what is drawn) and its vector; titles,
 themes and the child's emoji are kept only when the child shared the drawing.
@@ -19,7 +20,7 @@ from pathlib import Path
 
 from .contract import (
     ACTIVITIES, AFFECTS, CONTEXT_KINDS, DRAWING_THEMES, ENGAGEMENT, FEELINGS, INTAKE, INTAKE_SCORE, MEALS,
-    MEDIA_COMPANY, MEDIA_KINDS, NIGHT_SLEEP, VISITOR_KINDS, WARD_MEALS, WORRY_TOPICS, ChildHistory, ChildProfile,
+    MEDIA_COMPANY, MEDIA_KINDS, NIGHT_SLEEP, VISIT_OUTCOMES, VISITOR_KINDS, WARD_MEALS, WORRY_TOPICS, ChildHistory, ChildProfile,
     ContextEvent, DayRecord, Drawing, DrawingReading, MediaLog, NurseObservation, WardMeal,
 )
 from .policy.obs import AlertState
@@ -200,6 +201,27 @@ CREATE TABLE IF NOT EXISTS ai_readings (
     key TEXT PRIMARY KEY,
     reading TEXT NOT NULL,
     created_at TEXT NOT NULL
+);
+-- Volunteer matching. Volunteers live in the app: only their id is kept here. A suggestion shows a
+-- volunteer's card to the child, who decides whether to ask for a visit; a rated visit is what the
+-- matching learns from.
+CREATE TABLE IF NOT EXISTS volunteer_suggestions (
+    patient_id TEXT NOT NULL REFERENCES patients (id) ON DELETE CASCADE,
+    volunteer_id TEXT NOT NULL CHECK (length(volunteer_id) BETWEEN 1 AND 64),
+    local_date TEXT NOT NULL,
+    suggested_by TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (patient_id, volunteer_id, local_date)
+);
+CREATE TABLE IF NOT EXISTS volunteer_visits (
+    patient_id TEXT NOT NULL REFERENCES patients (id) ON DELETE CASCADE,
+    volunteer_id TEXT NOT NULL CHECK (length(volunteer_id) BETWEEN 1 AND 64),
+    local_date TEXT NOT NULL,
+    outcome TEXT NOT NULL CHECK (outcome IN ({_values(VISIT_OUTCOMES)})),
+    features TEXT NOT NULL,  -- JSON: the pair's features when the visit was rated, to refit the learner
+    rated_by TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (patient_id, volunteer_id, local_date)
 );
 CREATE INDEX IF NOT EXISTS visits_patient_date ON visits (patient_id, local_date);
 CREATE INDEX IF NOT EXISTS drawings_patient_date ON drawings (patient_id, local_date);
@@ -634,6 +656,38 @@ class Store:
     def put_reading(self, key: str, reading: dict) -> None:
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO ai_readings VALUES (?, ?, ?)", (key, json.dumps(reading), _now()))
+
+    # -- volunteer matching ------------------------------------------------------------------------
+    def put_volunteer_suggestion(self, patient_id: str, volunteer_id: str, day: date, suggested_by: str | None) -> None:
+        """Suggesting the same volunteer again the same day makes that suggestion the latest one."""
+        with self.db:
+            self.db.execute(
+                """INSERT INTO volunteer_suggestions VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT (patient_id, volunteer_id, local_date)
+                   DO UPDATE SET suggested_by = excluded.suggested_by, created_at = excluded.created_at""",
+                (patient_id, volunteer_id, day.isoformat(), suggested_by, _now()),
+            )
+
+    def volunteer_suggestions(self, since: date) -> list[dict]:
+        """Oldest first."""
+        return [dict(r) for r in self.db.execute(
+            "SELECT * FROM volunteer_suggestions WHERE local_date >= ? ORDER BY local_date, created_at", (since.isoformat(),)
+        )]
+
+    def put_volunteer_visit(self, patient_id: str, volunteer_id: str, day: date, outcome: str, features: dict,
+                            rated_by: str | None) -> None:
+        """How a visit went. Rating it again replaces the first rating."""
+        with self.db:
+            self.db.execute(
+                """INSERT INTO volunteer_visits VALUES (?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT (patient_id, volunteer_id, local_date) DO UPDATE SET outcome = excluded.outcome,
+                   features = excluded.features, rated_by = excluded.rated_by, created_at = excluded.created_at""",
+                (patient_id, volunteer_id, day.isoformat(), outcome, json.dumps(features), rated_by, _now()),
+            )
+
+    def volunteer_visits(self) -> list[dict]:
+        return [dict(r) | {"features": json.loads(r["features"])}
+                for r in self.db.execute("SELECT * FROM volunteer_visits ORDER BY local_date, created_at")]
 
     def labels(self) -> list[dict]:
         """Reviewed alerts and manual reports: the supervision signal for retraining and offline RL."""

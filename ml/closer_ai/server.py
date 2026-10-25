@@ -10,6 +10,9 @@ listens on localhost: a demo service for fictional data, not a hardened public s
     GET  /v1/patients/<id>/drawings/<day>      the drawings page: every drawing and this week against the usual
     POST /v1/overview                          several syncs at once, one line per child out
     GET  /v1/menu/<day>, PUT /v1/menu/<day>    the ward's menu
+    POST /v1/matching                          children, volunteer roster and requests in, this week's matching out
+    POST /v1/matching/suggestions              the same, after recording that a volunteer was suggested to a child
+    POST /v1/matching/visits                   the same, after recording how a visit went
     GET  /v1/health                            no secret needed, says nothing about children
 
 Every sync or round re-runs the daily job for that child when its inputs changed, so the
@@ -29,8 +32,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .bridge import (
-    MAX_IMAGE, BadRequest, Engine, drawings_view, ingest_drawing, menu_from_json, observation_from_json, open_store, overview_row, patient_id, report,
-    parse_day, sync_patient,
+    MAX_IMAGE, BadRequest, Engine, drawings_view, ingest_drawing, matching_view, menu_from_json, observation_from_json, open_store,
+    overview_row, patient_id, report, parse_day, sync_patient,
 )
 
 log = logging.getLogger(__name__)
@@ -43,6 +46,9 @@ ROUTES = (
     ("POST", re.compile(r"/v1/overview"), "overview"),
     ("GET", re.compile(r"/v1/menu/(\d{4}-\d{2}-\d{2})"), "get_menu"),
     ("PUT", re.compile(r"/v1/menu/(\d{4}-\d{2}-\d{2})"), "put_menu"),
+    ("POST", re.compile(r"/v1/matching"), "matching"),
+    ("POST", re.compile(r"/v1/matching/suggestions"), "suggest_volunteer"),
+    ("POST", re.compile(r"/v1/matching/visits"), "rate_visit"),
     ("GET", re.compile(r"/v1/health"), "health"),
 )
 
@@ -100,6 +106,15 @@ class CareTabAPI:
     def put_menu(self, store, body, day):
         store.put_menu(parse_day(day), menu_from_json(body))
         return store.menu(parse_day(day))
+
+    def matching(self, store, body):
+        return matching_view(store, self.engine, body)
+
+    def suggest_volunteer(self, store, body):
+        return matching_view(store, self.engine, body, suggestion=body.get("suggestion") or {})
+
+    def rate_visit(self, store, body):
+        return matching_view(store, self.engine, body, rating=body.get("visit") or {})
 
     def health(self, store, body):
         return {"ok": True, "claude": self.engine.claude, "model_version": self.engine.version}

@@ -141,6 +141,57 @@ export const VOLUNTEER_STORIES: Record<"maya" | "daniel", VolunteerStory> = {
   },
 };
 
+/** Every approved volunteer the matching can suggest. Maya and Daniel have demo accounts; the others are
+ * background volunteers without one, like Ava and Lucas among patients. */
+export type RosterVolunteer = Omit<VolunteerStory, "castId"> & {
+  id: string;
+  /** Visits offered a week */
+  slotsPerWeek: number;
+  /** The ages this volunteer is used to */
+  ages: [number, number];
+};
+
+export const VOLUNTEER_ROSTER: RosterVolunteer[] = [
+  { ...VOLUNTEER_STORIES.maya, id: "maya", slotsPerWeek: 2, ages: [6, 14] },
+  { ...VOLUNTEER_STORIES.daniel, id: "daniel", slotsPerWeek: 1, ages: [8, 17] },
+  {
+    id: "ines", firstName: "Inès", avatar: "🦕", job: "Paleontologist",
+    story: "I dig up dinosaur bones and put them back together at the natural history museum. I found my first fossil on a beach when I was eight.",
+    passions: ["Dinosaurs", "Fossils", "Hiking"], dreams: "To name a dinosaur nobody has discovered yet.",
+    funFact: "I once slept in the museum, right under a T. rex skeleton.", languages: ["French", "English"], slotsPerWeek: 2, ages: [6, 14],
+  },
+  {
+    id: "clara", firstName: "Clara", avatar: "🎶", job: "Music teacher",
+    story: "I teach music in a primary school and sing in a small band. My cat Pixel always naps on my guitar case.",
+    passions: ["Guitar", "Songwriting", "Cats"], dreams: "To record an album of songs written by kids.",
+    funFact: "Pixel meows along when I play in tune.", languages: ["English", "Portuguese"], slotsPerWeek: 1, ages: [8, 17],
+  },
+  {
+    id: "tom", firstName: "Tom", avatar: "🚄", job: "Train driver",
+    story: "I drive high-speed trains between big cities. At home, a LEGO railway runs around my whole living room.",
+    passions: ["Model trains", "LEGO", "Maps"], dreams: "To drive a train all the way across Canada.",
+    funFact: "My LEGO railway has 600 pieces of track.", languages: ["English"], slotsPerWeek: 2, ages: [5, 12],
+  },
+  {
+    id: "hugo", firstName: "Hugo", avatar: "🏅", job: "Youth soccer coach",
+    story: "I coach a team of under-12s. When I broke my leg at eleven, I learned to juggle a ball sitting on my bed.",
+    passions: ["Soccer", "Juggling", "Basketball"], dreams: "To take my team to a tournament abroad.",
+    funFact: "I can juggle a ball 200 times without dropping it.", languages: ["English", "French"], slotsPerWeek: 2, ages: [7, 15],
+  },
+  {
+    id: "nadia", firstName: "Nadia", avatar: "🎨", job: "Comic book artist",
+    story: "I draw comics for a children's magazine. My first one was about a dragon who was afraid of the dark.",
+    passions: ["Drawing", "Comics", "Dragons"], dreams: "To turn a story invented by kids into a real comic book.",
+    funFact: "I can draw with both hands at the same time.", languages: ["English", "Arabic", "French"], slotsPerWeek: 1, ages: [6, 17],
+  },
+  {
+    id: "sam", firstName: "Sam", avatar: "🐾", job: "Veterinarian",
+    story: "I take care of cats, dogs and rabbits, and once I nursed a baby fox back to health.",
+    passions: ["Cats", "Horses", "Wildlife rescue"], dreams: "To open a rescue center for wild animals.",
+    funFact: "My three cats are named after planets.", languages: ["English", "Spanish"], slotsPerWeek: 2, ages: [6, 15],
+  },
+];
+
 /** Inspiring questions (AI-generated later) */
 export const INSPIRING_QUESTIONS = [
   "What did you want to be when you were a kid?",

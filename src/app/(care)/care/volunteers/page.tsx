@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { AiOffline } from "@/components/care/ai-summary";
+import { VolunteerMatches } from "@/components/care/volunteer-matches";
 import { VolunteersAdmin } from "@/components/care/volunteers-admin";
+import { getMatchBoard, missingAiSettings } from "@/lib/data/care-ai";
+import { getVisiblePatients } from "@/lib/data/circle";
 import { getVolunteerSubmissions } from "@/lib/data/volunteer-submissions";
 import { getAnswersToReview } from "@/lib/data/daily-question";
 import { daysBetween, todayIn } from "@/lib/dates";
@@ -29,5 +33,18 @@ async function VolunteerReviews() {
     masked: a.masked,
     daysAgo: daysBetween(today, new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(a.created_at))),
   }));
-  return <VolunteersAdmin submissions={submissions} loadError={error} answers={answers} />;
+  const matches = (
+    <Suspense fallback={<p className="text-muted-foreground">Matching children and volunteers…</p>}>
+      <Matches />
+    </Suspense>
+  );
+  return <VolunteersAdmin submissions={submissions} loadError={error} answers={answers} matches={matches} />;
+}
+
+// This week's AI suggestions, for the children this care team member follows (RLS).
+async function Matches() {
+  const patients = await getVisiblePatients();
+  const board = await getMatchBoard(todayIn(patients[0]?.timezone ?? "America/New_York"));
+  if (!board) return <AiOffline missing={missingAiSettings()} />;
+  return <VolunteerMatches board={board} kids={patients.map((p) => ({ id: p.id, avatar: p.member?.avatar ?? "🙂" }))} />;
 }
