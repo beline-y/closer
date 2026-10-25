@@ -336,11 +336,14 @@ function Celebration({ streak }: { streak: Streak }) {
   const flameSize = Math.min(9, 4 + streak.totalDays / 5); // rem, grows with the days
   return (
     <div className="relative flex min-h-[60dvh] flex-col items-center justify-center gap-4 overflow-hidden text-center">
-      {confetti.map((c, i) => (
-        <span key={i} aria-hidden className="absolute animate-rise text-4xl" style={{ left: `${8 + i * 12}%`, top: `${10 + ((i * 37) % 60)}%`, animationDelay: `${i * 80}ms` }}>
-          {c}
-        </span>
-      ))}
+      {/* Reserve space for the decoration so it cannot cover the message or controls. */}
+      <div aria-hidden className="pointer-events-none flex h-12 w-full max-w-lg shrink-0 select-none items-center justify-around gap-2">
+        {confetti.map((c, i) => (
+          <span key={i} className="animate-rise text-2xl sm:text-3xl" style={{ animationDelay: `${i * 80}ms` }}>
+            {c}
+          </span>
+        ))}
+      </div>
       <span aria-hidden className="animate-heart leading-none" style={{ fontSize: `${flameSize}rem` }}>
         {milestone ? milestone.emoji : "🔥"}
       </span>
