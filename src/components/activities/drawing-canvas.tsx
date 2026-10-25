@@ -2,25 +2,12 @@
 
 import { Eraser, Loader2, Paintbrush, Trash2, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Modal } from "@/components/kit/modal";
 import { cn } from "@/lib/utils";
 
 type Point = [number, number, number]; // x, y (0..1 of the canvas), pressure
 type Stroke = { color: string; size: number; points: Point[] };
 
-// Named, so a screen reader says "Red", not "#ef4444".
-const COLORS = [
-  { value: "#111827", name: "Black" },
-  { value: "#ef4444", name: "Red" },
-  { value: "#f97316", name: "Orange" },
-  { value: "#facc15", name: "Yellow" },
-  { value: "#22c55e", name: "Green" },
-  { value: "#0ea5e9", name: "Light blue" },
-  { value: "#6366f1", name: "Blue" },
-  { value: "#a855f7", name: "Purple" },
-  { value: "#ec4899", name: "Pink" },
-  { value: "#92400e", name: "Brown" },
-];
+const COLORS = ["#111827", "#ef4444", "#f97316", "#facc15", "#22c55e", "#0ea5e9", "#6366f1", "#a855f7", "#ec4899", "#92400e"];
 const SIZES = [
   { value: 4, label: "Thin" },
   { value: 10, label: "Medium" },
@@ -35,12 +22,11 @@ export function DrawingCanvas({ theme, onDone, onCancel, doneLabel = "I'm done!"
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const strokes = useRef<Stroke[]>([]);
   const current = useRef<Stroke | null>(null);
-  const [color, setColor] = useState(COLORS[0].value);
+  const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1].value);
   const [eraser, setEraser] = useState(false);
   const [count, setCount] = useState(0); // re-renders the toolbar (undo enabled, etc.)
   const [saving, setSaving] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -141,18 +127,17 @@ export function DrawingCanvas({ theme, onDone, onCancel, doneLabel = "I'm done!"
         <div role="radiogroup" aria-label="Color" className="flex justify-center gap-1.5 overflow-x-auto">
           {COLORS.map((c) => (
             <button
-              key={c.value}
+              key={c}
               type="button"
               role="radio"
-              aria-checked={!eraser && color === c.value}
-              aria-label={c.name}
-              title={c.name}
+              aria-checked={!eraser && color === c}
+              aria-label={`Color ${c}`}
               onClick={() => {
-                setColor(c.value);
+                setColor(c);
                 setEraser(false);
               }}
-              className={cn("size-11 shrink-0 rounded-full ring-offset-2 ring-offset-card transition", !eraser && color === c.value ? "scale-110 ring-4 ring-foreground" : "ring-1 ring-black/10")}
-              style={{ backgroundColor: c.value }}
+              className={cn("size-11 shrink-0 rounded-full ring-offset-2 ring-offset-card transition", !eraser && color === c ? "scale-110 ring-4 ring-foreground" : "ring-1 ring-black/10")}
+              style={{ backgroundColor: c }}
             />
           ))}
         </div>
@@ -185,34 +170,18 @@ export function DrawingCanvas({ theme, onDone, onCancel, doneLabel = "I'm done!"
           <button
             type="button"
             disabled={count === 0}
-            onClick={() => setConfirmClear(true)}
+            onClick={() => {
+              if (!window.confirm("Clear your drawing?")) return;
+              strokes.current = [];
+              setCount(0);
+              redraw();
+            }}
             className="flex min-h-11 items-center gap-1.5 rounded-full bg-muted px-3 font-bold disabled:opacity-40"
           >
             <Trash2 className="size-5" aria-hidden /> Clear
           </button>
         </div>
       </footer>
-
-      <Modal open={confirmClear} onClose={() => setConfirmClear(false)} title="Clear your drawing? 🗑️">
-        <p className="text-lg">Everything on the page goes away. You can&apos;t get it back.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <button type="button" autoFocus onClick={() => setConfirmClear(false)} className="min-h-14 rounded-2xl bg-role-patient text-lg font-extrabold">
-            No, keep it
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              strokes.current = [];
-              setCount(0);
-              setConfirmClear(false);
-              redraw();
-            }}
-            className="min-h-14 rounded-2xl bg-muted text-lg font-bold"
-          >
-            Yes, clear it
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 }

@@ -6,12 +6,8 @@ import { BigActionButton } from "@/components/kit/big-action-button";
 import { Modal } from "@/components/kit/modal";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import type { CastMember } from "@/lib/cast";
-import type { Hue } from "@/lib/hues";
 import { NUDGE_KINDS, type NudgeKind } from "@/lib/nudges";
 import { cn } from "@/lib/utils";
-
-// Each nudge has its own color, so it can be found again without reading.
-const HUE: Record<NudgeKind, Hue> = { miss_you: "coral", call_me: "sky", bored: "mint", proud: "sun", hug: "lilac" };
 
 type Props = {
   circle: CastMember[];
@@ -74,7 +70,6 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
               key={k.kind}
               emoji={k.emoji}
               label={k.label}
-              hue={HUE[k.kind]}
               cooldown={cooldownMs ? ms / cooldownMs : 0}
               disabled={ms > 0 || circle.length === 0}
               hint={ms > 0 ? `Sent! Again in ${Math.ceil(ms / 60_000)} min` : undefined}
@@ -95,7 +90,7 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
               ❤️
             </span>
             <p className="text-xl font-bold">Your people got it.</p>
-            <button type="button" onClick={() => setPicking(null)} className="hue-sun pressable min-h-14 w-full rounded-2xl bg-hue text-lg font-extrabold">
+            <button type="button" onClick={() => setPicking(null)} className="min-h-14 w-full rounded-2xl bg-role-patient text-lg font-extrabold">
               Yay!
             </button>
           </div>
@@ -133,7 +128,7 @@ export function NudgePanel({ circle, cooldownMinutes, lastSent, serverNow }: Pro
               type="button"
               disabled={to.length === 0 || sending}
               onClick={send}
-              className="hue-sun pressable min-h-14 rounded-2xl bg-hue text-xl font-extrabold disabled:opacity-50"
+              className="min-h-14 rounded-2xl bg-role-patient text-xl font-extrabold shadow-sm transition active:scale-[0.98] disabled:opacity-50"
             >
               {sending ? "Sending…" : `Send ${kind?.emoji ?? ""}`}
             </button>

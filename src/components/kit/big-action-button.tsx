@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from "react";
-import { HUES, type Hue } from "@/lib/hues";
 import { cn } from "@/lib/utils";
 
 type Props = ComponentProps<"button"> & {
@@ -9,8 +8,6 @@ type Props = ComponentProps<"button"> & {
   /** 0..1 of the cooldown left; draws a ring around the emoji */
   cooldown?: number;
   tone?: "patient" | "family" | "care" | "volunteer";
-  /** Patient side: a hue of its own instead of the role tone, with a chunky pressable edge */
-  hue?: Hue;
 };
 
 const TONE = {
@@ -21,7 +18,7 @@ const TONE = {
 };
 
 // Huge tap target with an icon and a word. Used for nudges and main actions.
-export function BigActionButton({ emoji, label, hint, cooldown = 0, tone = "patient", hue, className, disabled, ...props }: Props) {
+export function BigActionButton({ emoji, label, hint, cooldown = 0, tone = "patient", className, disabled, ...props }: Props) {
   const r = 30;
   const circumference = 2 * Math.PI * r;
   return (
@@ -29,10 +26,9 @@ export function BigActionButton({ emoji, label, hint, cooldown = 0, tone = "pati
       type="button"
       disabled={disabled}
       className={cn(
-        "group flex min-h-24 w-full items-center gap-4 rounded-3xl p-4 text-left font-heading text-xl font-extrabold disabled:cursor-not-allowed disabled:opacity-60",
-        hue
-          ? cn(HUES[hue], "pressable bg-hue-soft text-foreground")
-          : cn(TONE[tone], "shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] disabled:hover:translate-y-0"),
+        "group flex min-h-24 w-full items-center gap-4 rounded-3xl p-4 text-left font-heading text-xl font-extrabold shadow-sm ring-1 ring-black/5 transition",
+        "hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0",
+        TONE[tone],
         className,
       )}
       {...props}
@@ -42,7 +38,7 @@ export function BigActionButton({ emoji, label, hint, cooldown = 0, tone = "pati
           {emoji}
         </span>
         {cooldown > 0 && (
-          <svg aria-hidden viewBox="0 0 64 64" className={cn("absolute inset-0 -rotate-90", hue && "text-hue-ink")}>
+          <svg aria-hidden viewBox="0 0 64 64" className="absolute inset-0 -rotate-90">
             <circle cx="32" cy="32" r={r} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="4" />
             <circle
               cx="32"

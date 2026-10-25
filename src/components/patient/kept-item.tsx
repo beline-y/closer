@@ -15,10 +15,10 @@ export function ShareKeptButtons({ sessionId }: { sessionId: string }) {
     });
   return (
     <div className="flex flex-wrap gap-2">
-      <button type="button" disabled={pending} onClick={() => share("family")} className="hue-coral pressable min-h-12 rounded-full bg-hue-soft px-4 font-bold disabled:opacity-60">
+      <button type="button" disabled={pending} onClick={() => share("family")} className="min-h-12 rounded-full bg-role-patient px-4 font-bold disabled:opacity-60">
         💛 Share with my family
       </button>
-      <button type="button" disabled={pending} onClick={() => share("memories")} className="hue-sky pressable min-h-12 rounded-full bg-hue-soft px-4 font-bold disabled:opacity-60">
+      <button type="button" disabled={pending} onClick={() => share("memories")} className="min-h-12 rounded-full bg-muted px-4 font-bold disabled:opacity-60">
         📸 Add to Memories
       </button>
     </div>

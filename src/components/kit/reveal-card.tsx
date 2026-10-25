@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import type { CastMember } from "@/lib/cast";
-import { HUES } from "@/lib/hues";
 import { cn } from "@/lib/utils";
 import { PersonaAvatar } from "./persona-avatar";
-import { ReadAloud } from "./read-aloud";
 
 export const CARD_COLORS = {
   sun: "bg-role-patient-soft",
@@ -16,7 +14,6 @@ export const CARD_COLORS = {
 
 // A sealed envelope that opens once, with a little flap animation.
 // A sealed card has no text yet: onOpen fetches it (the database records the opening).
-// Opened, it can be read out loud.
 export function RevealCard({
   from,
   body: initialBody,
@@ -54,8 +51,7 @@ export function RevealCard({
         }}
         aria-label={`Open the card from ${from.name}`}
         className={cn(
-          "group pressable relative flex aspect-[4/3] w-full flex-col items-center justify-end overflow-hidden rounded-3xl p-5",
-          HUES[color],
+          "group relative flex aspect-[4/3] w-full flex-col items-center justify-end overflow-hidden rounded-3xl p-5 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-md",
           CARD_COLORS[color],
           !opening && "hover:animate-wiggle",
         )}
@@ -75,19 +71,18 @@ export function RevealCard({
           <PersonaAvatar person={from} size="sm" decorative />
           From {from.name}
         </span>
-        <span className="relative font-bold text-hue-ink">{failed ? "Oops, try again" : "Tap to open ▶"}</span>
+        <span className="relative text-sm text-foreground/70">{failed ? "Oops, try again" : "Tap to open"}</span>
       </button>
     );
   }
 
   return (
-    <article className={cn("flex flex-col gap-3 rounded-3xl p-5 shadow-sm ring-1 ring-black/5", HUES[color], CARD_COLORS[color], initiallySealed && "animate-pop")}>
-      <header className="flex flex-wrap items-center gap-2 font-heading text-lg font-extrabold">
+    <article className={cn("flex flex-col gap-3 rounded-3xl p-5 shadow-sm ring-1 ring-black/5", CARD_COLORS[color], initiallySealed && "animate-pop")}>
+      <header className="flex items-center gap-2 font-heading text-lg font-extrabold">
         <PersonaAvatar person={from} size="sm" decorative />
-        <span className="mr-auto">From {from.name}</span>
-        <ReadAloud text={`A card from ${from.name}. ${body}`} className="font-sans text-base" />
+        From {from.name}
       </header>
-      <p className="text-xl leading-relaxed">{body}</p>
+      <p className="text-lg leading-relaxed">{body}</p>
     </article>
   );
 }
