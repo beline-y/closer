@@ -1,0 +1,975 @@
+[
+ {
+  "steps": 35840,
+  "harm_per_week": 0.18359375000000216,
+  "load_per_week": 2.43564453125,
+  "reward_per_week": -2.793414313872562,
+  "minutes": 0.1872832218805949
+ },
+ {
+  "steps": 71680,
+  "harm_per_week": 0.4557421874999939,
+  "load_per_week": 0.766796875,
+  "reward_per_week": -0.7582066267910689,
+  "minutes": 0.42302321990331015
+ },
+ {
+  "steps": 107520,
+  "harm_per_week": 0.4120312499999943,
+  "load_per_week": 0.882421875,
+  "reward_per_week": -0.6266567135120571,
+  "minutes": 0.6693251927693685
+ },
+ {
+  "steps": 143360,
+  "harm_per_week": 0.4252929687499945,
+  "load_per_week": 0.8630859375,
+  "reward_per_week": -0.6135699863813526,
+  "minutes": 0.8476394613583883
+ },
+ {
+  "steps": 179200,
+  "harm_per_week": 0.40650390624999533,
+  "load_per_week": 0.91630859375,
+  "reward_per_week": -0.5918420320954564,
+  "minutes": 1.0245938301086426
+ },
+ {
+  "steps": 215040,
+  "harm_per_week": 0.37474609374999585,
+  "load_per_week": 0.8189453125,
+  "reward_per_week": -0.5858797450418681,
+  "minutes": 1.2023768742879233
+ },
+ {
+  "steps": 250880,
+  "harm_per_week": 0.41314453124999495,
+  "load_per_week": 0.82119140625,
+  "reward_per_week": -0.6411326756519411,
+  "minutes": 1.3812423944473267
+ },
+ {
+  "steps": 286720,
+  "harm_per_week": 0.3752148437499968,
+  "load_per_week": 0.8390625,
+  "reward_per_week": -0.5674503613308391,
+  "minutes": 1.5601466457049051
+ },
+ {
+  "steps": 322560,
+  "harm_per_week": 0.41816406249999555,
+  "load_per_week": 0.833984375,
+  "reward_per_week": -0.6107707152620011,
+  "minutes": 1.7370392441749574
+ },
+ {
+  "steps": 358400,
+  "harm_per_week": 0.39574218749999657,
+  "load_per_week": 0.86337890625,
+  "reward_per_week": -0.5969582771074966,
+  "minutes": 1.91518026192983
+ },
+ {
+  "steps": 394240,
+  "harm_per_week": 0.36089843749999706,
+  "load_per_week": 0.9388671875,
+  "reward_per_week": -0.5820401377937381,
+  "minutes": 2.09312850634257
+ },
+ {
+  "steps": 430080,
+  "harm_per_week": 0.37257812499999543,
+  "load_per_week": 0.9150390625,
+  "reward_per_week": -0.5873075683215515,
+  "minutes": 2.2705275297164915
+ },
+ {
+  "steps": 465920,
+  "harm_per_week": 0.4072265624999967,
+  "load_per_week": 0.82890625,
+  "reward_per_week": -0.6006590593807901,
+  "minutes": 2.4491002678871157
+ },
+ {
+  "steps": 501760,
+  "harm_per_week": 0.40486328124999504,
+  "load_per_week": 0.82861328125,
+  "reward_per_week": -0.5990740529004908,
+  "minutes": 2.6267697691917418
+ },
+ {
+  "steps": 537600,
+  "harm_per_week": 0.37626953124999635,
+  "load_per_week": 0.86357421875,
+  "reward_per_week": -0.5931170628579493,
+  "minutes": 2.80419997771581
+ },
+ {
+  "steps": 573440,
+  "harm_per_week": 0.39835937499999596,
+  "load_per_week": 0.83310546875,
+  "reward_per_week": -0.600136004493912,
+  "minutes": 2.9815967321395873
+ },
+ {
+  "steps": 609280,
+  "harm_per_week": 0.36150390624999695,
+  "load_per_week": 0.8826171875,
+  "reward_per_week": -0.5703929088722798,
+  "minutes": 3.158646496136983
+ },
+ {
+  "steps": 645120,
+  "harm_per_week": 0.4183398437499952,
+  "load_per_week": 0.769140625,
+  "reward_per_week": -0.5959914122431792,
+  "minutes": 3.33435640335083
+ },
+ {
+  "steps": 680960,
+  "harm_per_week": 0.46109374999999425,
+  "load_per_week": 0.86259765625,
+  "reward_per_week": -0.6695644965312592,
+  "minutes": 3.5136257727940876
+ },
+ {
+  "steps": 716800,
+  "harm_per_week": 0.4472265624999926,
+  "load_per_week": 0.84267578125,
+  "reward_per_week": -0.6405471528906241,
+  "minutes": 3.691241804758708
+ },
+ {
+  "steps": 752640,
+  "harm_per_week": 0.41396484374999404,
+  "load_per_week": 0.78603515625,
+  "reward_per_week": -0.5958676862718943,
+  "minutes": 3.868587640921275
+ },
+ {
+  "steps": 788480,
+  "harm_per_week": 0.4142382812499948,
+  "load_per_week": 0.878125,
+  "reward_per_week": -0.6464476296396716,
+  "minutes": 4.047154748439789
+ },
+ {
+  "steps": 824320,
+  "harm_per_week": 0.37943359374999697,
+  "load_per_week": 0.96767578125,
+  "reward_per_week": -0.5791403971469496,
+  "minutes": 4.224981931845347
+ },
+ {
+  "steps": 860160,
+  "harm_per_week": 0.3946679687499971,
+  "load_per_week": 0.85078125,
+  "reward_per_week": -0.5835482479918686,
+  "minutes": 4.402753845850627
+ },
+ {
+  "steps": 896000,
+  "harm_per_week": 0.4106835937499952,
+  "load_per_week": 0.81611328125,
+  "reward_per_week": -0.634799800182414,
+  "minutes": 4.581501599152883
+ },
+ {
+  "steps": 931840,
+  "harm_per_week": 0.3949804687499948,
+  "load_per_week": 0.9724609375,
+  "reward_per_week": -0.6325196324981281,
+  "minutes": 4.759643471240997
+ },
+ {
+  "steps": 967680,
+  "harm_per_week": 0.35925781249999744,
+  "load_per_week": 0.9091796875,
+  "reward_per_week": -0.5673903671979807,
+  "minutes": 4.936773288249969
+ },
+ {
+  "steps": 1003520,
+  "harm_per_week": 0.3634570312499962,
+  "load_per_week": 1.02763671875,
+  "reward_per_week": -0.5832786854726464,
+  "minutes": 5.114231713612875
+ },
+ {
+  "steps": 1039360,
+  "harm_per_week": 0.39101562499999554,
+  "load_per_week": 0.9564453125,
+  "reward_per_week": -0.6112550842427034,
+  "minutes": 5.291209638118744
+ },
+ {
+  "steps": 1075200,
+  "harm_per_week": 0.36833984374999706,
+  "load_per_week": 0.85146484375,
+  "reward_per_week": -0.6010579889350441,
+  "minutes": 5.469809047381083
+ },
+ {
+  "steps": 1111040,
+  "harm_per_week": 0.36859374999999617,
+  "load_per_week": 0.80537109375,
+  "reward_per_week": -0.578112365520735,
+  "minutes": 5.646953892707825
+ },
+ {
+  "steps": 1146880,
+  "harm_per_week": 0.3449414062499973,
+  "load_per_week": 0.85078125,
+  "reward_per_week": -0.5541228673602586,
+  "minutes": 5.82321625550588
+ },
+ {
+  "steps": 1182720,
+  "harm_per_week": 0.3910937499999962,
+  "load_per_week": 0.8482421875,
+  "reward_per_week": -0.6116474827099188,
+  "minutes": 6.000569303830464
+ },
+ {
+  "steps": 1218560,
+  "harm_per_week": 0.4202734374999941,
+  "load_per_week": 0.90576171875,
+  "reward_per_week": -0.6369615033858526,
+  "minutes": 6.179174435138703
+ },
+ {
+  "steps": 1254400,
+  "harm_per_week": 0.38367187499999594,
+  "load_per_week": 0.9228515625,
+  "reward_per_week": -0.598819878897963,
+  "minutes": 6.356518924236298
+ },
+ {
+  "steps": 1290240,
+  "harm_per_week": 0.3888867187499966,
+  "load_per_week": 0.8919921875,
+  "reward_per_week": -0.6048083977675153,
+  "minutes": 6.5356769323348995
+ },
+ {
+  "steps": 1326080,
+  "harm_per_week": 0.3833789062499973,
+  "load_per_week": 0.86728515625,
+  "reward_per_week": -0.6056106371480116,
+  "minutes": 6.712149767080943
+ },
+ {
+  "steps": 1361920,
+  "harm_per_week": 0.3467187499999961,
+  "load_per_week": 0.79716796875,
+  "reward_per_week": -0.5548043748526211,
+  "minutes": 6.88945152759552
+ },
+ {
+  "steps": 1397760,
+  "harm_per_week": 0.3818945312499984,
+  "load_per_week": 0.85732421875,
+  "reward_per_week": -0.5893510088933376,
+  "minutes": 7.0681185563405355
+ },
+ {
+  "steps": 1433600,
+  "harm_per_week": 0.40580078124999563,
+  "load_per_week": 0.87744140625,
+  "reward_per_week": -0.5951420164646446,
+  "minutes": 7.2462533156077065
+ },
+ {
+  "steps": 1469440,
+  "harm_per_week": 0.40902343749999437,
+  "load_per_week": 0.95244140625,
+  "reward_per_week": -0.6082683432579439,
+  "minutes": 7.426262895266215
+ },
+ {
+  "steps": 1505280,
+  "harm_per_week": 0.41255859374999526,
+  "load_per_week": 0.98134765625,
+  "reward_per_week": -0.6203635502348002,
+  "minutes": 7.6039920488993324
+ },
+ {
+  "steps": 1541120,
+  "harm_per_week": 0.37140624999999594,
+  "load_per_week": 0.9064453125,
+  "reward_per_week": -0.5986680964957087,
+  "minutes": 7.780608908335368
+ },
+ {
+  "steps": 1576960,
+  "harm_per_week": 0.39658203124999636,
+  "load_per_week": 0.94365234375,
+  "reward_per_week": -0.6096575191427589,
+  "minutes": 7.9577606320381165
+ },
+ {
+  "steps": 1612800,
+  "harm_per_week": 0.3194140624999981,
+  "load_per_week": 1.012109375,
+  "reward_per_week": -0.5410738242822533,
+  "minutes": 8.136677694320678
+ },
+ {
+  "steps": 1648640,
+  "harm_per_week": 0.38968749999999663,
+  "load_per_week": 0.83955078125,
+  "reward_per_week": -0.5716997507553725,
+  "minutes": 8.313432149092357
+ },
+ {
+  "steps": 1684480,
+  "harm_per_week": 0.41613281249999606,
+  "load_per_week": 0.77587890625,
+  "reward_per_week": -0.5885254120941521,
+  "minutes": 8.491488305727641
+ },
+ {
+  "steps": 1720320,
+  "harm_per_week": 0.40796874999999594,
+  "load_per_week": 0.87724609375,
+  "reward_per_week": -0.5771299082502812,
+  "minutes": 8.668749205271403
+ },
+ {
+  "steps": 1756160,
+  "harm_per_week": 0.39271484374999643,
+  "load_per_week": 0.85263671875,
+  "reward_per_week": -0.580163859660981,
+  "minutes": 8.845438424746195
+ },
+ {
+  "steps": 1792000,
+  "harm_per_week": 0.37025390624999593,
+  "load_per_week": 0.92822265625,
+  "reward_per_week": -0.5608739087132448,
+  "minutes": 9.022678395112356
+ },
+ {
+  "steps": 1827840,
+  "harm_per_week": 0.41294921874999596,
+  "load_per_week": 0.84326171875,
+  "reward_per_week": -0.6072908470618643,
+  "minutes": 9.200439337889353
+ },
+ {
+  "steps": 1863680,
+  "harm_per_week": 0.39382812499999564,
+  "load_per_week": 0.80498046875,
+  "reward_per_week": -0.5663567780488971,
+  "minutes": 9.37953718105952
+ },
+ {
+  "steps": 1899520,
+  "harm_per_week": 0.3987890624999959,
+  "load_per_week": 0.79951171875,
+  "reward_per_week": -0.5849630115360351,
+  "minutes": 9.558853435516358
+ },
+ {
+  "steps": 1935360,
+  "harm_per_week": 0.38167968749999537,
+  "load_per_week": 0.94716796875,
+  "reward_per_week": -0.6044061381192452,
+  "minutes": 9.736144963900248
+ },
+ {
+  "steps": 1971200,
+  "harm_per_week": 0.37535156249999657,
+  "load_per_week": 0.930859375,
+  "reward_per_week": -0.6140481700662688,
+  "minutes": 9.911905805269877
+ },
+ {
+  "steps": 2007040,
+  "harm_per_week": 0.37691406249999704,
+  "load_per_week": 0.89228515625,
+  "reward_per_week": -0.5926893752616207,
+  "minutes": 10.088397375742595
+ },
+ {
+  "steps": 2042880,
+  "harm_per_week": 0.3810546874999972,
+  "load_per_week": 0.8583984375,
+  "reward_per_week": -0.576341990034626,
+  "minutes": 10.266022674242656
+ },
+ {
+  "steps": 2078720,
+  "harm_per_week": 0.4070507812499953,
+  "load_per_week": 0.93349609375,
+  "reward_per_week": -0.5944604214065172,
+  "minutes": 10.44534215927124
+ },
+ {
+  "steps": 2114560,
+  "harm_per_week": 0.4043164062499961,
+  "load_per_week": 0.87001953125,
+  "reward_per_week": -0.5970273415828042,
+  "minutes": 10.62251580953598
+ },
+ {
+  "steps": 2150400,
+  "harm_per_week": 0.4255468749999922,
+  "load_per_week": 0.90810546875,
+  "reward_per_week": -0.6247147080883523,
+  "minutes": 10.799203876654307
+ },
+ {
+  "steps": 2186240,
+  "harm_per_week": 0.3786523437499952,
+  "load_per_week": 0.87451171875,
+  "reward_per_week": -0.5810878231872335,
+  "minutes": 10.975800124804179
+ },
+ {
+  "steps": 2222080,
+  "harm_per_week": 0.4167187499999949,
+  "load_per_week": 0.8951171875,
+  "reward_per_week": -0.6106915335886254,
+  "minutes": 11.152107111612956
+ },
+ {
+  "steps": 2257920,
+  "harm_per_week": 0.42054687499999466,
+  "load_per_week": 0.8189453125,
+  "reward_per_week": -0.5996507368782151,
+  "minutes": 11.331513929367066
+ },
+ {
+  "steps": 2293760,
+  "harm_per_week": 0.38462890624999607,
+  "load_per_week": 0.981640625,
+  "reward_per_week": -0.5809488141019253,
+  "minutes": 11.509231781959533
+ },
+ {
+  "steps": 2329600,
+  "harm_per_week": 0.3919140624999952,
+  "load_per_week": 0.8587890625,
+  "reward_per_week": -0.5939150793100227,
+  "minutes": 11.686231489976247
+ },
+ {
+  "steps": 2365440,
+  "harm_per_week": 0.4174218749999949,
+  "load_per_week": 0.91103515625,
+  "reward_per_week": -0.6074216262844995,
+  "minutes": 11.86400203704834
+ },
+ {
+  "steps": 2401280,
+  "harm_per_week": 0.34007812499999684,
+  "load_per_week": 0.97080078125,
+  "reward_per_week": -0.5515752202114095,
+  "minutes": 12.042205691337585
+ },
+ {
+  "steps": 2437120,
+  "harm_per_week": 0.3656445312499961,
+  "load_per_week": 0.87060546875,
+  "reward_per_week": -0.5735675547200161,
+  "minutes": 12.220182422796885
+ },
+ {
+  "steps": 2472960,
+  "harm_per_week": 0.392812499999996,
+  "load_per_week": 0.89462890625,
+  "reward_per_week": -0.6065626851655889,
+  "minutes": 12.399525054295857
+ },
+ {
+  "steps": 2508800,
+  "harm_per_week": 0.3483398437499974,
+  "load_per_week": 0.89794921875,
+  "reward_per_week": -0.5877794117981718,
+  "minutes": 12.578092229366302
+ },
+ {
+  "steps": 2544640,
+  "harm_per_week": 0.3569335937499978,
+  "load_per_week": 0.87138671875,
+  "reward_per_week": -0.579864961584646,
+  "minutes": 12.754532198111216
+ },
+ {
+  "steps": 2580480,
+  "harm_per_week": 0.35880859374999713,
+  "load_per_week": 0.90146484375,
+  "reward_per_week": -0.5489194687199228,
+  "minutes": 12.93237236738205
+ },
+ {
+  "steps": 2616320,
+  "harm_per_week": 0.41472656249999496,
+  "load_per_week": 0.87421875,
+  "reward_per_week": -0.6178089478461608,
+  "minutes": 13.109229870637257
+ },
+ {
+  "steps": 2652160,
+  "harm_per_week": 0.40826171874999523,
+  "load_per_week": 0.91201171875,
+  "reward_per_week": -0.6500487765938168,
+  "minutes": 13.287240437666576
+ },
+ {
+  "steps": 2688000,
+  "harm_per_week": 0.3493749999999981,
+  "load_per_week": 0.9779296875,
+  "reward_per_week": -0.5913594656577978,
+  "minutes": 13.46737535794576
+ },
+ {
+  "steps": 2723840,
+  "harm_per_week": 0.36306640624999537,
+  "load_per_week": 0.94228515625,
+  "reward_per_week": -0.5672307027163306,
+  "minutes": 13.644799367586772
+ },
+ {
+  "steps": 2759680,
+  "harm_per_week": 0.37636718749999787,
+  "load_per_week": 0.88974609375,
+  "reward_per_week": -0.5633251132177182,
+  "minutes": 13.820462493101756
+ },
+ {
+  "steps": 2795520,
+  "harm_per_week": 0.40072265624999553,
+  "load_per_week": 0.81123046875,
+  "reward_per_week": -0.5956445100847809,
+  "minutes": 13.997933932145436
+ },
+ {
+  "steps": 2831360,
+  "harm_per_week": 0.4073046874999952,
+  "load_per_week": 0.85,
+  "reward_per_week": -0.5848672531664405,
+  "minutes": 14.176547420024871
+ },
+ {
+  "steps": 2867200,
+  "harm_per_week": 0.3352734374999968,
+  "load_per_week": 0.9458984375,
+  "reward_per_week": -0.5527948475472393,
+  "minutes": 14.353459850947063
+ },
+ {
+  "steps": 2903040,
+  "harm_per_week": 0.3970898437499954,
+  "load_per_week": 0.8779296875,
+  "reward_per_week": -0.6277484725408794,
+  "minutes": 14.532720601558685
+ },
+ {
+  "steps": 2938880,
+  "harm_per_week": 0.3557421874999972,
+  "load_per_week": 0.85205078125,
+  "reward_per_week": -0.5759504773124051,
+  "minutes": 14.709789800643922
+ },
+ {
+  "steps": 2974720,
+  "harm_per_week": 0.3569726562499971,
+  "load_per_week": 0.89248046875,
+  "reward_per_week": -0.5621200955773831,
+  "minutes": 14.887453369299571
+ },
+ {
+  "steps": 3010560,
+  "harm_per_week": 0.39015624999999676,
+  "load_per_week": 0.89873046875,
+  "reward_per_week": -0.592805158513825,
+  "minutes": 15.063769880930582
+ },
+ {
+  "steps": 3046400,
+  "harm_per_week": 0.40492187499999605,
+  "load_per_week": 0.8095703125,
+  "reward_per_week": -0.6075917269349999,
+  "minutes": 15.242080581188201
+ },
+ {
+  "steps": 3082240,
+  "harm_per_week": 0.3747070312499968,
+  "load_per_week": 0.8419921875,
+  "reward_per_week": -0.5569701794328616,
+  "minutes": 15.42110361258189
+ },
+ {
+  "steps": 3118080,
+  "harm_per_week": 0.39355468749999567,
+  "load_per_week": 0.88984375,
+  "reward_per_week": -0.586615482215107,
+  "minutes": 15.60070952574412
+ },
+ {
+  "steps": 3153920,
+  "harm_per_week": 0.3750390624999968,
+  "load_per_week": 0.86845703125,
+  "reward_per_week": -0.5868645067768457,
+  "minutes": 15.77854888041814
+ },
+ {
+  "steps": 3189760,
+  "harm_per_week": 0.3808984374999949,
+  "load_per_week": 0.82314453125,
+  "reward_per_week": -0.5884641047068406,
+  "minutes": 15.957007463773092
+ },
+ {
+  "steps": 3225600,
+  "harm_per_week": 0.3995703124999969,
+  "load_per_week": 0.83662109375,
+  "reward_per_week": -0.5968411902164912,
+  "minutes": 16.13399269580841
+ },
+ {
+  "steps": 3261440,
+  "harm_per_week": 0.3775976562499959,
+  "load_per_week": 0.82783203125,
+  "reward_per_week": -0.57484199927662,
+  "minutes": 16.31170663436254
+ },
+ {
+  "steps": 3297280,
+  "harm_per_week": 0.41490234374999496,
+  "load_per_week": 0.85009765625,
+  "reward_per_week": -0.6028320276164564,
+  "minutes": 16.490442756811778
+ },
+ {
+  "steps": 3333120,
+  "harm_per_week": 0.4145703124999958,
+  "load_per_week": 0.79873046875,
+  "reward_per_week": -0.5888594575262142,
+  "minutes": 16.66787948211034
+ },
+ {
+  "steps": 3368960,
+  "harm_per_week": 0.3896093749999955,
+  "load_per_week": 0.98876953125,
+  "reward_per_week": -0.5878908735589172,
+  "minutes": 16.844306047757467
+ },
+ {
+  "steps": 3404800,
+  "harm_per_week": 0.40449218749999655,
+  "load_per_week": 0.8794921875,
+  "reward_per_week": -0.5830445795761787,
+  "minutes": 17.020119055112204
+ },
+ {
+  "steps": 3440640,
+  "harm_per_week": 0.4163671874999958,
+  "load_per_week": 0.82099609375,
+  "reward_per_week": -0.5930661060107079,
+  "minutes": 17.19624509414037
+ },
+ {
+  "steps": 3476480,
+  "harm_per_week": 0.4127148437499944,
+  "load_per_week": 0.80751953125,
+  "reward_per_week": -0.5904267388691748,
+  "minutes": 17.37331725358963
+ },
+ {
+  "steps": 3512320,
+  "harm_per_week": 0.4086523437499947,
+  "load_per_week": 0.8373046875,
+  "reward_per_week": -0.5929292193479775,
+  "minutes": 17.553640878200532
+ },
+ {
+  "steps": 3548160,
+  "harm_per_week": 0.4223828124999941,
+  "load_per_week": 0.84736328125,
+  "reward_per_week": -0.6082152518480906,
+  "minutes": 17.731364405155183
+ },
+ {
+  "steps": 3584000,
+  "harm_per_week": 0.4063671874999952,
+  "load_per_week": 0.8224609375,
+  "reward_per_week": -0.5949910121845392,
+  "minutes": 17.909441141287484
+ },
+ {
+  "steps": 3619840,
+  "harm_per_week": 0.40203124999999595,
+  "load_per_week": 0.77958984375,
+  "reward_per_week": -0.5856121464829187,
+  "minutes": 18.08690421183904
+ },
+ {
+  "steps": 3655680,
+  "harm_per_week": 0.4158007812499962,
+  "load_per_week": 0.831640625,
+  "reward_per_week": -0.6017850903337776,
+  "minutes": 18.264033949375154
+ },
+ {
+  "steps": 3691520,
+  "harm_per_week": 0.38208984374999566,
+  "load_per_week": 0.8208984375,
+  "reward_per_week": -0.5824389754341729,
+  "minutes": 18.441576524575552
+ },
+ {
+  "steps": 3727360,
+  "harm_per_week": 0.43462890624999356,
+  "load_per_week": 0.737109375,
+  "reward_per_week": -0.61000541269732,
+  "minutes": 18.61969165802002
+ },
+ {
+  "steps": 3763200,
+  "harm_per_week": 0.3937499999999966,
+  "load_per_week": 0.81220703125,
+  "reward_per_week": -0.5818766897760557,
+  "minutes": 18.79771906932195
+ },
+ {
+  "steps": 3799040,
+  "harm_per_week": 0.4385546874999936,
+  "load_per_week": 0.8275390625,
+  "reward_per_week": -0.6096874067382143,
+  "minutes": 18.974996642271677
+ },
+ {
+  "steps": 3834880,
+  "harm_per_week": 0.37925781249999657,
+  "load_per_week": 0.84951171875,
+  "reward_per_week": -0.571609486257651,
+  "minutes": 19.151915196577708
+ },
+ {
+  "steps": 3870720,
+  "harm_per_week": 0.38777343749999665,
+  "load_per_week": 0.78125,
+  "reward_per_week": -0.5605512069207828,
+  "minutes": 19.329014666875203
+ },
+ {
+  "steps": 3906560,
+  "harm_per_week": 0.408808593749995,
+  "load_per_week": 0.7623046875,
+  "reward_per_week": -0.6080796315324835,
+  "minutes": 19.507055898507435
+ },
+ {
+  "steps": 3942400,
+  "harm_per_week": 0.36464843749999704,
+  "load_per_week": 0.8291015625,
+  "reward_per_week": -0.5725397756733182,
+  "minutes": 19.686126172542572
+ },
+ {
+  "steps": 3978240,
+  "harm_per_week": 0.38921874999999606,
+  "load_per_week": 0.8154296875,
+  "reward_per_week": -0.5760904877907844,
+  "minutes": 19.8632026274999
+ },
+ {
+  "steps": 4014080,
+  "harm_per_week": 0.4025585937499973,
+  "load_per_week": 0.73349609375,
+  "reward_per_week": -0.564478560676135,
+  "minutes": 20.040034731229145
+ },
+ {
+  "steps": 4049920,
+  "harm_per_week": 0.3859960937499959,
+  "load_per_week": 0.82119140625,
+  "reward_per_week": -0.5526436946618968,
+  "minutes": 20.216776076952616
+ },
+ {
+  "steps": 4085760,
+  "harm_per_week": 0.3965624999999962,
+  "load_per_week": 0.76865234375,
+  "reward_per_week": -0.5683669776570351,
+  "minutes": 20.393812048435212
+ },
+ {
+  "steps": 4121600,
+  "harm_per_week": 0.39615234374999625,
+  "load_per_week": 0.8080078125,
+  "reward_per_week": -0.6018525264785162,
+  "minutes": 20.57259477774302
+ },
+ {
+  "steps": 4157440,
+  "harm_per_week": 0.40019531249999635,
+  "load_per_week": 0.770703125,
+  "reward_per_week": -0.6049464773412211,
+  "minutes": 20.751507699489594
+ },
+ {
+  "steps": 4193280,
+  "harm_per_week": 0.3921289062499963,
+  "load_per_week": 0.761328125,
+  "reward_per_week": -0.5673380254182128,
+  "minutes": 20.92905333439509
+ },
+ {
+  "steps": 4229120,
+  "harm_per_week": 0.4086914062499948,
+  "load_per_week": 0.80400390625,
+  "reward_per_week": -0.5824527225209322,
+  "minutes": 21.10542399485906
+ },
+ {
+  "steps": 4264960,
+  "harm_per_week": 0.4344726562499936,
+  "load_per_week": 0.79482421875,
+  "reward_per_week": -0.6172034481728779,
+  "minutes": 21.281827127933504
+ },
+ {
+  "steps": 4300800,
+  "harm_per_week": 0.37550781249999715,
+  "load_per_week": 0.86376953125,
+  "reward_per_week": -0.5587928914459331,
+  "minutes": 21.45940361817678
+ },
+ {
+  "steps": 4336640,
+  "harm_per_week": 0.39914062499999525,
+  "load_per_week": 0.849609375,
+  "reward_per_week": -0.5854405435769529,
+  "minutes": 21.636860756079354
+ },
+ {
+  "steps": 4372480,
+  "harm_per_week": 0.40013671874999474,
+  "load_per_week": 0.952734375,
+  "reward_per_week": -0.603594234053298,
+  "minutes": 21.81501922607422
+ },
+ {
+  "steps": 4408320,
+  "harm_per_week": 0.3708007812499955,
+  "load_per_week": 0.85693359375,
+  "reward_per_week": -0.5509794976353332,
+  "minutes": 21.992484986782074
+ },
+ {
+  "steps": 4444160,
+  "harm_per_week": 0.4381249999999949,
+  "load_per_week": 0.828125,
+  "reward_per_week": -0.6246722495074408,
+  "minutes": 22.169464127222696
+ },
+ {
+  "steps": 4480000,
+  "harm_per_week": 0.44076171874999537,
+  "load_per_week": 0.89267578125,
+  "reward_per_week": -0.6166503232673713,
+  "minutes": 22.345271261533103
+ },
+ {
+  "steps": 4515840,
+  "harm_per_week": 0.3715624999999973,
+  "load_per_week": 0.8130859375,
+  "reward_per_week": -0.5456925473841533,
+  "minutes": 22.523079160849253
+ },
+ {
+  "steps": 4551680,
+  "harm_per_week": 0.4124218749999956,
+  "load_per_week": 0.78740234375,
+  "reward_per_week": -0.6051927142127632,
+  "minutes": 22.700221188863118
+ },
+ {
+  "steps": 4587520,
+  "harm_per_week": 0.38953124999999555,
+  "load_per_week": 0.82197265625,
+  "reward_per_week": -0.5749631263043542,
+  "minutes": 22.878560264905293
+ },
+ {
+  "steps": 4623360,
+  "harm_per_week": 0.4233984374999942,
+  "load_per_week": 0.76796875,
+  "reward_per_week": -0.5916857084611584,
+  "minutes": 23.05641615788142
+ },
+ {
+  "steps": 4659200,
+  "harm_per_week": 0.415371093749996,
+  "load_per_week": 0.80849609375,
+  "reward_per_week": -0.595575066206262,
+  "minutes": 23.232415473461153
+ },
+ {
+  "steps": 4695040,
+  "harm_per_week": 0.40900390624999583,
+  "load_per_week": 0.808203125,
+  "reward_per_week": -0.577931883880302,
+  "minutes": 23.41008290449778
+ },
+ {
+  "steps": 4730880,
+  "harm_per_week": 0.4531445312499943,
+  "load_per_week": 0.718359375,
+  "reward_per_week": -0.614875179250706,
+  "minutes": 23.587931934992472
+ },
+ {
+  "steps": 4766720,
+  "harm_per_week": 0.36976562499999643,
+  "load_per_week": 0.8697265625,
+  "reward_per_week": -0.5489283608648147,
+  "minutes": 23.76557111342748
+ },
+ {
+  "steps": 4802560,
+  "harm_per_week": 0.4235156249999935,
+  "load_per_week": 0.86591796875,
+  "reward_per_week": -0.6226503653876378,
+  "minutes": 23.94398051102956
+ },
+ {
+  "steps": 4838400,
+  "harm_per_week": 0.41601562499999584,
+  "load_per_week": 0.84287109375,
+  "reward_per_week": -0.5945076891729062,
+  "minutes": 24.121798932552338
+ },
+ {
+  "steps": 4874240,
+  "harm_per_week": 0.38882812499999647,
+  "load_per_week": 0.8556640625,
+  "reward_per_week": -0.5753435634076375,
+  "minutes": 24.297595564524332
+ },
+ {
+  "steps": 4910080,
+  "harm_per_week": 0.40445312499999525,
+  "load_per_week": 0.8087890625,
+  "reward_per_week": -0.5796881048715957,
+  "minutes": 24.474543770154316
+ },
+ {
+  "steps": 4945920,
+  "harm_per_week": 0.3876757812499951,
+  "load_per_week": 0.81220703125,
+  "reward_per_week": -0.5759558470576139,
+  "minutes": 24.651304280757905
+ },
+ {
+  "steps": 4981760,
+  "harm_per_week": 0.39130859374999677,
+  "load_per_week": 0.79541015625,
+  "reward_per_week": -0.5755406697996986,
+  "minutes": 24.829099400838217
+ }
+]
