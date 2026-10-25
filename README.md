@@ -55,7 +55,8 @@ Optional quick UI check:
 npm run dev     # http://localhost:3000
 ```
 
-The landing page footer shows **🟢 Supabase connected** when your keys are right.
+Use `npm run check:integrations` to verify the connection. The role picker keeps
+backend connection details out of the interface and includes an **AI demo guide**.
 
 ## How we test: Vercel previews
 

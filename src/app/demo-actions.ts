@@ -26,7 +26,7 @@ export async function signInAsDemoRole(_prev: DemoSignInState, formData: FormDat
 
   const account = DEMO_ACCOUNTS[role];
   const password = process.env[account.secret];
-  if (!password) return { error: `Demo sign-in is not configured (missing ${account.secret}).` };
+  if (!password) return { error: "Demo sign-in is temporarily unavailable. Please try again later." };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email: account.email, password });
