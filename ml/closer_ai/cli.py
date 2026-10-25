@@ -22,16 +22,17 @@ NICKNAMES = {
 }
 
 
-CLAUDE_VARIABLES = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLOSER_CLAUDE_MODEL")
+# Only these are read from .env.local: the Anthropic settings and the secret shared with the app's server.
+LOCAL_VARIABLES = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLOSER_CLAUDE_MODEL", "CLOSER_AI_TOKEN")
 
 
 def load_local_env(path: Path = ML_DIR.parent / ".env.local") -> None:
-    """Read the Anthropic settings from the repo's git-ignored .env.local; the environment wins."""
+    """Read the Anthropic settings and CLOSER_AI_TOKEN from the repo's git-ignored .env.local; the environment wins."""
     if not path.exists():
         return
     for line in path.read_text().splitlines():
         key, sep, value = line.partition("=")
-        if sep and key.strip() in CLAUDE_VARIABLES and value.strip():
+        if sep and key.strip() in LOCAL_VARIABLES and value.strip():
             os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
@@ -180,6 +181,66 @@ def _demo(args) -> None:
     print_digest(decisions, truth)
 
 
+def _serve(args) -> None:
+    import logging
+
+    from .bridge import Engine
+    from .server import CareTabAPI
+
+    token = os.environ.get("CLOSER_AI_TOKEN", "")
+    if len(token) < 24:
+        raise SystemExit("Set CLOSER_AI_TOKEN (24+ random characters) in the repo's .env.local, the same value the "
+                         "app's server uses. For example: python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    from .assessor import Assessor
+    from .pipeline import load_policy
+    from .policy.distill import TreePolicy
+
+    policy, _ = load_policy(ARTIFACTS)
+    tree_path = ARTIFACTS / "policy_tree.joblib"
+    client = None
+    if not args.no_claude:
+        import anthropic
+
+        from .claude import check_access
+
+        if problem := check_access():
+            print(f"Claude unavailable ({problem}): template summaries and the lexicon only.")
+        else:
+            client = anthropic.Anthropic()
+    engine = Engine(Assessor.load(ARTIFACTS / "assessor.joblib"), policy,
+                    TreePolicy.load(tree_path) if tree_path.exists() else None, client, args.language)
+    CareTabAPI(args.db, engine, token).serve(args.host, args.port)
+
+
+def _add_drawing(args) -> None:
+    """Analyze a drawing (colors here, content by Claude) and, with --patient, store its reading."""
+    import json
+    from dataclasses import asdict
+
+    from .contract import DRAWING_VECTOR, Drawing
+    from .drawings import analyze, image_hash
+    from .store import Store
+
+    store = Store(args.db) if args.patient else None
+    reader = None
+    if not args.no_claude:
+        from .claude import ClaudeReader, StoreCache, check_access
+
+        if problem := check_access():
+            print(f"Claude unavailable ({problem}): colors only.")
+        else:
+            reader = ClaudeReader(cache=StoreCache(store) if store else None)
+    image = Path(args.image).read_bytes()
+    reading = analyze(image, reader, args.title)
+    print(json.dumps(asdict(reading) | {"themes": list(reading.themes)}, ensure_ascii=False, indent=1))
+    print("vector:", dict(zip(DRAWING_VECTOR, (round(v, 2) for v in reading.vector()))))
+    if store:
+        shared = Drawing(args.emotion, (), args.title) if args.shared else None
+        new = store.add_drawing(args.patient, _today(args.date), image_hash(image), reading, shared)
+        print("Stored." if new else "Already stored: the same image is counted once.")
+
+
 def _alerts(args) -> None:
     from .store import Store
 
@@ -280,6 +341,25 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--language", default="English", help="language of the daily summaries")
     p.add_argument("--dry-run", action="store_true", help="print decisions without writing them")
     p.set_defaults(func=_run)
+
+    p = sub.add_parser("serve", help="JSON API for the app's care tab (localhost, secret in CLOSER_AI_TOKEN)")
+    p.add_argument("--db", default=str(DEFAULT_DB))
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8787)
+    p.add_argument("--no-claude", action="store_true", help="template summaries and the lexicon only")
+    p.add_argument("--language", default="English", help="language of the daily summaries")
+    p.set_defaults(func=_serve)
+
+    p = sub.add_parser("add-drawing", help="analyze a drawing image; with --patient, store its reading")
+    p.add_argument("image")
+    p.add_argument("--patient", help="patient id; without it the reading is only printed")
+    p.add_argument("--date", help="YYYY-MM-DD, default today")
+    p.add_argument("--title")
+    p.add_argument("--shared", action="store_true", help="the child shared it with the care team")
+    p.add_argument("--emotion", type=int, choices=range(1, 6), help="the emoji the child picked, 1..5")
+    p.add_argument("--db", default=str(DEFAULT_DB))
+    p.add_argument("--no-claude", action="store_true", help="colors only")
+    p.set_defaults(func=_add_drawing)
 
     p = sub.add_parser("alerts", help="the psychologist's inbox")
     p.add_argument("--db", default=str(DEFAULT_DB))

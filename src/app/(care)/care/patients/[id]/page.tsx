@@ -3,19 +3,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AiOffline, AiSummary } from "@/components/care/ai-summary";
+import { NurseRoundForm } from "@/components/care/nurse-round-form";
+import { PatientTabs } from "@/components/care/patient-tabs";
 import { ThresholdsForm } from "@/components/care/thresholds-form";
 import { AlertBadge } from "@/components/kit/alert-badge";
 import { InteractionBars, MoodChart } from "@/components/kit/charts";
 import { EmptyState } from "@/components/kit/empty-state";
 import { MoodDot } from "@/components/kit/mood-dot";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
-import { getCheckins, moodSeries } from "@/lib/data/checkins";
-import { getVisiblePatient } from "@/lib/data/circle";
+import { getAiReport, missingAiSettings } from "@/lib/data/care-ai";
+import { type CheckInView, getCheckins, moodSeries } from "@/lib/data/checkins";
+import { getVisiblePatient, type VisiblePatient } from "@/lib/data/circle";
 import { getThresholds } from "@/lib/data/nudges";
 import { activitySummary, LIKINGS, MEAL_AMOUNTS } from "@/lib/checkin";
 import { getActivityCounts } from "@/lib/data/activities";
 import { StatTile } from "@/components/kit/stat-tile";
-import { relativeDay } from "@/lib/dates";
+import { relativeDay, timeIn, todayIn } from "@/lib/dates";
+import { roundFromSaved } from "@/lib/nurse-round";
 import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS, DEFAULT_THRESHOLDS } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Patient · Closer" };
@@ -74,6 +79,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <AlertBadge count={alerts.length} />
       </header>
+      <PatientTabs patientId={patient.id} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Check-ins, last 7 days" value={checkins.filter((c) => c.daysAgo < 7).length} />
@@ -96,6 +102,10 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
           ))}
         </ul>
       )}
+
+      <Suspense fallback={<AiLoading nickname={patient.nickname} />}>
+        <AiSection patient={patient} checkins={checkins} />
+      </Suspense>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-xl border bg-card p-4">
@@ -149,5 +159,42 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
         <ThresholdsForm title={`Thresholds for ${patient.nickname}`} patientId={id} initial={thresholds ?? DEFAULT_THRESHOLDS} />
       </div>
     </>
+  );
+}
+
+function AiLoading({ nickname }: { nickname: string }) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
+      <div className="flex min-h-64 animate-pulse flex-col gap-3 rounded-xl border bg-card p-5">
+        <span className="h-5 w-40 rounded bg-muted" />
+        <span className="h-4 w-24 rounded bg-muted" />
+        <span className="mt-2 h-4 w-full rounded bg-muted" />
+        <span className="h-4 w-5/6 rounded bg-muted" />
+        <span className="mt-auto text-sm text-muted-foreground">Reading {nickname}&apos;s day…</span>
+      </div>
+      <div className="min-h-64 animate-pulse rounded-xl border bg-card" />
+    </div>
+  );
+}
+
+// Claude's summary next to the nurse's round: saving the round updates the summary.
+async function AiSection({ patient, checkins }: { patient: VisiblePatient; checkins: CheckInView[] }) {
+  const today = todayIn(patient.timezone);
+  const report = await getAiReport(patient, today, checkins);
+  if (!report) return <AiOffline missing={missingAiSettings()} />;
+  const computed = report.assessment?.computed_at;
+  return (
+    <div className="grid items-start gap-6 xl:grid-cols-[1.1fr_1fr]">
+      <AiSummary report={report} nickname={patient.nickname} computedAt={computed ? timeIn(computed, patient.timezone) : null} />
+      <NurseRoundForm
+        key={report.observation?.updated_at ?? "new"}
+        patientId={patient.id}
+        nickname={patient.nickname}
+        initial={roundFromSaved(report.observation)}
+        menu={report.menu}
+        savedBy={report.observation ? (report.observation.observed_by ?? "the care team") : null}
+        claude={report.claude}
+      />
+    </div>
   );
 }

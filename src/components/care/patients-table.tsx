@@ -3,12 +3,14 @@
 import { ArrowDown, ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { LevelBadge } from "@/components/care/ai-summary";
 import { AlertBadge } from "@/components/kit/alert-badge";
 import { MoodSparkline } from "@/components/kit/charts";
 import { MoodDot } from "@/components/kit/mood-dot";
 import { PersonaAvatar } from "@/components/kit/persona-avatar";
 import type { CastMember } from "@/lib/cast";
 import type { MoodPoint } from "@/lib/mood";
+import type { AiOverview } from "@/lib/nurse-round";
 import { relativeDay } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -22,21 +24,36 @@ export type PatientRow = {
   minutesToday: number;
   familyContactToday: boolean;
   alerts: number;
+  /** The AI service's reading for today; null when it isn't running */
+  ai: AiOverview | null;
 };
 
-type SortKey = "name" | "lastCheckIn" | "minutesToday" | "alerts";
+type SortKey = "name" | "lastCheckIn" | "minutesToday" | "alerts" | "ai";
+
+const needsAttention = (r: PatientRow) => r.alerts > 0 || (r.ai !== null && (r.ai.level !== "stable" || r.ai.open_alerts > 0));
 
 // Sortable, filterable list. Usable on a landscape tablet: the table scrolls inside its card.
 export function PatientsTable({ rows }: { rows: PatientRow[] }) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "alerts", dir: -1 });
+  const hasAi = rows.some((r) => r.ai);
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: hasAi ? "ai" : "alerts", dir: -1 });
   const [query, setQuery] = useState("");
   const [onlyAlerts, setOnlyAlerts] = useState(false);
 
   const shown = useMemo(() => {
     const value = (r: PatientRow) =>
-      sort.key === "name" ? r.name : sort.key === "lastCheckIn" ? (r.lastCheckIn ? -r.lastCheckIn.daysAgo : -999) : sort.key === "minutesToday" ? r.minutesToday : r.alerts;
+      sort.key === "name"
+        ? r.name
+        : sort.key === "lastCheckIn"
+          ? r.lastCheckIn
+            ? -r.lastCheckIn.daysAgo
+            : -999
+          : sort.key === "minutesToday"
+            ? r.minutesToday
+            : sort.key === "ai"
+              ? (r.ai?.p_distress ?? -1)
+              : r.alerts;
     return rows
-      .filter((r) => r.name.toLowerCase().includes(query.toLowerCase()) && (!onlyAlerts || r.alerts > 0))
+      .filter((r) => r.name.toLowerCase().includes(query.toLowerCase()) && (!onlyAlerts || needsAttention(r)))
       .sort((a, b) => {
         const va = value(a);
         const vb = value(b);
@@ -79,6 +96,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
           <thead className="border-b bg-muted/60 text-sm text-muted-foreground">
             <tr>
               {header("name", "Patient")}
+              {hasAi && header("ai", "AI reading")}
               <th scope="col" className="px-3 py-2 font-bold">
                 Mood, 7 days
               </th>
@@ -102,6 +120,18 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                     </span>
                   </Link>
                 </td>
+                {hasAi && (
+                  <td className="px-3 py-2">
+                    {r.ai?.level ? (
+                      <span className="flex flex-col items-start gap-0.5">
+                        <LevelBadge level={r.ai.level} />
+                        <span className="text-xs text-muted-foreground">{r.ai.nurse_seen_today ? "Round done" : "Round to do"}</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">No reading</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-3 py-2">
                   <MoodSparkline points={r.mood7} label={`${r.name}'s mood over 7 days`} />
                 </td>
@@ -128,7 +158,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
             ))}
             {shown.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-10 text-center text-muted-foreground">
+                <td colSpan={hasAi ? 7 : 6} className="px-3 py-10 text-center text-muted-foreground">
                   No patient matches. 🎉 Everyone looks fine.
                 </td>
               </tr>

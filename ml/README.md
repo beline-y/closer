@@ -59,6 +59,9 @@ Simulated children, test and validation cohorts never seen in training. Full rep
 
 ## Why reinforcement learning, and where
 
+The full design (equations, observation, mask, training, deployment, Whittle, VIPER, evaluation) is in
+[RL_ARCHITECTURE.md](RL_ARCHITECTURE.md).
+
 The assessment is supervised: estimating a hidden state from noisy signals is a belief, not a decision. The
 **alerting** is a sequential decision problem with real trade-offs, so that part uses RL:
 
@@ -78,7 +81,7 @@ that it cannot override protect the cases that matter most.
 |---|---|
 | Model | Constrained POMDP, one decision per child per evening |
 | Hidden state | stable, fragile or distress. Driven by stressors (big days, isolation, days without family, pain, length of stay) and support (family visits, the psychologist's visits after an alert) |
-| Belief | The assessor's P(stable, fragile, distress), from 60 causal features compared with the child's own habits |
+| Belief | The assessor's P(stable, fragile, distress), from 76 causal features (the nurse's round and drawings included) compared with the child's own habits |
 | Actions | wait · digest alert · priority alert · ask a gentle validated question (8 years and up) |
 | Reward | − 1 per day in distress before a psychologist knows, − 0.1 per fragile day with no contact, − 0.05 per question asked |
 | Constraint | Psychologist workload (digest 1 unit, priority 1.5) under a weekly budget, through Lagrangian relaxation: reward − λ · workload |
@@ -151,14 +154,24 @@ New data fields, all optional for the child. The UI can offer one or two a day s
 | Pain, worries | pain 0–10 and worry 0–4 on faces scales, worry topics (procedure, needles, home, alone, night, school) | Separate physical discomfort and anticipatory fear from psychological distress |
 | "I'd like to talk to someone" | one chip | The child's own request: it always raises a priority alert |
 | Notes | 280 characters | Read by a lexicon and, optionally, by Claude |
-| Drawings | count of all drawings; for drawings the child **chose to share**: their emoji, themes, title and image | Drawing less than usual (losing interest), the themes the child picked (home, alone…). No projective interpretation of the picture |
+| Drawings | **every drawing** is analyzed once and reduced to an 18-value vector: colors from the pixels (brightness, saturation, dark ink, hues used, coverage, warmth) and what Claude sees drawn (people, alone, family, smiling or sad faces, setting, sun, rain, an explicitly expressed feeling, explicit danger). The image is never stored. For drawings the child **chose to share**: their emoji, themes and title | Drawing less than usual (losing interest), and this week's drawings against the child's **own** earlier ones (darker, fewer colors, more often alone or sad). A single drawing proves nothing, so there is no projective interpretation. An explicitly dangerous drawing goes to the shield |
 | Films, series, cartoons, music, games, books | kind, minutes, with whom, enjoyment 1–5, rewatch | Media alone vs. with family, enjoying less than usual, comfort rewatching |
 | People | family and friend interactions in the app, nudges and replies, in-person visits by kind | Isolation is one of the strongest stressors |
 | Engagement | minutes in the app, comfort cards opened, question of the day answered | Withdrawal, not content |
 | Care context (care team) | big day, protective isolation, roommate left, room change, discharge planned, visit restrictions | Explains expected dips. Never a diagnosis or a treatment |
 | Validated scales | score from a short scale chosen by the psychologist | The answer to the "ask" action, and a strong label |
+| Nurse's round (care tab) | lunch and dinner eaten (all, half, a little, nothing, fasting), how the child looked (calm, cheerful, sad, tearful, anxious, withdrawn, irritable, agitated, tired), engagement during care, pain score 0–10, last night's sleep, refused care, visitors, a note, and "I'd like the psychologist to see this child" | A second view, independent of the app: brief, often skipped, but harder to fool for a child who hides distress behind good moods. The nurse's request always raises a priority alert, and the note goes through the safety rules and Claude like the child's |
+| Ward menu (care tab) | today's lunch and dinner | The baseline for appetite: the model compares what the child ate with what the *other* children ate of the same dish, so a dish nobody liked is not read as a lost appetite |
 
-**Never read:** comfort card and question-of-the-day contents, photos, unshared drawings, and anything biometric.
+App usage the store never received (minutes, nudges, family messages) stays unknown, never zero: "no data" must
+not read as "no family contact". In simulation, adding the nurse's round raises the assessor's AUC for distress from
+0.927 to 0.949 (500 held-out children; quick check, not in RESULTS.md).
+
+In simulation, the drawing vectors barely move the assessor's AUC (0.949 to 0.951): a drawing is a weak signal and
+children draw less than every other day. Their value is elsewhere: the shield, and what Claude's summary can say.
+
+**Never read:** comfort card and question-of-the-day contents, photos, drawing images (only their reading is kept),
+and anything biometric.
 Faces in photos and voice are excluded: emotion recognition from biometric data is high-risk under the EU AI Act,
 and the gain would be marginal.
 
@@ -177,15 +190,52 @@ Claude makes the analysis better without becoming a single point of failure:
   assessor's top signals, the tree rule, the urgency index) and from what the care team can already read (moods,
   extras, recent notes and shared drawings, care context). It never diagnoses. The summary is stored with the
   assessment, so the psychologist has a short note for every child, not only for the alerted ones.
-- **Drawings, by vision.** `ClaudeReader.read_drawing` reads the image of a shared drawing: what is drawn, its
-  themes, and any safety concern, with no projective interpretation. It is implemented but not wired yet, because
-  the store does not keep image files. That is the next step once the app uploads drawings.
+- **Drawings, by vision.** Every drawing goes through `drawings.analyze`: Pillow computes the colors, Claude
+  (`ClaudeReader.read_drawing`, structured output) records what is drawn, with no projective interpretation. The
+  store keeps the reading and a hash of the image (the same drawing counts once), never the image. Entry points:
+  `POST /v1/patients/<id>/drawings` (base64 image) and `python -m closer_ai add-drawing image.png --patient <id>`.
 - **Robust by design.** Model `claude-opus-5-5` (override with `CLOSER_CLAUDE_MODEL`), with server-side refusal
   fallback (`fallbacks="default"`). Access is checked at startup through the Models API, which costs no tokens. On a
   refusal, an API error or a missing key, the job carries on with the lexicon and a template summary.
 
 With real children, sending notes to an external API would first need guardian consent and a data processing
 agreement.
+
+## In the app: the care tab
+
+The nurse (Sarah in the demo) sees the AI's read of each child and adds what only the care team sees.
+
+- **Patients** (`/care`): Claude's summary for every child, the ones who need support first, an "AI reading" column
+  in the table, and today's ward menu.
+- **Patient page**: today's summary (level, chance of distress and its 3-day trend, what weighs most, the decision,
+  14 days of readings, the alerts sent to the psychologist) next to the nurse's round. Saving the round re-runs the
+  job for that child and the summary updates in about 10 seconds.
+- **Drawings tab** (patient page): the nurse adds a photo of today's drawing; the page shows this week against the
+  child's usual drawings (how many, explicit feelings, dark ink, colors), the feeling each drawing shows over 30
+  days, its dark ink against the child's usual range, and a card per drawing with its palette and Claude's
+  description. The image itself is not kept.
+
+```
+browser ──> Next.js server ──(RLS: may Sarah see this child?)──> Supabase
+                  │
+                  └──(shared secret, localhost)──> python -m closer_ai serve ──> SQLite ──> assessor, shield, agent, Claude
+```
+
+The app stays the source of truth for what the child shares; the Next.js server forwards the check-ins it may read
+(never photos or reactions), then the nurse's round and the menu. The browser never talks to the AI service. A child's
+assessment is recomputed only when their inputs changed, and within a day a decision can only escalate: an alert or a
+question already sent stands.
+
+To run it locally, with `CLOSER_AI_URL=http://127.0.0.1:8787` and a random `CLOSER_AI_TOKEN` in the repo's
+`.env.local` (both processes read it):
+
+```bash
+cd ml && python -m closer_ai serve      # the AI service; --no-claude for template summaries
+npm run dev                             # in another terminal, from the repo root; choose "Care team"
+```
+
+The first visit reads every child's notes once (about 30 s with Claude); after that, pages load in about a second.
+Without the service (on a Vercel preview, for example), the care tab says so and everything else works.
 
 ## Run it
 
@@ -233,12 +283,14 @@ python -m closer_ai eval-reader --n 80           # lexicon vs Claude on planted 
 | `store.py` | SQLite store (standard library `sqlite3`): signals in, assessments, alerts and reviews out |
 | `simulator.py`, `notes_gen.py` | Fictional children: hidden states, reporting styles, masking, treatment fatigue, notes in French and English |
 | `text.py`, `safety.py` | Note lexicon with negation and idioms; deterministic crisis and concern rules |
-| `features.py`, `assessor.py` | 60 causal features; additive spline model with exact per-feature explanations |
+| `features.py`, `assessor.py` | 76 causal features; additive spline model with exact per-feature explanations |
 | `policy/env.py`, `policy/obs.py` | The constrained POMDP as a Gymnasium env; observation and mask shared with production |
 | `policy/train.py`, `policy/baselines.py` | λ-conditioned MaskablePPO; spec rules, thresholds, value-of-information heuristic, oracle |
 | `policy/whittle.py`, `policy/distill.py` | Neural Whittle index and ward simulation; VIPER extraction |
 | `evaluate.py`, `report.py` | Cohorts, metrics, paired bootstrap, the full report |
 | `claude.py`, `pipeline.py`, `cli.py` | Claude reader and daily summaries; the evening job; the command line |
+| `drawings.py` | Every drawing reduced to a reading and its vector: colors from the pixels, content from Claude |
+| `bridge.py`, `server.py` | The app's vocabulary mapped to the contract; the care tab's local JSON API (standard library) |
 
 ## Limits, honestly
 

@@ -3,6 +3,7 @@
 - crisis -> urgent alert: suicidal thoughts, self-harm, a child saying an adult hurts them.
 - concern -> priority alert: strong statements such as "personne m'aime" or "j'ai peur de mourir".
 - child_request -> priority alert: the child tapped "I'd like to talk to someone".
+- care_request -> priority alert: the nurse asked for the psychologist to see the child.
 
 The patterns are a starting point to review with the psychologist. They favour recall:
 a false alarm costs a few minutes of a psychologist's time, a miss can cost far more.
@@ -61,7 +62,7 @@ CRISIS = {
 
 @dataclass(frozen=True)
 class SafetyFlag:
-    level: str  # "crisis" | "concern" | "child_request"
+    level: str  # "crisis" | "concern" | "child_request" | "care_request"
     category: str
     excerpt: str
 
@@ -71,6 +72,7 @@ ALERT_FOR_LEVEL = {
     "crisis": ("safety_rule", "urgent"),
     "concern": ("safety_rule", "priority"),
     "child_request": ("child_request", "priority"),
+    "care_request": ("nurse_request", "priority"),
 }
 
 
@@ -88,15 +90,26 @@ def check_text(text: str | None) -> list[SafetyFlag]:
 
 
 def check_day(record: DayRecord) -> list[SafetyFlag]:
-    """Safety flags for one day: the check-in note, shared drawing titles and the talk request."""
+    """Safety flags for one day: the check-in note, shared drawing titles, the nurse's note and both requests."""
     flags = check_text(record.note)
     for drawing in record.shared_drawings:
         flags += check_text(drawing.title)
     if record.wants_to_talk:
         flags.append(SafetyFlag("child_request", "wants_to_talk", ""))
+    flags += drawing_flags(record)
+    if record.nurse is not None:
+        flags += check_text(record.nurse.note)
+        if record.nurse.asks_psychologist:
+            flags.append(SafetyFlag("care_request", "nurse_request", ""))
     return flags
 
 
+def drawing_flags(record: DayRecord) -> list[SafetyFlag]:
+    """Drawings Claude found explicitly dangerous (self-harm, an adult hurting the child, death...)."""
+    return [SafetyFlag(x.safety, "claude_drawing", x.description) for x in record.drawing_readings
+            if x.safety in ("crisis", "concern")]
+
+
 def most_severe(flags: list[SafetyFlag]) -> SafetyFlag | None:
-    order = {"crisis": 0, "concern": 1, "child_request": 2}
+    order = {"crisis": 0, "concern": 1, "child_request": 2, "care_request": 3}
     return min(flags, key=lambda f: order[f.level], default=None)

@@ -1,9 +1,11 @@
-"""Data contract shared by the simulator and the Supabase source.
+"""Data contract shared by the simulator, the store and the app bridge.
 
 A child is one ChildHistory: a small profile, one DayRecord per local day (contiguous,
 empty days included) and the care context events entered so far. Every field maps to a
-column the care team can already see (docs/SPEC.md, "AI wellbeing analysis"). Comfort
-cards, question answers, photos and unshared drawings never reach the model.
+column the care team can already see (docs/SPEC.md, "AI wellbeing analysis"), or to what
+the nurse notes on the daily round. Comfort cards, question answers, photos and unshared
+drawings keep no image: each drawing is reduced to a DrawingReading, a few observable
+attributes and a vector, compared with the child's own drawings.
 """
 
 from __future__ import annotations
@@ -31,6 +33,17 @@ CONTEXT_KINDS = (
     "big_day", "isolation", "room_change", "roommate_left", "discharge_planned", "visit_restrictions",
 )
 LEVELS = ("stable", "fragile", "distress")
+# The nurse's round. "fasting" means nothing by mouth (before a procedure), so it says nothing about appetite.
+WARD_MEALS = ("lunch", "dinner")
+INTAKE = ("all", "half", "little", "none", "fasting")
+INTAKE_SCORE = {"all": 1.0, "half": 0.5, "little": 0.2, "none": 0.0}
+AFFECTS_POSITIVE = ("calm", "cheerful")
+AFFECTS_NEGATIVE = ("sad", "tearful", "anxious", "withdrawn", "irritable", "agitated")
+AFFECTS = AFFECTS_POSITIVE + AFFECTS_NEGATIVE + ("tired",)
+ENGAGEMENT = ("engaged", "quiet", "refuses")
+DRAWING_SETTINGS = ("home", "hospital", "outdoors", "other")
+DRAWING_AFFECTS = ("positive", "neutral", "negative", "unclear")
+NIGHT_SLEEP = ("good", "restless", "poor")
 
 
 @dataclass(frozen=True)
@@ -40,6 +53,52 @@ class Drawing:
     emotion: int | None = None  # 1..5, the emoji the child picked for it
     themes: tuple[str, ...] = ()
     title: str | None = None
+
+
+@dataclass(frozen=True)
+class DrawingReading:
+    """One drawing in numbers: its colors (computed locally) and what is drawn (read by Claude).
+
+    Every drawing gets one, shared or not. What is drawn is described, never interpreted:
+    a single drawing says little, a change against the child's own drawings says more.
+    """
+
+    brightness: float  # 0..1, mean value of the inked pixels
+    saturation: float  # 0..1, mean saturation of the inked pixels
+    dark_share: float  # share of the ink that is dark (black, gray, dark brown)
+    colors: int  # distinct hues used, 0..12
+    coverage: float  # share of the sheet with ink
+    warm_share: float  # share of the colored ink in warm hues (red, orange, yellow, pink)
+    people: int = 0
+    alone: bool = False  # one person drawn alone
+    family: bool = False
+    smiling_faces: int = 0
+    sad_faces: int = 0
+    setting: str = "other"  # DRAWING_SETTINGS
+    sun: bool = False
+    rain: bool = False
+    affect: str = "unclear"  # DRAWING_AFFECTS: only what the drawing shows explicitly (tears, hearts, words)
+    safety: str = "none"  # none, concern, crisis
+    themes: tuple[str, ...] = ()
+    description: str = ""
+    read_by_claude: bool = False  # False: colors only
+    palette: tuple[str, ...] = ()  # dominant ink colors as hex, most used first (for display, not in the vector)
+
+    def vector(self) -> tuple[float, ...]:
+        """The synthesis vector (DRAWING_VECTOR), each value in 0..1."""
+        return (
+            self.brightness, self.saturation, self.dark_share, self.colors / 12, self.coverage, self.warm_share,
+            min(self.people, 5) / 5, float(self.alone), float(self.family), min(self.smiling_faces, 3) / 3,
+            min(self.sad_faces, 3) / 3, float(self.setting == "home"), float(self.setting == "hospital"),
+            float(self.setting == "outdoors"), float(self.sun), float(self.rain), float(self.affect == "positive"),
+            float(self.affect == "negative"),
+        )
+
+
+DRAWING_VECTOR = (
+    "brightness", "saturation", "dark_share", "colors", "coverage", "warm_share", "people", "alone", "family",
+    "smiling_faces", "sad_faces", "home", "hospital", "outdoors", "sun", "rain", "positive", "negative",
+)
 
 
 @dataclass(frozen=True)
@@ -69,6 +128,38 @@ class ContextEvent:
         return self.known_on is None or self.known_on <= day
 
 
+@dataclass(frozen=True)
+class NurseObservation:
+    """What the nurse saw today. Every field is optional: a quick round still counts."""
+
+    lunch: str | None = None  # INTAKE: how much of the ward's lunch the child ate
+    dinner: str | None = None
+    affect: tuple[str, ...] = ()  # AFFECTS: how the child looked
+    engagement: str | None = None  # ENGAGEMENT: with the care team during care
+    pain: int | None = None  # 0..10, the nurse's pain score
+    night_sleep: str | None = None  # NIGHT_SLEEP, from the night shift
+    refused_care: bool = False
+    asks_psychologist: bool = False  # "I'd like the psychologist to see this child"
+    note: str | None = None  # <= 280 characters
+
+    def intakes(self) -> list[tuple[str, float]]:
+        """(meal, share eaten) for the meals the child was served; fasting meals are left out."""
+        return [(meal, INTAKE_SCORE[value]) for meal, value in (("lunch", self.lunch), ("dinner", self.dinner))
+                if value in INTAKE_SCORE]
+
+
+@dataclass(frozen=True)
+class WardMeal:
+    """One meal of the ward's menu, and how much the other observed children ate of it (0..1).
+
+    A child who eats little on a day nobody liked the fish is not a child losing appetite.
+    """
+
+    meal: str  # WARD_MEALS
+    dish: str | None = None
+    ward_intake: float | None = None
+
+
 @dataclass
 class DayRecord:
     day: date
@@ -91,6 +182,7 @@ class DayRecord:
     nudge_replies: int = 0
     cards_opened: int = 0
     question_answered: bool = False
+    engagement_known: bool = True  # False when the app sent no usage data that day (the fields above are unknown)
     # People around the child
     family_contacts: int = 0
     friend_contacts: int = 0
@@ -98,9 +190,13 @@ class DayRecord:
     # Creative and media
     drawings: int = 0  # all drawings, counted without content
     shared_drawings: tuple[Drawing, ...] = ()
+    drawing_readings: tuple[DrawingReading, ...] = ()  # one per analyzed drawing, shared or not
     media: tuple[MediaLog, ...] = ()
     # Validated scale chosen by the psychologist, normalized to 0..1 (higher = more distress)
     screening: float | None = None
+    # The nurse's round and the ward's menu
+    nurse: NurseObservation | None = None
+    ward_meals: tuple[WardMeal, ...] = ()
 
     @property
     def checked_in(self) -> bool:
