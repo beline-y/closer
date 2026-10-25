@@ -12,6 +12,7 @@ import {
   Mail,
   MessageCircleQuestion,
   Newspaper,
+  Puzzle,
   Settings,
   Sun,
   User,
@@ -31,7 +32,7 @@ export const NAV: Record<RoleKey, NavItem[]> = {
   patient: [
     { href: "/patient", label: "Today", icon: Sun },
     { href: "/patient/connect", label: "Connect", icon: Heart },
-    { href: "/patient/question", label: "Question", icon: MessageCircleQuestion },
+    { href: "/patient/play", label: "Play", icon: Puzzle },
     { href: "/patient/memories", label: "Memories", icon: Images },
     { href: "/patient/me", label: "Me", icon: User },
   ],
@@ -66,10 +67,22 @@ const ACTIVE: Record<RoleKey, string> = {
 
 type WithPath<P> = P & { pathname: string | null };
 
+// Screens without their own tab light up the tab they belong to.
+const BELONGS_TO: Record<string, string> = {
+  "/patient/question": "/patient",
+  "/patient/checkin": "/patient",
+  "/patient/activities": "/patient/play",
+  "/care/patients": "/care",
+};
+
 function activeMatcher(role: RoleKey, pathname: string | null) {
   const home = NAV[role][0].href;
-  return (href: string) =>
-    pathname !== null && (href === home ? pathname === home || (role === "care" && pathname.startsWith("/care/patients")) : pathname.startsWith(href));
+  const owner = pathname && Object.entries(BELONGS_TO).find(([prefix]) => pathname.startsWith(prefix))?.[1];
+  return (href: string) => {
+    if (pathname === null) return false;
+    if (owner) return href === owner;
+    return href === home ? pathname === home : pathname.startsWith(href);
+  };
 }
 
 // usePathname() needs a Suspense boundary on dynamic routes. The fallback is the same
