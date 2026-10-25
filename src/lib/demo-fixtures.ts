@@ -78,15 +78,6 @@ export const TODAY_QUESTION = {
   } as Partial<Record<CastId, string>>,
 };
 
-export const QUESTION_IDEAS = [
-  "If you could have any animal as a pet, what would it be?",
-  "What's the funniest thing that happened to you this week?",
-  "If you could visit any place in the world, where would you go?",
-  "What superpower would you choose, and why?",
-  "What's a food you'd eat every day if you could?",
-  "Who is your favorite character in a book or a movie?",
-];
-
 // ---------------------------------------------------------------------------
 // Memories (patient + circle only)
 // ---------------------------------------------------------------------------

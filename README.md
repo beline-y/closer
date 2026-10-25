@@ -169,3 +169,6 @@ shared-database workflow before these features can be used. Nothing is deployed 
 
 [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) maps the verified GitHub, Supabase and Vercel connections,
 the live-versus-fixture feature boundaries, and the checks needed before deployment.
+
+For Mistral question ideas, the editable card draft flow, and the role-specific notification
+demo buttons, see [docs/AI_DEMO.md](docs/AI_DEMO.md).
