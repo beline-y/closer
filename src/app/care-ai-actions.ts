@@ -3,12 +3,12 @@
 import { refresh } from "next/cache";
 import type { ActionResult } from "@/app/checkin-actions";
 import { castByUserId } from "@/lib/cast";
-import { saveAiRound, saveVisitRating, saveVolunteerSuggestion, saveWardMenu, sendDrawing } from "@/lib/data/care-ai";
-import { getVisiblePatient, getVisiblePatients } from "@/lib/data/circle";
+import { saveAiRound, saveVisitRating, saveVolunteerSuggestion, sendDrawing } from "@/lib/data/care-ai";
+import { getVisiblePatient } from "@/lib/data/circle";
 import { todayIn } from "@/lib/dates";
 import { VOLUNTEER_ROSTER } from "@/lib/demo-fixtures";
 import { VISIT_OUTCOMES, type VisitOutcome } from "@/lib/matching";
-import { AFFECTS, ENGAGEMENTS, INTAKES, NIGHT_SLEEPS, NURSE_NOTE_MAX, type NurseRoundInput, VISITORS, type WardMenu } from "@/lib/nurse-round";
+import { AFFECTS, ENGAGEMENTS, INTAKES, NIGHT_SLEEPS, NURSE_NOTE_MAX, type NurseRoundInput, VISITORS } from "@/lib/nurse-round";
 import { createClient } from "@/lib/supabase/server";
 
 const one = <T extends string>(value: unknown, allowed: readonly { value: T }[]): T | null =>
@@ -93,13 +93,3 @@ export async function rateVolunteerVisit(patientId: string, volunteerId: string,
   return { ok: true };
 }
 
-// Today's ward menu: it sets every child's baseline for "ate less than the others".
-export async function saveTodaysMenu(menu: WardMenu): Promise<ActionResult> {
-  if (!(await careTeamMember())) return { ok: false, error: "Only the care team can set the menu." };
-  const [first] = await getVisiblePatients();
-  const clean = (dish: unknown) => (typeof dish === "string" ? dish.trim().slice(0, 80) || null : null);
-  const saved = await saveWardMenu(todayIn(first?.timezone ?? "UTC"), { lunch: clean(menu.lunch), dinner: clean(menu.dinner) });
-  if (!saved) return { ok: false, error: "The AI service didn't answer. The menu wasn't saved." };
-  refresh();
-  return { ok: true };
-}

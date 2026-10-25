@@ -16,12 +16,13 @@ import { getAiReport, missingAiSettings } from "@/lib/data/care-ai";
 import { type CheckInView, getCheckins, moodSeries } from "@/lib/data/checkins";
 import { getVisiblePatient, type VisiblePatient } from "@/lib/data/circle";
 import { getThresholds } from "@/lib/data/nudges";
-import { activitySummary, LIKINGS, MEAL_AMOUNTS } from "@/lib/checkin";
+import { activitySummary } from "@/lib/checkin";
 import { getActivityCounts } from "@/lib/data/activities";
+import { type EngagementDay, getEngagement, todayOf } from "@/lib/data/engagement";
 import { StatTile } from "@/components/kit/stat-tile";
-import { relativeDay, timeIn, todayIn } from "@/lib/dates";
+import { dateTimeIn, relativeDay, timeIn, todayIn } from "@/lib/dates";
 import { roundFromSaved } from "@/lib/nurse-round";
-import { ALERT_LABELS, CARE_ALERTS, CARE_METRICS, DEFAULT_THRESHOLDS } from "@/lib/demo-fixtures";
+import { ALERT_LABELS, CARE_ALERTS, DEFAULT_THRESHOLDS } from "@/lib/demo-fixtures";
 
 export const metadata: Metadata = { title: "Patient · Closer" };
 
@@ -45,23 +46,15 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
   if (!patient) notFound();
 
   const alerts = CARE_ALERTS.filter((a) => a.patientId === id);
-  // No photos, no reactions: the care team reads mood, activity, meal and note only.
-  const [checkins, thresholds, activityCounts] = await Promise.all([
+  // No photos, no reactions: the care team reads mood, activity and note, plus counts.
+  const [checkins, thresholds, activityCounts, engagement] = await Promise.all([
     getCheckins(id, patient.timezone, { days: 30 }),
     getThresholds(id),
     getActivityCounts(id, 7),
+    getEngagement(id, 30),
   ]);
-  // Appetite: how much was eaten over the last 3 check-ins vs the 4 before (all = 1, half = 0.5, a little = 0.2).
-  const eaten = (cs: typeof checkins) => {
-    const share = { all: 1, half: 0.5, a_little: 0.2 } as const;
-    const values = cs.flatMap((c) => c.dishes.flatMap((d) => (d.amount ? [share[d.amount]] : [])));
-    return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
-  };
-  const recent = eaten(checkins.slice(0, 3));
-  const before = eaten(checkins.slice(3, 7));
-  const appetiteDrop = recent !== null && before !== null && recent < before - 0.2;
   const activitiesWeek = activityCounts.reduce((n, d) => n + d.completed, 0);
-  const metrics = CARE_METRICS[id];
+  const today = todayOf(engagement);
   const age = patient.birthYear ? new Date().getFullYear() - patient.birthYear : null;
 
   return (
@@ -74,7 +67,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
               {patient.nickname}
               {age !== null && <span className="ml-2 font-normal text-muted-foreground">{age} years</span>}
             </h1>
-            <p className="text-muted-foreground">{metrics?.familyContactToday ? "Family in touch today" : "No family contact today"}</p>
+            <p className="text-muted-foreground">{today.familyContacts > 0 ? "Family in touch today" : "No family contact today"}</p>
           </div>
         </div>
         <AlertBadge count={alerts.length} />
@@ -84,12 +77,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Check-ins, last 7 days" value={checkins.filter((c) => c.daysAgo < 7).length} />
         <StatTile label="Activities done, last 7 days" value={activitiesWeek} hint="Count only, no content" />
-        <StatTile
-          label="Appetite, last 3 check-ins"
-          value={recent === null ? "–" : `${Math.round(recent * 100)}%`}
-          tone={appetiteDrop ? "alert" : undefined}
-          hint={appetiteDrop ? `⚠ Down from ${Math.round((before ?? 0) * 100)}%` : "Share of the plate eaten"}
-        />
+        <StatTile label="In app today" value={`${today.minutesInApp} min`} />
         <StatTile label="Latest mood" value={checkins[0] ? <MoodDot value={checkins[0].mood} className="text-xl" /> : "–"} />
       </div>
 
@@ -104,7 +92,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
       )}
 
       <Suspense fallback={<AiLoading nickname={patient.nickname} />}>
-        <AiSection patient={patient} checkins={checkins} />
+        <AiSection patient={patient} checkins={checkins} engagement={engagement} />
       </Suspense>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -112,7 +100,7 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
           <MoodChart history={moodSeries(checkins, 30)} />
         </section>
         <section className="rounded-xl border bg-card p-4">
-          <InteractionBars counts={metrics?.interactions ?? []} />
+          <InteractionBars counts={engagement.slice(-14).map((d) => d.familyContacts)} />
         </section>
       </div>
 
@@ -135,17 +123,6 @@ async function PatientDetail({ params }: { params: Promise<{ id: string }> }) {
                   <MoodDot value={c.mood} className="w-32 shrink-0 font-bold" />
                   <span className="text-sm">
                     {activitySummary(c.activities, c.activityNote)}
-                    {c.dishes.length > 0 && (
-                      <span className="mt-1 flex flex-wrap gap-1.5">
-                        {c.dishes.map((d) => (
-                          <span key={`${d.meal}-${d.dish}`} className="rounded-full bg-muted px-2 py-0.5">
-                            <span aria-hidden>{d.icon}</span> {d.dish}: {LIKINGS.find((l) => l.value === d.liking)?.emoji ?? ""}{" "}
-                            {LIKINGS.find((l) => l.value === d.liking)?.label ?? ""}
-                            {d.amount && ` · ate ${MEAL_AMOUNTS.find((a) => a.value === d.amount)?.label.toLowerCase()}`}
-                          </span>
-                        ))}
-                      </span>
-                    )}
                     {c.note && <span className="block text-muted-foreground">“{c.note}”</span>}
                   </span>
                 </li>
@@ -177,12 +154,24 @@ function AiLoading({ nickname }: { nickname: string }) {
   );
 }
 
-// Claude's summary next to the nurse's round: saving the round updates the summary.
-async function AiSection({ patient, checkins }: { patient: VisiblePatient; checkins: CheckInView[] }) {
+// Claude's summary next to the nurse's round: saving the round updates the summary. While
+// the AI service is off, its last stored summary shows with its date, without the round.
+async function AiSection({ patient, checkins, engagement }: { patient: VisiblePatient; checkins: CheckInView[]; engagement: EngagementDay[] }) {
   const today = todayIn(patient.timezone);
-  const report = await getAiReport(patient, today, checkins);
-  if (!report) return <AiOffline missing={missingAiSettings()} />;
+  const reading = await getAiReport({ patient, today, checkins, engagement });
+  if (!reading) return <AiOffline missing={missingAiSettings()} />;
+  const report = reading.value;
   const computed = report.assessment?.computed_at;
+  if (reading.storedAt) {
+    return (
+      <AiSummary
+        report={report}
+        nickname={patient.nickname}
+        computedAt={null}
+        storedAt={dateTimeIn(reading.storedAt, patient.timezone)}
+      />
+    );
+  }
   return (
     <div className="grid items-start gap-6 xl:grid-cols-[1.1fr_1fr]">
       <AiSummary report={report} nickname={patient.nickname} computedAt={computed ? timeIn(computed, patient.timezone) : null} />
@@ -191,7 +180,6 @@ async function AiSection({ patient, checkins }: { patient: VisiblePatient; check
         patientId={patient.id}
         nickname={patient.nickname}
         initial={roundFromSaved(report.observation)}
-        menu={report.menu}
         savedBy={report.observation ? (report.observation.observed_by ?? "the care team") : null}
         claude={report.claude}
       />

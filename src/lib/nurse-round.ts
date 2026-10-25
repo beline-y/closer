@@ -83,8 +83,6 @@ export const EMPTY_ROUND: NurseRoundInput = {
   note: "",
 };
 
-export type WardMenu = Record<WardMeal, string | null>;
-
 // -- What the AI module sends back ------------------------------------------------------------
 export type AiLevel = "stable" | "fragile" | "distress";
 export type AiAction = "wait" | "ask" | "digest" | "priority";
@@ -138,7 +136,6 @@ export type AiReport = {
   history: { for_date: string; level: AiLevel; p_distress: number; action: AiAction }[];
   alerts: AiAlert[];
   observation: SavedRound | null;
-  menu: WardMenu;
 };
 
 export type AiOverview = {

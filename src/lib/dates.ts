@@ -30,3 +30,9 @@ export function daysBetween(today: string, date: string): number {
 export function timeIn(iso: string, timeZone: string): string {
   return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone });
 }
+
+/** "Oct 24, 2:10pm" in a timezone. */
+export function dateTimeIn(iso: string, timeZone: string): string {
+  const day = new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone });
+  return `${day}, ${timeIn(iso, timeZone).replace(/\s/g, "").toLowerCase()}`;
+}

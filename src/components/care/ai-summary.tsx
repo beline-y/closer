@@ -41,7 +41,7 @@ export function AiOffline({ missing }: { missing: string[] }) {
     <section className="flex flex-col gap-2 rounded-xl border border-dashed bg-card p-5">
       <h2 className="flex items-center gap-2 font-heading text-lg font-extrabold">
         <PlugZap className="size-5 text-muted-foreground" aria-hidden />
-        {configured ? "The AI summary isn't answering" : "AI summary not connected"}
+        AI summary unavailable
       </h2>
       <p className="text-muted-foreground">
         {configured
@@ -59,15 +59,18 @@ export function AiOffline({ missing }: { missing: string[] }) {
           ))}
         </p>
       )}
+      {!configured && (
       <p className="text-sm text-muted-foreground">
         Start it with <code className="rounded bg-muted px-1.5 py-0.5">cd ml && python -m closer_ai serve</code>, then set <code className="rounded bg-muted px-1.5 py-0.5">CLOSER_AI_URL</code> and{" "}
         <code className="rounded bg-muted px-1.5 py-0.5">CLOSER_AI_TOKEN</code> in .env.local, or in the host&apos;s environment variables (Vercel), then redeploy.
       </p>
+      )}
     </section>
   );
 }
 
-export function AiSummary({ report, nickname, computedAt }: { report: AiReport; nickname: string; computedAt: string | null }) {
+/** `storedAt` ("Oct 24, 2:10pm") when the AI service is off and this is its last stored reading. */
+export function AiSummary({ report, nickname, computedAt, storedAt = null }: { report: AiReport; nickname: string; computedAt: string | null; storedAt?: string | null }) {
   const a = report.assessment;
   if (!a) {
     return (
@@ -91,10 +94,11 @@ export function AiSummary({ report, nickname, computedAt }: { report: AiReport; 
     <section aria-labelledby="ai-summary-title" className="flex flex-col gap-5 rounded-xl border border-role-care/40 bg-card p-5 shadow-sm">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="ai-summary-title" className="font-heading text-lg font-extrabold">
-          Today&apos;s summary
+          {storedAt ? `Summary from ${storedAt}` : "Today\u2019s summary"}
         </h2>
         <SourceChip claude={a.summary_source === "claude"} />
       </header>
+      {storedAt && <p className="-mt-3 text-sm text-muted-foreground">The AI service isn&apos;t answering: this is its last summary.</p>}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <LevelBadge level={a.level} className="px-3 py-1 text-base" />
@@ -157,7 +161,7 @@ export function AiSummary({ report, nickname, computedAt }: { report: AiReport; 
 
       <p className="border-t pt-3 text-xs text-muted-foreground">
         Decision support for the care team, not a diagnosis. Safety rules always alert the psychologist, whatever the model says.
-        {computedAt && <> Updated at {computedAt}.</>}
+        {computedAt && !storedAt && <> Updated at {computedAt}.</>}
       </p>
     </section>
   );
