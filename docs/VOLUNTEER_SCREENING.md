@@ -41,12 +41,17 @@ Uses existing server-only `MISTRAL_API_KEY`, optional `MISTRAL_MODEL`, and
 `SUPABASE_SECRET_KEY`, plus the existing public Supabase connection settings.
 No additional environment variables are needed.
 
-Migration: `20261025011204_volunteer_message_screening.sql`. Types were derived
-locally with the existing offline generator. Follow `CONTRIBUTING.md` before pushing
+Migration: `20261025011204_volunteer_message_screening.sql` is applied to the shared
+fictional project, with types regenerated from the linked database. Follow `CONTRIBUTING.md` before pushing
 to the shared database: all earlier migrations must arrive through `main`, announce
 the push to the team, dry-run, push one at a time, then regenerate linked types.
 Ship the migration/types in a small prerequisite PR before feature code. Until the
 migration is applied, the UI shows unavailability and preserves unsent drafts.
+
+Database PR #29 reached main before the feature PR. The coordinated rollout used
+`--include-all` because this additive migration predates an already-applied comfort-card
+migration. Its dry-run listed only this file; migration history was not repaired.
+The user waived the separate team-chat announcement for this run.
 
 ## Verification
 
@@ -63,3 +68,9 @@ migration is applied, the UI shows unavailability and preserves unsent drafts.
   As Sarah, review Applicant messages and approve/reject; refresh both roles to check
   the saved decision. Check an unflagged message under All awaiting review. Verify
   Leo/Emma cannot access submissions.
+
+Verified after rollout: a fictional aggressive/vulgar event application persisted
+across refreshes, appeared in Sarah's flagged queue with grounded excerpts, and its
+rejection appeared in review history. All 171 linked pgTAP assertions passed. The
+comfort-card access test now uses baseline counts, since demo cards may already have
+been opened; test data and baseline observations remain inside rolled-back transactions.
