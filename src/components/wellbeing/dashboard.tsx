@@ -65,7 +65,7 @@ export async function WellbeingPanel({ role }: { role: "patient" | "family" | "c
             <span className={`rounded-full px-3 py-1 text-sm font-bold ${r.level === "priority" ? "bg-destructive/10 text-destructive" : "bg-secondary"}`}>{r.status === "processing" ? "Review in progress" : levelLabels[r.level ?? ""]}</span></div>
           <p className="mb-2 flex flex-wrap items-center gap-2 text-sm font-bold text-muted-foreground">
             {r.source === "mistral" && r.status !== "processing" && <span className="rounded-full bg-role-care-soft px-2.5 py-0.5 text-role-care-ink">AI-generated</span>}
-            {r.status === "processing" ? "Waiting for the review to finish" : r.source === "mistral" ? `Mistral · ${r.model}` : r.source === "no_data" ? "No shared responses · fixed reminders only" : "Rules only · AI review unavailable"}
+            {r.status === "processing" ? "Waiting for the review to finish" : r.source === "mistral" ? (r.acknowledged_at ? "Reviewed" : "Ready for care review") : r.source === "no_data" ? "No shared responses" : "AI review unavailable"}
           </p>
           <p className="mb-4 leading-relaxed">{r.summary}</p>
           {r.safeguarding_concern && <p className="mb-4 rounded-xl bg-destructive/10 p-4 font-bold">Safeguarding concern: guardian notifications were withheld. Follow your safeguarding procedure.</p>}
@@ -85,7 +85,6 @@ export async function WellbeingPanel({ role }: { role: "patient" | "family" | "c
           <label className="flex min-h-14 items-center gap-3"><input className="size-5 accent-primary" type="checkbox" name="connection_enabled" value="yes" defaultChecked={data.connectionEnabled} />
             {isChild ? "Send me little ideas for connecting" : "Send me personalized connection prompts"}</label>
           {!isChild && <p className="text-sm text-muted-foreground">Support alerts remain available even when connection prompts are off.</p>}
-          {role === "family" && <p className="text-sm font-bold">Daily wellbeing reviews use AI (Mistral). You can turn this off anytime.</p>}
         </ActionForm>
       </section>}
       {!data.patients.length && <p className={panelClass}>Your space is ready. Your care team can help link your family.</p>}
