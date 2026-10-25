@@ -50,7 +50,7 @@ export function VolunteerQuestions({ me, submissions = [] }: { me: "maya" | "dan
           <h2 id="kids-title" className="text-xl font-extrabold">
             From young explorers
           </h2>
-          <p className="text-sm text-muted-foreground">Questions are checked by the care team and stripped of names before they reach you.</p>
+          <p className="text-sm text-muted-foreground">Anonymous questions, approved by the care team.</p>
           <ul className="flex flex-col gap-3">{fromKids.map(item)}</ul>
         </section>
         <section aria-labelledby="inspiring-title" className="flex flex-col gap-3">
@@ -65,7 +65,7 @@ export function VolunteerQuestions({ me, submissions = [] }: { me: "maya" | "dan
         <h2 id="shared-title" className="text-xl font-extrabold">
           What young explorers answered
         </h2>
-        <p className="text-sm text-muted-foreground">Shared with permission and approved by the care team. Names and places are hidden.</p>
+        <p className="text-sm text-muted-foreground">Shared with permission.</p>
         <ul className="flex flex-col gap-3">
           {SHARED_ANSWERS.map((a) => (
             <li key={a.id} className="flex flex-col gap-2 rounded-3xl bg-role-volunteer-soft p-4">
